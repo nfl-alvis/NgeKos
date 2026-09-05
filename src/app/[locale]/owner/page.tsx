@@ -4,6 +4,13 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { AlertCircle, BedDouble, CalendarClock, ChevronDown, TrendingUp } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -71,13 +78,16 @@ export default function OwnerDashboardPage() {
   const [range, setRange] = useState<RevenueRange>("monthly");
   const revenue = REVENUE_RANGES[range];
   const revenueTotal = revenue.reduce((a, v) => a + v, 0);
-  const revenueMax = Math.max(...revenue);
   const chartLabels =
     range === "weekly"
       ? (t.raw("days") as string[])
       : range === "yearly"
         ? (t.raw("years") as string[])
         : monthNames;
+  const chartData = chartLabels.map((label, i) => ({ label, value: revenue[i] }));
+  const chartConfig = {
+    value: { label: t("chartSeries"), color: "var(--chart-1)" },
+  } satisfies ChartConfig;
 
   // Band judul tinted di atas card putih — tidak membungkus isi card.
   const stats: Stat[] = [
@@ -279,22 +289,33 @@ export default function OwnerDashboardPage() {
                   {t(`chartCompare${range.charAt(0).toUpperCase()}${range.slice(1)}`)}
                 </span>
               </p>
-              <div className="mt-6 flex h-44 items-end gap-3">
-                {revenue.map((v, i) => (
-                  <div key={`${range}-${i}`} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
-                    <span className="font-mono text-[10px] tabular-nums text-nk-text-muted">
-                      {v.toFixed(1)}
-                    </span>
-                    <div
-                      className="w-full rounded-t-sm bg-nk-accent/80 transition-all hover:bg-nk-accent"
-                      style={{ height: `${(v / revenueMax) * 100}%` }}
-                      role="img"
-                      aria-label={`${chartLabels[i]}: ${v} juta`}
-                    />
-                    <span className="text-[10px] text-nk-text-muted">{chartLabels[i]}</span>
-                  </div>
-                ))}
-              </div>
+              <ChartContainer config={chartConfig} className="mt-6 h-44 w-full">
+                <BarChart accessibilityLayer data={chartData} margin={{ top: 8, left: 0, right: 0 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="label"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    fontSize={10}
+                    interval={0}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={
+                      <ChartTooltipContent
+                        hideLabel
+                        formatter={(value) => (
+                          <span className="font-mono text-[10px] tabular-nums text-nk-text-muted">
+                            {(Number(value) || 0).toFixed(1)} jt
+                          </span>
+                        )}
+                      />
+                    }
+                  />
+                  <Bar dataKey="value" fill="var(--color-value)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
             </div>
           </section>
         </div>

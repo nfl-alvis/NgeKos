@@ -360,6 +360,7 @@
     "approve": "Approve",
     "reject": "Reject",
     "chartTitle": "Revenue Stats",
+    "chartSeries": "Revenue",
     "rangeWeekly": "Weekly",
     "rangeMonthly": "Monthly",
     "rangeYearly": "Yearly",

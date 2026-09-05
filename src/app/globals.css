@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* shadcn chart — nilai chart di :root agar var() bisa dibaca recharts (fill via style attr) */
+:root {
+  --chart-1: #3a2618;
+  --chart-2: #8a6a1f;
+  --chart-3: #2f6b3c;
+  --chart-4: #33517c;
+  --chart-5: #9c3b32;
+}
+
 @theme inline {
   --color-nk-bg: #FDFCF9;
   --color-nk-surface: #FFFFFF;
@@ -39,6 +48,13 @@
   --color-border: var(--color-nk-border);
   --color-input: var(--color-nk-border);
   --color-ring: var(--color-nk-accent);
+
+  /* ===== chart tokens (shadcn chart) — bar utama coklat accent, grid netral ===== */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 
   /* ===== sidebar tokens (dashboard owner/admin) — warm greige, jelas beda dari bg ===== */
   --color-sidebar: #F1EEE7;
