@@ -70,12 +70,6 @@ export default async function HomePage({
   const props = getVerifiedProperties();
   const featured = props.slice(0, 4);
 
-  const marqueeItems = [
-    { label: t("why.verified") },
-    { label: t("why.transparent") },
-    { label: t("why.nearCampus") },
-  ];
-
   return (
     <>
       {/* ===== HERO — giant type + search ===== */}
@@ -100,25 +94,6 @@ export default async function HomePage({
           <div className="mx-auto mt-12 w-full max-w-2xl">
             <SearchBar />
           </div>
-        </div>
-      </section>
-
-      {/* ===== MARQUEE STRIP — 3 value props, hairline grid ===== */}
-      <section className="border-b border-nk-border bg-nk-border">
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-[1px] md:grid-cols-3">
-          {marqueeItems.map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center justify-between bg-nk-bg px-6 py-5"
-            >
-              <span className="text-sm font-medium text-nk-text">
-                {item.label}
-              </span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" className="text-nk-text-muted" aria-hidden="true">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </div>
-          ))}
         </div>
       </section>
 
