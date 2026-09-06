@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowUpRight, CalendarClock, MessageSquare, Wrench } from "lucide-react";
+import { ArrowUpRight, CalendarClock, ChevronDown, MessageSquare, Wrench } from "lucide-react";
 import { Label, Pie, PieChart } from "recharts";
 import {
   ChartContainer,
@@ -9,6 +10,13 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
 import { Link } from "@/i18n/navigation";
 import { conversations, getOwnerProperties, invoices, ownerBookings, roomUnits } from "@/lib/data/entities";
 import { formatIDR } from "@/lib/utils";
@@ -44,6 +52,26 @@ export default function OwnerDashboardInsights() {
   ] as const;
   const linkStyle = "rounded-sm text-sm underline underline-offset-4 hover:text-nk-text-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-nk-accent";
 
+  const [selectedSlug, setSelectedSlug] = useState(properties[0]?.slug ?? "");
+  const selected = properties.find((property) => property.slug === selectedSlug) ?? properties[0];
+  const roomConfig = {
+    occupied: { label: t("occupied"), color: "var(--chart-1)" },
+    available: { label: t("available"), color: "var(--chart-3)" },
+    reserved: { label: t("reserved"), color: "var(--chart-2)" },
+    repair: { label: t("repair"), color: "var(--chart-5)" },
+  } satisfies ChartConfig;
+
+  const selectedRooms = selected ? roomUnits[selected.slug] ?? [] : [];
+  const selectedTotal = selectedRooms.length;
+  const selectedFilled = selectedRooms.filter((room) => room.status === "terisi").length;
+  const selectedCounts = ROOM_STATUSES.map((status) => ({
+    key: STATUS_LABEL_KEYS[status],
+    count: selectedRooms.filter((room) => room.status === status).length,
+  }));
+  const pieData = selectedCounts
+    .filter((c) => c.count > 0)
+    .map((c) => ({ name: c.key, value: c.count, fill: `var(${STATUS_CHART_TOKENS[c.key]})` }));
+
   return (
     <section className="mt-8 space-y-5" aria-labelledby="operations-title">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -74,92 +102,92 @@ export default function OwnerDashboardInsights() {
               <h3 className="text-sm font-semibold text-nk-text">{t("properties")}</h3>
               <p className="mt-1 text-xs text-nk-text-muted">{t("propertiesNote")}</p>
             </div>
-            <Link href="/owner/properties" className={linkStyle}>{t("manage")}</Link>
+            <div className="flex items-center gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className="flex items-center gap-1.5 rounded-md bg-nk-surface px-3 py-1.5 text-sm text-nk-text ring-1 ring-foreground/10 transition-colors hover:bg-nk-accent-subtle focus:outline-none"
+                  aria-label={t("properties")}
+                >
+                  {selected?.name ?? "—"}
+                  <ChevronDown className="size-3.5 text-nk-text-muted" aria-hidden="true" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuRadioGroup value={selectedSlug} onValueChange={setSelectedSlug}>
+                    {properties.map((property) => (
+                      <DropdownMenuRadioItem key={property.slug} value={property.slug}>
+                        {property.name}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Link href="/owner/properties" className={linkStyle}>{t("manage")}</Link>
+            </div>
           </div>
-          <ul className="divide-y divide-nk-border">
-            {properties.map((property) => {
-              const rooms = roomUnits[property.slug] ?? [];
-              const total = rooms.length;
-              const filled = rooms.filter((room) => room.status === "terisi").length;
-              const counts = ROOM_STATUSES.map((status) => ({
-                key: STATUS_LABEL_KEYS[status],
-                count: rooms.filter((room) => room.status === status).length,
-              }));
-              const pieData = counts
-                .filter((c) => c.count > 0)
-                .map((c) => ({ name: c.key, value: c.count, fill: `var(${STATUS_CHART_TOKENS[c.key]})` }));
-              const chartConfig = {
-                occupied: { label: t("occupied"), color: "var(--chart-1)" },
-                available: { label: t("available"), color: "var(--chart-3)" },
-                reserved: { label: t("reserved"), color: "var(--chart-2)" },
-                repair: { label: t("repair"), color: "var(--chart-5)" },
-              } satisfies ChartConfig;
-              return (
-                <li key={property.slug} className="p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <Link href={`/owner/properties/${property.slug}`} aria-label={t("viewProperty", { name: property.name })} className={`${linkStyle} font-medium text-nk-text`}>{property.name}</Link>
-                      <p className="mt-1 text-xs text-nk-text-muted">{property.city} · {t(property.verificationStatus)}</p>
-                    </div>
-                    {total > 0 && <span className="text-lg font-semibold tabular-nums text-nk-text">{Math.round((filled / total) * 100)}%</span>}
-                  </div>
-                  {total > 0 ? (
-                    <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
-                      <ChartContainer
-                        config={chartConfig}
-                        className="aspect-square h-[150px] flex-shrink-0"
+          {selected && (
+            <div className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Link href={`/owner/properties/${selected.slug}`} aria-label={t("viewProperty", { name: selected.name })} className={`${linkStyle} font-medium text-nk-text`}>{selected.name}</Link>
+                  <p className="mt-1 text-xs text-nk-text-muted">{selected.city} · {t(selected.verificationStatus)}</p>
+                </div>
+                {selectedTotal > 0 && <span className="text-lg font-semibold tabular-nums text-nk-text">{Math.round((selectedFilled / selectedTotal) * 100)}%</span>}
+              </div>
+              {selectedTotal > 0 ? (
+                <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
+                  <ChartContainer
+                    config={roomConfig}
+                    className="aspect-square h-[150px] flex-shrink-0"
+                  >
+                    <PieChart>
+                      <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent hideLabel />}
+                      />
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={48}
+                        outerRadius={72}
+                        strokeWidth={4}
+                        stroke="#FFFFFF"
                       >
-                        <PieChart>
-                          <ChartTooltip
-                            cursor={false}
-                            content={<ChartTooltipContent hideLabel />}
-                          />
-                          <Pie
-                            data={pieData}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={48}
-                            outerRadius={72}
-                            strokeWidth={4}
-                            stroke="#FFFFFF"
-                          >
-                            <Label
-                              content={({ viewBox }) => {
-                                if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                                  return (
-                                    <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                                      <tspan x={viewBox.cx} y={viewBox.cy - 6} className="fill-nk-text text-lg font-semibold">
-                                        {Math.round((filled / total) * 100)}%
-                                      </tspan>
-                                      <tspan x={viewBox.cx} y={viewBox.cy + 12} className="fill-nk-text-muted text-[10px]">
-                                        {t("occupied")}
-                                      </tspan>
-                                    </text>
-                                  );
-                                }
-                              }}
-                            />
-                          </Pie>
-                        </PieChart>
-                      </ChartContainer>
-                      <ul className="flex flex-col gap-2">
-                        {counts.map(({ key, count }) => (
-                          <li key={key} className="flex items-center gap-3 text-xs text-nk-text-muted">
-                            <span
-                              className="size-2 shrink-0 rounded-full"
-                              style={{ backgroundColor: `var(${STATUS_CHART_TOKENS[key]})` }}
-                              aria-hidden="true"
-                            />
-                            {t(key)} <span className="font-medium tabular-nums text-nk-text">{count}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : <p className="mt-3 text-xs text-nk-text-muted">{t("noRooms")}</p>}
-                </li>
-              );
-            })}
-          </ul>
+                        <Label
+                          content={({ viewBox }) => {
+                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                              return (
+                                <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                                  <tspan x={viewBox.cx} y={viewBox.cy - 6} className="fill-nk-text text-lg font-semibold">
+                                    {Math.round((selectedFilled / selectedTotal) * 100)}%
+                                  </tspan>
+                                  <tspan x={viewBox.cx} y={viewBox.cy + 12} className="fill-nk-text-muted text-[10px]">
+                                    {t("occupied")}
+                                  </tspan>
+                                </text>
+                              );
+                            }
+                          }}
+                        />
+                      </Pie>
+                    </PieChart>
+                  </ChartContainer>
+                  <ul className="flex flex-col gap-2">
+                    {selectedCounts.map(({ key, count }) => (
+                      <li key={key} className="flex items-center gap-3 text-xs text-nk-text-muted">
+                        <span
+                          className="size-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: `var(${STATUS_CHART_TOKENS[key]})` }}
+                          aria-hidden="true"
+                        />
+                        {t(key)} <span className="font-medium tabular-nums text-nk-text">{count}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : <p className="mt-3 text-xs text-nk-text-muted">{t("noRooms")}</p>}
+            </div>
+          )}
           {properties.length === 0 && <p className="p-5 text-sm text-nk-text-muted">{t("emptyProperties")}</p>}
         </section>
 
