@@ -63,16 +63,6 @@ export default function Navbar() {
         </div>
 
         <div className="hidden items-center gap-6 md:flex">
-          <Link
-            href="/kost"
-            className="flex items-center gap-2 text-sm text-nk-text transition-colors hover:text-nk-text-muted"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            {t("search")}
-          </Link>
           {user ? (
             <div className="relative">
               <button
@@ -122,7 +112,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setRoleOpen(true)}
-            className="inline-flex items-center rounded-lg bg-nk-accent px-5 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+            className="inline-flex items-center bg-nk-accent px-5 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
           >
             {t("login")}
           </button>
