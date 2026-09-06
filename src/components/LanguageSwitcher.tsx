@@ -1,35 +1,61 @@
 "use client";
 
+import { Languages } from "lucide-react";
 import { useLocale } from "next-intl";
-import { usePathname, useRouter } from "@/i18n/navigation";
 import { useParams } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { usePathname, useRouter } from "@/i18n/navigation";
+
+const LANGUAGES = [
+  { value: "id", label: "Bahasa Indonesia", flag: "🇮🇩" },
+  { value: "en", label: "English", flag: "🇺🇸" },
+] as const;
 
 export default function LanguageSwitcher() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
-  const nextLocale = locale === "id" ? "en" : "id";
 
-  function switchLocale() {
+  function switchLocale(next: string) {
+    if (next === locale) return;
     router.replace(
       // @ts-expect-error — dynamic pathname with locale
       { pathname, params },
-      { locale: nextLocale }
+      { locale: next }
     );
   }
 
   return (
-    <button
-      onClick={switchLocale}
-      className="inline-flex size-9 items-center justify-center text-nk-text transition-colors hover:text-nk-accent"
-      aria-label={locale === "id" ? "Switch to English" : "Ganti ke Bahasa Indonesia"}
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M3.6 9h16.8M3.6 15h16.8" />
-        <path d="M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
-      </svg>
-    </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="inline-flex size-9 items-center justify-center text-nk-text transition-colors hover:text-nk-accent"
+        aria-label={locale === "id" ? "Ganti bahasa" : "Switch language"}
+      >
+        <Languages className="size-[18px]" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-48" align="end">
+        <DropdownMenuLabel>{locale === "id" ? "Pilih bahasa" : "Select language"}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup value={locale} onValueChange={switchLocale}>
+          {LANGUAGES.map((l) => (
+            <DropdownMenuRadioItem key={l.value} value={l.value}>
+              <span className="flex items-center gap-2">
+                <span aria-hidden="true">{l.flag}</span>
+                <span>{l.label}</span>
+              </span>
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

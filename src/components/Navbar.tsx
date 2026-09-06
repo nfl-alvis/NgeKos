@@ -59,10 +59,10 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
-          <LanguageSwitcher />
         </div>
 
         <div className="hidden items-center gap-6 md:flex">
+          <LanguageSwitcher />
           {user ? (
             <div className="relative">
               <button
