@@ -121,7 +121,7 @@ export default function OwnerDashboardInsights() {
               <Link href="/owner/properties" className={linkStyle}>{t("manage")}</Link>
             </div>
           </div>
-          <div className="flex-1 rounded-lg bg-nk-surface">
+          <div className="flex-1 rounded-lg bg-nk-surface ring-1 ring-foreground/10">
             {selected && (
               <div className="p-5">
               <div className="flex items-start justify-between gap-3">
@@ -194,7 +194,7 @@ export default function OwnerDashboardInsights() {
           <div className="flex items-center justify-between px-4 pb-1 pt-3">
             <h3 className="text-sm font-semibold text-nk-text">{t("invoices")}</h3>
           </div>
-          <div className="flex-1 rounded-lg bg-nk-surface">
+          <div className="flex-1 rounded-lg bg-nk-surface ring-1 ring-foreground/10">
           <div className="border-b border-nk-border p-5">
             <p className="text-xs text-nk-text-muted">{t("outstanding")}</p>
             <p className="mt-1 text-2xl font-semibold tracking-tight text-nk-text">{formatIDR(unpaid.reduce((sum, invoice) => sum + invoice.amount, 0))}</p>

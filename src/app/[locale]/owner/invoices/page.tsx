@@ -61,7 +61,7 @@ export default function OwnerInvoicesPage() {
       <div className="mb-6 grid grid-cols-2 gap-4 sm:max-w-md">
         <div className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#E8EFF8]">
           <p className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{t("summaryUnpaid")}</p>
-          <div className="flex-1 rounded-lg bg-nk-surface p-4">
+          <div className="flex-1 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">
             <div className="flex items-center gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#D3E0F0] text-[#33517C]">
                 <Receipt className="size-4" aria-hidden="true" />
@@ -74,7 +74,7 @@ export default function OwnerInvoicesPage() {
         </div>
         <div className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#FAEAE8]">
           <p className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{t("summaryArrears")}</p>
-          <div className="flex-1 rounded-lg bg-nk-surface p-4">
+          <div className="flex-1 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">
             <div className="flex items-center gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#F3D7D3] text-[#9C3B32]">
                 <AlertCircle className="size-4" aria-hidden="true" />

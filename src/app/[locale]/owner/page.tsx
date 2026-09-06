@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Link } from "@/i18n/navigation";
 import DashboardShell from "@/components/DashboardShell";
+import OwnerDashboardInsights from "@/components/OwnerDashboardInsights";
 import { StatusBadge } from "@/components/StatusBadge";
 import { OWNER_PROFILE, ownerBookings, roomUnits, tenants } from "@/lib/data/entities";
 import { cn, formatIDR } from "@/lib/utils";
@@ -156,7 +157,7 @@ export default function OwnerDashboardPage() {
             )}
           >
             <p className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{s.label}</p>
-            <div className="flex-1 rounded-lg bg-nk-surface p-4">
+            <div className="flex-1 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">
               <div className="flex items-center gap-3">
                 <div
                   className={cn(
@@ -217,7 +218,7 @@ export default function OwnerDashboardPage() {
                 {t("seeAll")}
               </Link>
             </div>
-            <div className="flex flex-1 flex-col divide-y divide-nk-border rounded-lg bg-nk-surface">
+            <div className="flex flex-1 flex-col divide-y divide-nk-border rounded-lg bg-nk-surface ring-1 ring-foreground/10">
               {pending.slice(0, 5).map((b) => (
                 <div key={b.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                   <div className="min-w-0 flex-1">
@@ -277,7 +278,7 @@ export default function OwnerDashboardPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <div className="flex-1 rounded-lg bg-nk-surface p-6">
+            <div className="flex-1 rounded-lg bg-nk-surface p-6 ring-1 ring-foreground/10">
               <p className="text-2xl font-semibold tracking-tight text-nk-text">
                 {formatIDR(revenueTotal * 1_000_000)}
               </p>
@@ -323,7 +324,7 @@ export default function OwnerDashboardPage() {
         {/* sidebar kanan: aktivitas */}
         <aside className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-nk-section lg:order-last">
           <h2 className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{t("activity")}</h2>
-          <ol className="flex flex-1 flex-col rounded-lg bg-nk-surface px-5">
+          <ol className="flex flex-1 flex-col rounded-lg bg-nk-surface px-5 ring-1 ring-foreground/10">
             {ACTIVITIES.map((a) => (
               <li key={a.id} className="border-b border-nk-border py-3 last:border-b-0">
                 <p className="text-sm text-nk-text">{a.text}</p>
@@ -333,6 +334,7 @@ export default function OwnerDashboardPage() {
           </ol>
         </aside>
       </div>
+      <OwnerDashboardInsights />
     </DashboardShell>
   );
 }
