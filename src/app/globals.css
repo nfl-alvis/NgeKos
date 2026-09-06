@@ -28,6 +28,9 @@
   /* warm section tint (nk-bg shifted slightly brown) */
   --color-nk-warm: #F4F3EF;
 
+  /* rating star (kuning) */
+  --color-nk-star: #EAB308;
+
   /* ===== shadcn token aliases (dipetakan ke palet warm nk-*) ===== */
   --color-background: var(--color-nk-bg);
   --color-foreground: var(--color-nk-text);
