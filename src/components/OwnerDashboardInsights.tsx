@@ -96,12 +96,9 @@ export default function OwnerDashboardInsights() {
       </nav>
 
       <div className="grid items-start gap-6 xl:grid-cols-2">
-        <section className="overflow-hidden rounded-xl border border-nk-border bg-nk-surface">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-nk-border bg-nk-section px-5 py-4">
-            <div>
-              <h3 className="text-sm font-semibold text-nk-text">{t("properties")}</h3>
-              <p className="mt-1 text-xs text-nk-text-muted">{t("propertiesNote")}</p>
-            </div>
+        <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-nk-section">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 pb-1 pt-3">
+            <h3 className="text-sm font-semibold text-nk-text">{t("properties")}</h3>
             <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -124,8 +121,9 @@ export default function OwnerDashboardInsights() {
               <Link href="/owner/properties" className={linkStyle}>{t("manage")}</Link>
             </div>
           </div>
-          {selected && (
-            <div className="p-5">
+          <div className="flex-1 rounded-lg bg-nk-surface">
+            {selected && (
+              <div className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <Link href={`/owner/properties/${selected.slug}`} aria-label={t("viewProperty", { name: selected.name })} className={`${linkStyle} font-medium text-nk-text`}>{selected.name}</Link>
@@ -186,16 +184,17 @@ export default function OwnerDashboardInsights() {
                   </ul>
                 </div>
               ) : <p className="mt-3 text-xs text-nk-text-muted">{t("noRooms")}</p>}
-            </div>
-          )}
-          {properties.length === 0 && <p className="p-5 text-sm text-nk-text-muted">{t("emptyProperties")}</p>}
+              </div>
+            )}
+            {properties.length === 0 && <p className="p-5 text-sm text-nk-text-muted">{t("emptyProperties")}</p>}
+          </div>
         </section>
 
-        <section className="overflow-hidden rounded-xl border border-nk-border bg-nk-surface">
-          <div className="border-b border-nk-border bg-nk-section px-5 py-4">
+        <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-nk-section">
+          <div className="flex items-center justify-between px-4 pb-1 pt-3">
             <h3 className="text-sm font-semibold text-nk-text">{t("invoices")}</h3>
-            <p className="mt-1 text-xs text-nk-text-muted">{t("invoiceNote")}</p>
           </div>
+          <div className="flex-1 rounded-lg bg-nk-surface">
           <div className="border-b border-nk-border p-5">
             <p className="text-xs text-nk-text-muted">{t("outstanding")}</p>
             <p className="mt-1 text-2xl font-semibold tracking-tight text-nk-text">{formatIDR(unpaid.reduce((sum, invoice) => sum + invoice.amount, 0))}</p>
@@ -215,6 +214,7 @@ export default function OwnerDashboardInsights() {
           </ul>
           {unpaid.length === 0 && <p className="p-5 text-sm text-nk-text-muted">{t("emptyInvoices")}</p>}
           <div className="border-t border-nk-border p-5"><Link href="/owner/invoices" className={linkStyle}>{t("seeInvoices")}</Link></div>
+          </div>
         </section>
       </div>
     </section>
