@@ -95,8 +95,8 @@ export default function OwnerDashboardInsights() {
         ))}
       </nav>
 
-      <div className="grid items-start gap-6 xl:grid-cols-5">
-        <section className="overflow-hidden rounded-xl border border-nk-border bg-nk-surface xl:col-span-3">
+      <div className="grid items-start gap-6 xl:grid-cols-2">
+        <section className="overflow-hidden rounded-xl border border-nk-border bg-nk-surface">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-nk-border bg-nk-section px-5 py-4">
             <div>
               <h3 className="text-sm font-semibold text-nk-text">{t("properties")}</h3>
@@ -137,7 +137,7 @@ export default function OwnerDashboardInsights() {
                 <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
                   <ChartContainer
                     config={roomConfig}
-                    className="aspect-square h-[150px] flex-shrink-0"
+                    className="mx-auto aspect-square h-[210px] flex-shrink-0"
                   >
                     <PieChart>
                       <ChartTooltip
@@ -148,8 +148,8 @@ export default function OwnerDashboardInsights() {
                         data={pieData}
                         dataKey="value"
                         nameKey="name"
-                        innerRadius={48}
-                        outerRadius={72}
+                        innerRadius={66}
+                        outerRadius={104}
                         strokeWidth={4}
                         stroke="#FFFFFF"
                       >
@@ -191,7 +191,7 @@ export default function OwnerDashboardInsights() {
           {properties.length === 0 && <p className="p-5 text-sm text-nk-text-muted">{t("emptyProperties")}</p>}
         </section>
 
-        <section className="overflow-hidden rounded-xl border border-nk-border bg-nk-surface xl:col-span-2">
+        <section className="overflow-hidden rounded-xl border border-nk-border bg-nk-surface">
           <div className="border-b border-nk-border bg-nk-section px-5 py-4">
             <h3 className="text-sm font-semibold text-nk-text">{t("invoices")}</h3>
             <p className="mt-1 text-xs text-nk-text-muted">{t("invoiceNote")}</p>
