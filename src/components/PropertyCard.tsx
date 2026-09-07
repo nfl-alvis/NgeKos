@@ -74,7 +74,7 @@ export default async function PropertyCard({ property }: { property: Property })
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="text-nk-star" aria-hidden="true">
             <path d="M12 2l2.9 6.26L21.5 9.27l-5 4.87L17.8 21 12 17.77 6.2 21l1.3-6.86-5-4.87 6.6-1.01L12 2z" />
           </svg>
-          {property.rating.toFixed(1)} ({property.reviewCount})
+          <span className="text-nk-star">{property.rating.toFixed(1)}</span> ({property.reviewCount})
         </span>
         <span className="flex items-center gap-1.5">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

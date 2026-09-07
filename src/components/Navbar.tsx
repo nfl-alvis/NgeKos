@@ -41,9 +41,7 @@ export default function Navbar() {
     <>
       <nav className="sticky top-0 z-50 border-b border-nk-border bg-nk-bg/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
-        <Link href="/" aria-label={t("home")}>
-          <Logo className="h-8 w-auto text-nk-text" />
-        </Link>
+        <Logo className="h-8 w-auto text-nk-text" href="/" />
 
         <div className="hidden items-center gap-8 md:flex">
           {navLinks.map((l) => (

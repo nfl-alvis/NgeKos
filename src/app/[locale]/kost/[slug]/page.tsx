@@ -101,7 +101,7 @@ export default async function DetailPage({
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-nk-star" aria-hidden="true">
                     <path d="M12 2l2.9 6.26L21.5 9.27l-5 4.87L17.8 21 12 17.77 6.2 21l1.3-6.86-5-4.87 6.6-1.01L12 2z" />
                   </svg>
-                  {p.rating.toFixed(1)} ({p.reviewCount} {t("detail.reviews")})
+                  <span className="text-nk-star">{p.rating.toFixed(1)}</span> ({p.reviewCount} {t("detail.reviews")})
                 </span>
               </div>
 

@@ -170,8 +170,17 @@
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
+    "errorHint": "Something went wrong on our side. Try reloading this page.",
     "retry": "Try again",
+    "backHome": "Back to home",
     "skip": "Skip to content"
+  },
+  "notFound": {
+    "eyebrow": "404 — Page not found",
+    "title": "The page you're looking for doesn't exist.",
+    "body": "The address may be mistyped, or the page has moved. Try browsing verified kosts with the button below.",
+    "ctaPrimary": "Browse kosts",
+    "ctaBack": "Back to home"
   },
   "why": {
     "heading": "Why NgeKost?",

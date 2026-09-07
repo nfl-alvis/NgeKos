@@ -170,8 +170,17 @@
   "common": {
     "loading": "Memuat...",
     "error": "Terjadi kesalahan",
+    "errorHint": "Ada yang salah di sisi kami. Coba muat ulang halaman ini.",
     "retry": "Coba lagi",
+    "backHome": "Kembali ke beranda",
     "skip": "Lewati ke konten"
+  },
+  "notFound": {
+    "eyebrow": "404 — Halaman tidak ditemukan",
+    "title": "Halaman yang kamu cari tidak ada.",
+    "body": "Mungkin alamatnya salah ketik, atau halamannya sudah dipindah. Coba jelajahi kost terverifikasi lewat tombol di bawah.",
+    "ctaPrimary": "Jelajahi kost",
+    "ctaBack": "Ke beranda"
   },
   "why": {
     "heading": "Kenapa NgeKost?",

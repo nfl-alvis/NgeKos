@@ -34,3 +34,11 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Owner dashboard
+
+`/[locale]/owner` includes an operational summary in `src/components/OwnerDashboardInsights.tsx`, with Indonesian and English labels. It uses the existing demo records in `src/lib/data/entities.ts`:
+
+- Occupancy uses recorded room units per owner property, including reserved and maintenance rooms in the denominator. Properties without units show an explicit empty state.
+- Outstanding invoices include all unpaid periods, with up to four invoices shown in ascending due-date order. This total is distinct from the existing monthly tenant arrears metric.
+- Follow-up links lead to bookings, messages, and property management. The summary does not send reminders or change records.
