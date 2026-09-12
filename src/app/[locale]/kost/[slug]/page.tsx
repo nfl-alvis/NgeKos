@@ -192,6 +192,14 @@ export default async function DetailPage({
                           : t("detail.full")}
                       </span>
                     </div>
+                    {rt.available > 0 && (
+                      <Link
+                        href={`/kost/${p.slug}/ajukan?kamar=${rt.id}`}
+                        className="mt-4 inline-flex w-full items-center justify-center border border-nk-accent px-4 py-2.5 text-xs font-medium text-nk-accent transition-colors duration-200 hover:bg-nk-accent hover:text-nk-text-inverse"
+                      >
+                        {t("detail.pickRoom")}
+                      </Link>
+                    )}
                   </div>
                 ))}
               </div>
@@ -236,11 +244,12 @@ export default async function DetailPage({
                 </div>
 
                 <div className="space-y-2.5 pt-1">
-                  <button
+                  <Link
+                    href={`/kost/${p.slug}/ajukan`}
                     className="inline-flex w-full items-center justify-center bg-nk-accent px-6 py-3.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
                   >
                     {t("detail.book")}
-                  </button>
+                  </Link>
                   <button
                     className="inline-flex w-full items-center justify-center gap-2 border border-nk-border bg-nk-bg px-6 py-3.5 text-sm text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
                   >

@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 import BookingApplyClient from "./BookingApplyClient";
 
-export const metadata: Metadata = { title: "Ajukan Booking" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "booking" });
+  return { title: t("title") };
+}
 
 export default async function BookingApplyPage({
   params,
