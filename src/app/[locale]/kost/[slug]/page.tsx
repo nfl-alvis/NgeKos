@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { getPropertyBySlug, getVerifiedProperties } from "@/lib/data/properties";
 import { FACILITY_META } from "@/lib/data/facilities";
 import { formatIDR, formatDistance, cn } from "@/lib/utils";
+import BookingCta from "@/components/BookingCta";
 
 export async function generateStaticParams() {
   const props = getVerifiedProperties();
@@ -193,12 +194,16 @@ export default async function DetailPage({
                       </span>
                     </div>
                     {rt.available > 0 && (
-                      <Link
-                        href={`/kost/${p.slug}/ajukan?kamar=${rt.id}`}
+                      <BookingCta
+                        slug={p.slug}
+                        propertyName={p.name}
+                        dpAmount={p.dpAmount}
+                        initialRoomId={rt.id}
+                        rooms={p.roomTypes.filter((r) => r.available > 0)}
                         className="mt-4 inline-flex w-full items-center justify-center border border-nk-accent px-4 py-2.5 text-xs font-medium text-nk-accent transition-colors duration-200 hover:bg-nk-accent hover:text-nk-text-inverse"
                       >
                         {t("detail.pickRoom")}
-                      </Link>
+                      </BookingCta>
                     )}
                   </div>
                 ))}
@@ -244,12 +249,15 @@ export default async function DetailPage({
                 </div>
 
                 <div className="space-y-2.5 pt-1">
-                  <Link
-                    href={`/kost/${p.slug}/ajukan`}
-                    className="inline-flex w-full items-center justify-center bg-nk-accent px-6 py-3.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+                  <BookingCta
+                    slug={p.slug}
+                    propertyName={p.name}
+                    dpAmount={p.dpAmount}
+                    rooms={p.roomTypes.filter((r) => r.available > 0)}
+                    className="inline-flex w-full items-center justify-center rounded-lg bg-nk-accent px-6 py-3.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
                   >
                     {t("detail.book")}
-                  </Link>
+                  </BookingCta>
                   <button
                     className="inline-flex w-full items-center justify-center gap-2 border border-nk-border bg-nk-bg px-6 py-3.5 text-sm text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
                   >

@@ -294,7 +294,14 @@
     "waMessage": "Hi, I'm {name}. Just requested {room} at {property} on NgeKost (code {code}). Please review, thank you.",
     "notFound": "This boarding house is not accepting requests.",
     "backList": "Back to listings",
-    "totalPeriod": "Total for {count, plural, one {# month} other {# months}}"
+    "totalPeriod": "Total for {count, plural, one {# month} other {# months}}",
+    "roomLabel": "Choose a room",
+    "durationOptions": [
+      "1 month",
+      "3 months",
+      "6 months",
+      "1 year"
+    ]
   },
   "myBookings": {
     "title": "My Bookings",

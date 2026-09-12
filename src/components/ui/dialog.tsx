@@ -14,15 +14,36 @@ const DialogClose = DialogPrimitive.Close;
 /**
  * DialogContent shadcn (Radix) dengan token warm nk-*:
  * rounded-lg, border nk-border, bg surface, close button pojok kanan atas.
+ *
+ * Guard: klik di dalam popup Base UI Select yang diportal ke body (mis.
+ * di dalam dialog pengajuan sewa) bukan "outside interaction" — jangan
+ * tutup dialog saat user memilih opsi.
  */
+const isInsidePortaledPopup = (target: EventTarget | null) => {
+  const el = target as HTMLElement | null;
+  return (
+    !!el?.closest?.(
+      '[data-slot="select-content"], [data-slot="select-popup"], [role="listbox"]'
+    )
+  );
+};
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, onInteractOutside, onPointerDownOutside, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      onInteractOutside={(e) => {
+        if (isInsidePortaledPopup(e.target)) e.preventDefault();
+        else onInteractOutside?.(e);
+      }}
+      onPointerDownOutside={(e) => {
+        if (isInsidePortaledPopup(e.target)) e.preventDefault();
+        else onPointerDownOutside?.(e);
+      }}
       className={cn(
         "fixed left-[50%] top-[50%] z-[100] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border border-nk-border bg-nk-surface p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
         className

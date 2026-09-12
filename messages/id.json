@@ -294,7 +294,14 @@
     "waMessage": "Halo, saya {name}. Baru mengajukan sewa {room} di {property} di NgeKost (kode {code}). Mohon dicek, terima kasih.",
     "notFound": "Kost ini sedang tidak menerima pengajuan.",
     "backList": "Kembali ke daftar kost",
-    "totalPeriod": "Total {count, plural, other {# bulan}} pertama"
+    "totalPeriod": "Total {count, plural, other {# bulan}} pertama",
+    "roomLabel": "Pilih kamar",
+    "durationOptions": [
+      "1 bulan",
+      "3 bulan",
+      "6 bulan",
+      "1 tahun"
+    ]
   },
   "myBookings": {
     "title": "Booking Saya",

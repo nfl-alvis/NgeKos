@@ -61,10 +61,20 @@ export default function BookingApplyPage() {
   const rooms = useMemo(() => (property ? property.roomTypes.filter((r) => r.available > 0) : []), [property]);
 
   const initialRoom = searchParams.get("kamar") ?? rooms[0]?.id ?? "";
-  const [step, setStep] = useState<Step>(0);
+  const prefillDate = searchParams.get("tanggal") ?? "";
+  const prefillMonths = Number(searchParams.get("bulan"));
+  const [step, setStep] = useState<Step>(
+    prefillDate && [1, 3, 6, 12].includes(prefillMonths) ? 1 : 0
+  );
   const [roomId, setRoomId] = useState(rooms.some((r) => r.id === initialRoom) ? initialRoom : rooms[0]?.id ?? "");
-  const [months, setMonths] = useState(3);
-  const [startDate, setStartDate] = useState("");
+  const [months, setMonths] = useState(
+    [1, 3, 6, 12].includes(prefillMonths) ? prefillMonths : 3
+  );
+  const [startDate, setStartDate] = useState(
+    /^\d{4}-\d{2}-\d{2}$/.test(prefillDate) && prefillDate >= new Date().toISOString().slice(0, 10)
+      ? prefillDate
+      : ""
+  );
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
