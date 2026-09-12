@@ -228,54 +228,26 @@
     "seeAll": "View all campuses"
   },
   "about": {
-    "eyebrow": "About us",
-    "title": "Helping renters find a place they can trust.",
-    "subtitle": "NgeKost started from a simple problem: finding a kost is exhausting. Mismatched ads, unclear prices, misleading photos. We cleaned all three up.",
-    "missionLabel": "Our mission",
-    "missionTitle": "Every kost is checked first. The ones that pass get listed, the rest get fixed.",
-    "missionBody": "Our verification team reviews every property before it appears on the platform: photos, prices, and facilities. When something doesn't match, we send the listing back to the owner to fix before it reaches search.",
-    "imageAlt": "NgeKost team verifying a kost",
-    "valuesLabel": "Our values",
-    "valuesTitle": "Three things we hold to.",
-    "values": [
-      {
-        "title": "Verified first, listed second",
-        "body": "Every kost goes through a team review before appearing in search results. No ghost listings."
-      },
-      {
-        "title": "The price you see is the price you pay",
-        "body": "Clean prices with no hidden fees. Listings without clear pricing don't get shown."
-      },
-      {
-        "title": "Near campus, near everything",
-        "body": "Filter by campus, station, and area. Walking distance matters."
-      }
-    ],
-    "processLabel": "How it works",
-    "processTitle": "How a kost passes verification.",
-    "process": [
-      {
-        "title": "Owner submits the kost",
-        "body": "Property data, photos, and prices are filled in by the owner or manager."
-      },
-      {
-        "title": "Team reviews documents & photos",
-        "body": "Ownership, location, and photo accuracy are checked one by one."
-      },
-      {
-        "title": "Visit or video call",
-        "body": "For major cities, our team visits in person. The rest via video call."
-      },
-      {
-        "title": "Verified badge issued",
-        "body": "Approved kosts receive a badge and start appearing in search."
-      }
-    ],
-    "statsLabel": "NgeKost today",
-    "ctaTitle": "Ready to move somewhere better?",
-    "ctaBody": "Explore hundreds of verified kosts in 6 cities. Clean prices, real facilities.",
+    "title": "About NgeKost",
+    "heroLine1": "The boarding-house platform",
+    "heroLine2": "with checkable data.",
+    "subtitle": "NgeKost started from a simple problem: finding a kost is exhausting. Mismatched ads, unclear prices, misleading photos. Since 2021 we have been fixing all three, one property at a time.",
     "ctaButton": "Explore Kost",
     "heroSecondary": "Own a kost? List it here",
+    "f1Title": "Complete listing data",
+    "f1Body": "Every listing carries real photos, the monthly price, and a full facility list. Owners fill the data, our team reviews it before it goes live.",
+    "f2Title": "Connecting owners and renters",
+    "f2Body": "Owners get a channel to present their property. Renters get direct contact, no shady brokers in between. We hold the data quality on both sides.",
+    "f3Title": "City by city coverage",
+    "f3Body": "Thousands of rooms across 6 major cities, centered on campus and transit areas. We open a new city only when our verification team is ready there.",
+    "z1Title": "Verified first, listed second.",
+    "z1Body": "Our team checks ownership documents, location, and photo accuracy one by one. A kost that fails goes back to its owner to be fixed, not left to mislead renters.",
+    "z1Alt": "NgeKost team reviewing kost documents and photos on a site visit",
+    "z2Title": "We open a city only with real inventory.",
+    "z2Body": "We never switch on a city before enough verified kosts exist to actually browse. Today NgeKost is live in Jakarta, Bandung, Yogyakarta, Malang, Surabaya, and Semarang.",
+    "z2Alt": "Map of NgeKost city coverage in Indonesia",
+    "ctaTitle": "Ready to move to a better kost?",
+    "ctaBody": "Browse hundreds of verified kosts across 6 cities. Clear prices, facilities as promised.",
     "ctaCities": "Cities we cover"
   },
   "booking": {

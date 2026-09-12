@@ -228,54 +228,26 @@
     "seeAll": "Lihat semua kampus"
   },
   "about": {
-    "eyebrow": "Tentang kami",
-    "title": "Ngebantu anak kos nemu tempat tinggal yang bisa dipercaya.",
-    "subtitle": "NgeKost lahir dari masalah sederhana: nyari kost itu melelahkan. Iklan nggak sesuai, harga nggak jelas, foto nggak nyambung. Kami merapikan tiga hal itu.",
-    "missionLabel": "Misi kami",
-    "missionTitle": "Setiap kost dicek dulu. Yang lolos tayang, yang tidak diperbaiki.",
-    "missionBody": "Tim verifikasi meninjau setiap properti sebelum tayang: foto, harga, dan fasilitas. Kalau ada yang tidak sesuai, kost itu kami kembalikan ke pemiliknya untuk diperbaiki sebelum masuk pencarian.",
-    "imageAlt": "Proses verifikasi kost oleh tim NgeKost",
-    "valuesLabel": "Nilai kami",
-    "valuesTitle": "Tiga hal yang tidak kami kompromikan.",
-    "values": [
-      {
-        "title": "Terverifikasi dulu, tampil kemudian",
-        "body": "Setiap kost melewati pemeriksaan tim sebelum muncul di hasil pencarian. Nggak ada listing hantu."
-      },
-      {
-        "title": "Harga yang terlihat, itu yang dibayar",
-        "body": "Harga bersih tanpa biaya tersembunyi. Listing tanpa harga yang jelas nggak kami tampilkan."
-      },
-      {
-        "title": "Dekat kampus, dekat aktivitas",
-        "body": "Filter berdasarkan kampus, stasiun, dan area. Jarak berjalan kaki itu penting."
-      }
-    ],
-    "processLabel": "Cara kerja",
-    "processTitle": "Bagaimana kost lolos verifikasi.",
-    "process": [
-      {
-        "title": "Pengelola mendaftarkan kost",
-        "body": "Data kost, foto, dan harga diisi lengkap oleh pemilik atau pengelola."
-      },
-      {
-        "title": "Tim memeriksa dokumen & foto",
-        "body": "Kepemilikan, lokasi, dan kesesuaian foto dicek satu per satu."
-      },
-      {
-        "title": "Kunjungan atau video call",
-        "body": "Untuk kota utama, tim kami berkunjung langsung. Sisanya lewat video call."
-      },
-      {
-        "title": "Badge terverifikasi diterbitkan",
-        "body": "Kost yang lolos mendapat badge dan mulai tampil di pencarian."
-      }
-    ],
-    "statsLabel": "NgeKost hari ini",
-    "ctaTitle": "Siap pindah ke kost yang lebih baik?",
-    "ctaBody": "Jelajahi ratusan kost terverifikasi di 6 kota. Harga bersih, fasilitas sesuai.",
+    "title": "Tentang NgeKost",
+    "heroLine1": "Platform cari kost yang",
+    "heroLine2": "datanya bisa dicek.",
+    "subtitle": "NgeKost lahir dari masalah sederhana: nyari kost itu melelahkan. Iklan nggak sesuai, harga nggak jelas, foto nggak nyambung. Sejak 2021 kami merapikan tiga hal itu, satu kost per satu.",
     "ctaButton": "Jelajahi Kost",
     "heroSecondary": "Punya kost? Daftarkan di sini",
+    "f1Title": "Data kost yang lengkap",
+    "f1Body": "Setiap listing memuat foto aslinya, harga bulanan, dan daftar fasilitas. Data diisi pengelola, diperiksa tim kami sebelum tayang.",
+    "f2Title": "Penghubung pemilik dan pencari",
+    "f2Body": "Pengelola dapat kanal untuk menampilkan kostnya. Penyewa dapat kontak langsung tanpa perantara liar. Dua-duanya kami jaga kualitas datanya.",
+    "f3Title": "Jangkauan antar kota",
+    "f3Body": "Ribuan kamar di 6 kota besar, terpusat di area kampus dan transit. Kami buka kota baru kalau tim verifikasinya sudah siap di sana.",
+    "z1Title": "Verifikasi dulu, tayang kemudian.",
+    "z1Body": "Tim kami mengecek dokumen kepemilikan, lokasi, dan kesesuaian foto satu per satu. Kost yang tidak lolos dikembalikan ke pemiliknya untuk diperbaiki, bukan dibiarkan menyesatkan pencari.",
+    "z1Alt": "Tim NgeKost memeriksa dokumen dan foto kost saat kunjungan",
+    "z2Title": "Kota demi kota, kami buka dengan data nyata.",
+    "z2Body": "Kami tidak menayangkan kota sebelum jumlah kost terverifikasinya cukup untuk dipakai cari-cari. Sekarang NgeKost aktif di Jakarta, Bandung, Yogyakarta, Malang, Surabaya, dan Semarang.",
+    "z2Alt": "Peta jangkauan kota NgeKost di Indonesia",
+    "ctaTitle": "Siap pindah ke kost yang lebih baik?",
+    "ctaBody": "Jelajahi ratusan kost terverifikasi di 6 kota. Harga bersih, fasilitas sesuai.",
     "ctaCities": "Kota yang sudah kami rambah"
   },
   "booking": {

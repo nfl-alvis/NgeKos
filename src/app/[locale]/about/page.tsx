@@ -1,28 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
-import { Button } from "@/components/ui/button";
 import Image from "next/image";
-
-function ArrowRightIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M5 12h14" />
-      <path d="m13 6 6 6-6 6" />
-    </svg>
-  );
-}
+import { Link } from "@/i18n/navigation";
 
 export async function generateMetadata({
   params,
@@ -30,13 +9,117 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  return {
-    title: locale === "en" ? "About NgeKost" : "Tentang NgeKost",
-    description:
-      locale === "en"
-        ? "NgeKost is Indonesia's trusted platform for verified boarding houses with transparent pricing and real owner verification."
-        : "NgeKost adalah platform terpercaya untuk kost terverifikasi di Indonesia dengan harga transparan dan verifikasi pemilik resmi.",
-  };
+  const t = await getTranslations({ locale, namespace: "about" });
+  return { title: t("title"), description: t("subtitle") };
+}
+
+/* ---- Mamikos-style art, re-inked to the NgeKost palette ---- */
+
+function CurveHero({ children }: { children: React.ReactNode }) {
+  return (
+    <section className="relative overflow-x-clip bg-nk-accent">
+      {/* green-curve.svg equivalent: bottom wave, cream */}
+      <svg
+        aria-hidden
+        viewBox="0 0 1366 647"
+        preserveAspectRatio="none"
+        className="pointer-events-none absolute inset-x-0 -bottom-px -z-10 h-[38%] w-full"
+      >
+        <path
+          d="M0 0h1366v530.677C838.24 684.783 537.15 686.763 0 530.677z"
+          fill="#FDFCF9"
+        />
+      </svg>
+      {/* bg-silhouete-building.svg equivalent: skyline peeking from the fold */}
+      <svg
+        aria-hidden
+        viewBox="0 0 1440 120"
+        preserveAspectRatio="none"
+        className="pointer-events-none absolute inset-x-0 bottom-[37.5%] -z-10 hidden h-[120px] opacity-[0.16] md:block"
+      >
+        <path
+          fill="#FDFCF9"
+          d="M0 120V70h26v50zm30 0V44h8v76zm12 0V58h30v62zm36 0V26h3v94zm8 0V50h22v70zm26 0V14h5v106zm11 0V42h26v78zm30 0V24h5v96zm11 0V56h22v64zm26 0V4h3v116zm8 0V38h22v82zm26 0V58h26v62zm30 0V18h6v102zm14 0V66h26v54zm30 0V32h4v88zm10 0V52h22v68zm26 0V12h6v108zm14 0V62h26v58zm30 0V28h4v92zm10 0V48h22v72zm26 0V8h5v112zm13 0V60h26v60zm30 0V22h5v98zm15 0V50h22v70zm26 0V6h3v114zm8 0V40h22v80zm26 0V56h26v64zm30 0V18h5v102zm15 0V64h26v56zm30 0V34h4v86zm10 0V48h22v72zm26 0V10h6v110zm14 0V58h26v62zm30 0V24h5v96zm15 0V44h22v76zm26 0V2h3v118zm8 0V38h22v82zm26 0V56h26v64zm30 0V16h5v104zm15 0V62h26v58zm30 0V30h4v90zm10 0V50h22v70zm26 0V10h6v110zm14 0V60h26v60zm30 0V24h5v96zm15 0V46h22v74zm26 0V4h4v116zm9 0V40h22v80zm26 0V56h26v64zm30 0V18h5v102zm15 0V64h26v56zm30 0V34h4v86zm10 0V50h22v70zm26 0V10h6v110zm14 0V60h26v60zm30 0V26h5v94zm15 0V46h22v74zm26 0V4h3v116zm8 0V40h22v80zm26 0V56h26v64zm30 0V18h5v102zm15 0V62h26v58zm30 0V30h4v90zm10 0V50h22v70zm26 0V10h6v110zm14 0V60h26v60zm30 0V24h5v96zm15 0V46h22v74zm26 0V2h4v118zm9 0V40h22v80zm26 0V58h26v62z"
+        />
+      </svg>
+      {children}
+    </section>
+  );
+}
+
+function PhoneMock({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 280 500"
+      className={className}
+      role="img"
+      aria-label="Aplikasi NgeKost di ponsel"
+    >
+      <rect x="10" y="10" width="260" height="480" rx="40" fill="#FDFCF9" />
+      <rect
+        x="10"
+        y="10"
+        width="260"
+        height="480"
+        rx="40"
+        fill="none"
+        stroke="#E5E4DE"
+        strokeWidth="2"
+      />
+      <rect x="104" y="26" width="72" height="10" rx="5" fill="#E5E4DE" />
+      <rect x="26" y="56" width="228" height="42" rx="10" fill="#F4F3EF" />
+      <circle cx="44" cy="77" r="7" fill="none" stroke="#3A2618" strokeWidth="2" />
+      <line x1="49" y1="82" x2="54" y2="87" stroke="#3A2618" strokeWidth="2" strokeLinecap="round" />
+      <rect x="64" y="72" width="92" height="10" rx="5" fill="#DDD9D0" />
+      <rect x="26" y="112" width="109" height="118" rx="12" fill="#F4F3EF" />
+      <rect x="145" y="112" width="109" height="118" rx="12" fill="#F4F3EF" />
+      <rect x="36" y="124" width="89" height="58" rx="8" fill="#3A2618" />
+      <rect x="155" y="124" width="89" height="58" rx="8" fill="#8A6A1F" />
+      <rect x="36" y="192" width="60" height="8" rx="4" fill="#3A2618" />
+      <rect x="36" y="206" width="44" height="7" rx="3.5" fill="#B8B0A3" />
+      <rect x="155" y="192" width="60" height="8" rx="4" fill="#3A2618" />
+      <rect x="155" y="206" width="44" height="7" rx="3.5" fill="#B8B0A3" />
+      <rect x="26" y="244" width="228" height="88" rx="12" fill="#F4F3EF" />
+      <rect x="38" y="258" width="58" height="60" rx="8" fill="#2F6B3C" />
+      <rect x="108" y="258" width="110" height="9" rx="4.5" fill="#3A2618" />
+      <rect x="108" y="274" width="72" height="8" rx="4" fill="#B8B0A3" />
+      <rect x="108" y="290" width="92" height="8" rx="4" fill="#DDD9D0" />
+      <rect x="108" y="306" width="48" height="10" rx="5" fill="#3A2618" />
+      <rect x="26" y="346" width="228" height="88" rx="12" fill="#F4F3EF" />
+      <rect x="38" y="360" width="58" height="60" rx="8" fill="#33517C" />
+      <rect x="108" y="360" width="110" height="9" rx="4.5" fill="#3A2618" />
+      <rect x="108" y="376" width="72" height="8" rx="4" fill="#B8B0A3" />
+      <rect x="108" y="392" width="92" height="8" rx="4" fill="#DDD9D0" />
+      <rect x="108" y="408" width="48" height="10" rx="5" fill="#3A2618" />
+      <rect x="120" y="452" width="40" height="5" rx="2.5" fill="#E5E4DE" />
+    </svg>
+  );
+}
+
+/* feature glyphs — stroke 1.6, currentColor (konvensi ikon proyek) */
+function IconList() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M9 6h11M9 12h11M9 18h11" />
+      <path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" strokeWidth="2.4" />
+    </svg>
+  );
+}
+function IconLink() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M10 14a4.5 4.5 0 0 0 6.8.5l2.7-2.7a4.5 4.5 0 0 0-6.4-6.4l-1.5 1.5" />
+      <path d="M14 10a4.5 4.5 0 0 0-6.8-.5l-2.7 2.7a4.5 4.5 0 0 0 6.4 6.4l1.5-1.5" />
+    </svg>
+  );
+}
+function IconMap() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 21s-6.5-5.4-6.5-10.5A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.5C18.5 15.6 12 21 12 21Z" />
+      <circle cx="12" cy="10.2" r="2.3" />
+    </svg>
+  );
 }
 
 export default async function AboutPage({
@@ -46,229 +129,152 @@ export default async function AboutPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("about");
+  const t = await getTranslations({ locale, namespace: "about" });
 
-  const values = t.raw("values") as { title: string; body: string }[];
-  const process = t.raw("process") as { title: string; body: string }[];
-
-  const en = locale === "en";
-
-  const stats = [
-    { value: "120+", label: en ? "verified kosts" : "kost terverifikasi" },
-    { value: "6", label: en ? "cities" : "kota" },
-    { value: "8.4rb", label: en ? "active renters" : "penyewa aktif" },
+  const features = [
+    { icon: <IconList />, title: t("f1Title"), body: t("f1Body") },
+    { icon: <IconLink />, title: t("f2Title"), body: t("f2Body") },
+    { icon: <IconMap />, title: t("f3Title"), body: t("f3Body") },
   ];
 
-  const cities = ["Jakarta", "Bandung", "Yogyakarta", "Malang", "Surabaya", "Semarang"];
-
   return (
-    <div className="bg-nk-bg">
-      {/* ===== Hero — full-bleed photo, editorial layout ===== */}
-      <section className="relative flex min-h-[calc(100dvh-4rem)] items-end overflow-hidden">
-        <Image
-          src="/images/about-hero-wide.jpg"
-          alt={t("imageAlt")}
-          fill
-          sizes="100vw"
-          className="absolute inset-0 -z-10 object-cover"
-          priority
-        />
-
-        {/* cream veil, heavier at the bottom where the copy sits */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#FAF9F7] via-[#FAF9F7]/60 to-[#FAF9F7]/30" />
-
-        <div className="mx-auto w-full max-w-7xl px-6 pb-20 pt-32 lg:px-10 lg:pb-28">
-          <p className="flex items-center gap-2.5 text-sm font-medium tracking-[0.08em] text-nk-accent">
-            <span
-              aria-hidden
-              className="inline-block size-1.5 rounded-full bg-nk-accent"
-            />
-            {t("eyebrow")}
-          </p>
-
-          <h1 className="mt-5 max-w-3xl text-5xl leading-[1.03] font-semibold tracking-tighter text-balance text-nk-text md:text-[4.25rem] lg:text-[4.75rem]">
-            {t("title")}
-          </h1>
-
-          <p className="mt-7 max-w-xl text-lg leading-relaxed text-pretty text-nk-text-muted md:text-xl">
-            {t("subtitle")}
-          </p>
-
-          <div className="mt-10 flex flex-wrap items-center gap-4">
-            <Button size="lg" href="/kost" className="group">
-              {t("ctaButton")}
-              <ArrowRightIcon className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-            </Button>
-            <Button size="lg" variant="outline" href="/mitra">
-              {t("heroSecondary")}
-            </Button>
+    <>
+      {/* ===== HERO — full-bleed ink, curve fold, phone overlapping into next section ===== */}
+      <CurveHero>
+        <div className="mx-auto flex min-h-[560px] w-full max-w-6xl flex-col items-center gap-10 px-6 pt-32 pb-36 md:min-h-[85vh] md:flex-row md:justify-between md:pt-40 md:pb-32 lg:gap-16">
+          <div className="max-w-xl text-center md:text-left">
+            <h1 className="text-4xl leading-[1.25] font-bold tracking-tight text-balance text-nk-text-inverse md:text-5xl">
+              {t("heroLine1")}
+              <br className="hidden md:block" />{" "}
+              {t("heroLine2")}
+            </h1>
+            <p className="mx-auto mt-6 max-w-md text-base leading-[2] text-nk-text-inverse/75 md:mx-0 md:text-lg">
+              {t("subtitle")}
+            </p>
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-4 md:justify-start">
+              <Link
+                href="/kost"
+                className="inline-flex h-12 items-center rounded-lg bg-nk-text-inverse px-7 text-sm font-semibold text-nk-accent transition-colors duration-200 hover:bg-[#FFFFFF] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-text-inverse active:translate-y-px"
+              >
+                {t("ctaButton")}
+              </Link>
+              <Link
+                href="/mitra"
+                className="inline-flex h-12 items-center rounded-lg border border-nk-text-inverse/30 px-7 text-sm font-semibold text-nk-text-inverse transition-colors duration-200 hover:border-nk-text-inverse/60 hover:bg-nk-text-inverse/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-text-inverse active:translate-y-px"
+              >
+                {t("heroSecondary")}
+              </Link>
+            </div>
+          </div>
+          <div className="relative z-10 shrink-0 translate-y-[22%] md:translate-y-[38%]">
+            <PhoneMock className="w-[240px] drop-shadow-[0_24px_48px_rgba(10,7,4,0.5)] md:w-[300px]" />
           </div>
         </div>
-      </section>
+      </CurveHero>
 
-      {/* ===== Mission + Values — sticky title, hairline editorial list ===== */}
-      <section className="mx-auto max-w-7xl px-6 py-24 lg:px-10 lg:py-32">
-        <div className="grid grid-cols-1 gap-16 lg:grid-cols-12 lg:gap-16">
-          <div className="self-start lg:sticky lg:top-24 lg:col-span-5">
-            <p className="flex items-center gap-2.5 text-sm font-medium tracking-[0.08em] text-nk-accent">
-              <span
-                aria-hidden
-                className="inline-block size-1.5 rounded-full bg-nk-accent"
-              />
-              {t("missionLabel")}
-            </p>
-            <h2 className="mt-6 text-4xl leading-[1.08] font-semibold tracking-tight text-balance text-nk-text md:text-5xl">
-              {t("missionTitle")}
-            </h2>
-            <p className="mt-8 max-w-md text-lg leading-relaxed text-pretty text-nk-text-muted">
-              {t("missionBody")}
-            </p>
-          </div>
-
-          <div className="lg:col-span-7">
-            <h3 className="mb-10 text-3xl font-semibold tracking-tight text-nk-text">
-              {t("valuesTitle")}
-            </h3>
-
-            <ol className="border-t border-nk-border">
-              {values.map((v, i) => (
-                <li
-                  key={v.title}
-                  className="group border-b border-nk-border border-l-2 border-l-transparent transition-[border-color,background-color] duration-200 hover:border-l-nk-accent hover:bg-nk-warm/60"
-                >
-                  <div className="flex items-start gap-6 px-2 py-8 lg:px-5">
-                    <span className="mt-1.5 text-sm font-medium text-nk-accent tabular-nums">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <h4 className="text-xl font-medium tracking-tight text-nk-text lg:text-2xl">
-                        {v.title}
-                      </h4>
-                      <p className="mt-3 max-w-xl leading-relaxed text-pretty text-nk-text-muted">
-                        {v.body}
-                      </p>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== Verification process — numbered timeline with rail ===== */}
-      <section className="bg-nk-warm">
-        <div className="mx-auto max-w-7xl px-6 py-24 lg:px-10 lg:py-32">
-          <p className="flex items-center gap-2.5 text-sm font-medium tracking-[0.08em] text-nk-accent">
-            <span
-              aria-hidden
-              className="inline-block size-1.5 rounded-full bg-nk-accent"
-            />
-            {t("processLabel")}
-          </p>
-
-          <h2 className="mt-6 max-w-2xl text-4xl leading-[1.08] font-semibold tracking-tight text-balance text-nk-text md:text-5xl">
-            {t("processTitle")}
-          </h2>
-
-          <ol className="mt-20 grid grid-cols-1 gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-4">
-            {process.map((p, i) => (
-              <li key={p.title} className="relative flex flex-col">
-                {/* connector rail, desktop only */}
-                {i < process.length - 1 && (
-                  <span
-                    aria-hidden
-                    className="absolute top-3.5 left-8 hidden h-px w-[calc(100%-2rem)] bg-nk-border lg:block"
-                  />
-                )}
-                <span className="relative z-10 flex size-7 items-center justify-center rounded-full bg-nk-accent text-xs font-medium text-nk-text-inverse tabular-nums">
-                  {i + 1}
+      {/* ===== FEATURES — Mamikos pull: overlap -10rem, glyph + title + body, centered stack ===== */}
+      <section className="bg-nk-bg">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="grid gap-x-14 gap-y-16 pt-40 pb-24 md:grid-cols-3 md:gap-y-10 md:pt-32">
+            {features.map((f, i) => (
+              <article key={f.title} className="flex flex-col items-center text-center">
+                <span className="flex size-12 items-center justify-center rounded-full bg-nk-accent-subtle text-nk-accent ring-1 ring-nk-border">
+                  {f.icon}
                 </span>
-                <h3 className="mt-6 text-xl font-medium tracking-tight text-nk-text">
-                  {p.title}
-                </h3>
-                <p className="mt-3 max-w-[38ch] leading-relaxed text-pretty text-nk-text-muted">
-                  {p.body}
+                <h2 className="mt-5 text-lg font-semibold tracking-tight [font-variant-numeric:tabular-nums]">
+                  {String(i + 1).padStart(2, "0")}
+                  <span className="mx-2 text-nk-border">·</span>
+                  {f.title}
+                </h2>
+                <p className="mt-3 max-w-xs text-[15px] leading-[1.9] text-nk-text-muted">
+                  {f.body}
                 </p>
-              </li>
+              </article>
             ))}
-          </ol>
+          </div>
         </div>
       </section>
 
-      {/* ===== Closing CTA — photo panel in brand brown + stats ledger ===== */}
-      <section className="mx-auto max-w-7xl px-6 py-24 lg:px-10 lg:py-32">
-        <div className="relative overflow-hidden rounded-2xl ring-1 ring-foreground/10">
-          <Image
-            src="/images/about-hero.jpg"
-            alt={t("imageAlt")}
-            fill
-            sizes="(min-width: 1024px) 1240px, 100vw"
-            className="absolute inset-0 -z-10 object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-nk-accent/85 via-nk-accent/78 to-nk-accent-dark/92" />
-
-          <div className="relative px-6 py-16 text-nk-text-inverse md:px-12 md:py-20">
-            <p className="flex items-center gap-2.5 text-sm font-medium tracking-[0.08em] text-white/85">
-              <span
-                aria-hidden
-                className="inline-block size-1.5 rounded-full bg-white/85"
+      {/* ===== ZIGZAG — image + copy pairs, reverse order per row (Mamikos about-us-info) ===== */}
+      <section className="border-t border-nk-border bg-nk-surface">
+        <div className="mx-auto flex max-w-6xl flex-col gap-20 px-6 py-24 md:gap-28">
+          <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
+            <div className="md:order-2">
+              <Image
+                src="https://picsum.photos/seed/ngekost-verifikasi-kost/920/640"
+                alt={t("z1Alt")}
+                width={920}
+                height={640}
+                className="aspect-[23/16] w-full rounded-2xl object-cover ring-1 ring-nk-border"
+                sizes="(min-width: 768px) 440px, 100vw"
               />
-              {t("statsLabel")}
-            </p>
+            </div>
+            <div className="md:order-1">
+              <h2 className="text-2xl leading-[1.4] font-bold tracking-tight text-balance md:text-[28px]">
+                {t("z1Title")}
+              </h2>
+              <p className="mt-4 max-w-[38rem] text-base leading-[2] text-nk-text-muted">
+                {t("z1Body")}
+              </p>
+            </div>
+          </div>
 
-            <div className="mt-10 grid gap-14 lg:grid-cols-12 lg:items-stretch">
-              <div className="lg:col-span-7">
-                <h2 className="max-w-xl text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">
-                  {t("ctaTitle")}
-                </h2>
-                <p className="mt-4 max-w-md text-lg leading-relaxed text-pretty text-white/90">
-                  {t("ctaBody")}
-                </p>
-
-                <div className="mt-8 flex flex-wrap items-center gap-4">
-                  <Button size="lg" variant="light" href="/kost">
-                    {t("ctaButton")}
-                  </Button>
-                  <Link
-                    href="/kost"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-white/80 underline-offset-4 transition-colors hover:text-white hover:underline"
-                  >
-                    {en ? "See all cities" : "Lihat semua kota"}
-                    <ArrowRightIcon className="size-4" />
-                  </Link>
-                </div>
-
-                <nav aria-label={t("ctaCities")} className="mt-10">
-                  <ul className="flex flex-wrap gap-2">
-                    {cities.map((c) => (
-                      <li key={c}>
-                        <Link
-                          href={`/kost?kota=${c}`}
-                          className="inline-flex rounded-lg border border-white/20 px-3.5 py-1.5 text-sm text-white/90 transition-colors duration-200 hover:border-white/60 hover:bg-white/15 hover:text-white"
-                        >
-                          {c}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
-              </div>
-
-              <dl className="grid grid-cols-1 gap-px overflow-hidden rounded-lg bg-white/25 sm:grid-cols-3 lg:col-span-5 lg:grid-cols-1">
-                {stats.map((s) => (
-                  <div key={s.label} className="bg-nk-accent/85 px-5 py-5">
-                    <dd className="text-3xl font-medium tracking-tight tabular-nums">
-                      {s.value}
-                    </dd>
-                    <dt className="mt-1 text-sm text-white/85">{s.label}</dt>
-                  </div>
-                ))}
-              </dl>
+          <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
+            <div>
+              <Image
+                src="https://picsum.photos/seed/ngekost-jangkauan-kota/920/640"
+                alt={t("z2Alt")}
+                width={920}
+                height={640}
+                className="aspect-[23/16] w-full rounded-2xl object-cover ring-1 ring-nk-border"
+                sizes="(min-width: 768px) 440px, 100vw"
+              />
+            </div>
+            <div>
+              <h2 className="text-2xl leading-[1.4] font-bold tracking-tight text-balance md:text-[28px]">
+                {t("z2Title")}
+              </h2>
+              <p className="mt-4 max-w-[38rem] text-base leading-[2] text-nk-text-muted">
+                {t("z2Body")}
+              </p>
             </div>
           </div>
         </div>
       </section>
-    </div>
+
+      {/* ===== CTA band (in-house, sits before the curved footer) ===== */}
+      <section className="border-t border-nk-border bg-nk-bg">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-8 px-6 py-20 text-center">
+          <h2 className="max-w-2xl text-3xl leading-tight font-bold tracking-tight text-balance md:text-4xl">
+            {t("ctaTitle")}
+          </h2>
+          <p className="max-w-xl text-lg leading-[1.9] text-pretty text-nk-text-muted">
+            {t("ctaBody")}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/kost"
+              className="inline-flex h-12 items-center rounded-lg bg-nk-accent px-7 text-sm font-semibold text-nk-text-inverse transition-all duration-200 hover:bg-nk-accent-dark hover:shadow-lg hover:shadow-nk-accent/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent active:translate-y-px"
+            >
+              {t("ctaButton")}
+            </Link>
+            <nav aria-label={t("ctaCities")}>
+              <ul className="flex flex-wrap items-center justify-center gap-2">
+                {(["Jakarta", "Bandung", "Yogyakarta", "Malang", "Surabaya", "Semarang"] as const).map((city) => (
+                  <li key={city}>
+                    <Link
+                      href={{ pathname: "/kost", query: { kota: city } }}
+                      className="inline-flex h-9 items-center rounded-lg border border-nk-border bg-nk-surface px-3.5 text-sm text-nk-text-muted transition-colors duration-200 hover:border-nk-accent/40 hover:text-nk-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
+                    >
+                      {city}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
