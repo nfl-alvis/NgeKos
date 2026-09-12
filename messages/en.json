@@ -230,13 +230,13 @@
   "about": {
     "eyebrow": "About us",
     "title": "Helping renters find a place they can trust.",
-    "subtitle": "NgeKost started from a simple problem: finding a kost is exhausting. Mismatched ads, unclear prices, misleading photos. We clean all of that up.",
+    "subtitle": "NgeKost started from a simple problem: finding a kost is exhausting. Mismatched ads, unclear prices, misleading photos. We cleaned all three up.",
     "missionLabel": "Our mission",
-    "missionTitle": "Every kost is checked first. Only the ones that pass get listed.",
-    "missionBody": "Our verification team reviews every property before it appears on the platform: photos, prices, and facilities. If something doesn't match, the listing doesn't go live. Simple, yet rarely done.",
+    "missionTitle": "Every kost is checked first. The ones that pass get listed, the rest get fixed.",
+    "missionBody": "Our verification team reviews every property before it appears on the platform: photos, prices, and facilities. When something doesn't match, we send the listing back to the owner to fix before it reaches search.",
     "imageAlt": "NgeKost team verifying a kost",
     "valuesLabel": "Our values",
-    "valuesTitle": "Three things we never compromise.",
+    "valuesTitle": "Three things we hold to.",
     "values": [
       {
         "title": "Verified first, listed second",
@@ -274,7 +274,9 @@
     "statsLabel": "NgeKost today",
     "ctaTitle": "Ready to move somewhere better?",
     "ctaBody": "Explore hundreds of verified kosts in 6 cities. Clean prices, real facilities.",
-    "ctaButton": "Explore Kost"
+    "ctaButton": "Explore Kost",
+    "heroSecondary": "Own a kost? List it here",
+    "ctaCities": "Cities we cover"
   },
   "booking": {
     "breadcrumbDetail": "Kost Detail",

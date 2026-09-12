@@ -230,13 +230,13 @@
   "about": {
     "eyebrow": "Tentang kami",
     "title": "Ngebantu anak kos nemu tempat tinggal yang bisa dipercaya.",
-    "subtitle": "NgeKost lahir dari masalah sederhana: nyari kost itu melelahkan. Iklan nggak sesuai, harga nggak jelas, foto nggak nyambung. Kami rapikan semuanya.",
+    "subtitle": "NgeKost lahir dari masalah sederhana: nyari kost itu melelahkan. Iklan nggak sesuai, harga nggak jelas, foto nggak nyambung. Kami merapikan tiga hal itu.",
     "missionLabel": "Misi kami",
-    "missionTitle": "Setiap kost dicek dulu. Yang lolos, yang tampil.",
-    "missionBody": "Tim verifikasi kami meninjau setiap properti sebelum tampil di platform: foto, harga, sampai fasilitas. Kalau ada yang nggak sesuai, kost itu nggak tayang. Sederhana, tapi jarang dilakukan.",
+    "missionTitle": "Setiap kost dicek dulu. Yang lolos tayang, yang tidak diperbaiki.",
+    "missionBody": "Tim verifikasi meninjau setiap properti sebelum tayang: foto, harga, dan fasilitas. Kalau ada yang tidak sesuai, kost itu kami kembalikan ke pemiliknya untuk diperbaiki sebelum masuk pencarian.",
     "imageAlt": "Proses verifikasi kost oleh tim NgeKost",
     "valuesLabel": "Nilai kami",
-    "valuesTitle": "Tiga hal yang nggak kami tawar.",
+    "valuesTitle": "Tiga hal yang tidak kami kompromikan.",
     "values": [
       {
         "title": "Terverifikasi dulu, tampil kemudian",
@@ -274,7 +274,9 @@
     "statsLabel": "NgeKost hari ini",
     "ctaTitle": "Siap pindah ke kost yang lebih baik?",
     "ctaBody": "Jelajahi ratusan kost terverifikasi di 6 kota. Harga bersih, fasilitas sesuai.",
-    "ctaButton": "Jelajahi Kost"
+    "ctaButton": "Jelajahi Kost",
+    "heroSecondary": "Punya kost? Daftarkan di sini",
+    "ctaCities": "Kota yang sudah kami rambah"
   },
   "booking": {
     "breadcrumbDetail": "Detail Kost",
