@@ -72,22 +72,27 @@ export default function BookingSidebarActions({
 
       {hasDp ? (
         <div className="flex flex-col gap-3">
-          <div>
-            <p className="text-xs font-medium text-nk-text-muted">{t("ifDp")}</p>
-            <div className="mt-1.5 flex items-center justify-between text-sm">
-              <span className="text-nk-text">{t("dpLabel2")}</span>
-              <span className="text-nk-text">{formatIDR(flow.dpAmount)}</span>
+          {/* rincian DP vs bayar penuh: satu panel ber-border abu tipis */}
+          <div className="rounded-lg border border-nk-border bg-nk-surface p-4">
+            <div>
+              <p className="text-xs font-medium text-nk-text-muted">{t("ifDp")}</p>
+              <div className="mt-1.5 flex items-center justify-between text-sm">
+                <span className="text-nk-text">{t("dpLabel2")}</span>
+                <span className="text-nk-text">{formatIDR(flow.dpAmount)}</span>
+              </div>
+              <div className="mt-1 flex items-center justify-between text-sm">
+                <span className="text-nk-text">{t("midLabel")}</span>
+                <span className="text-nk-text">{formatIDR(flow.pricePerMonth)}</span>
+              </div>
             </div>
-            <div className="mt-1 flex items-center justify-between text-sm">
-              <span className="text-nk-text">{t("midLabel")}</span>
-              <span className="text-nk-text">{formatIDR(flow.pricePerMonth)}</span>
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-nk-text-muted">{t("ifFull")}</p>
-            <div className="mt-1.5 flex items-center justify-between text-sm">
-              <span className="text-nk-text">{t("fullLabel2")}</span>
-              <span className="text-nk-text">{formatIDR(fullFirst)}</span>
+            {/* garis pemisah antara pelunasan dan opsi bayar penuh */}
+            <div className="my-3 h-px bg-nk-border" aria-hidden="true" />
+            <div>
+              <p className="text-xs font-medium text-nk-text-muted">{t("ifFull")}</p>
+              <div className="mt-1.5 flex items-center justify-between text-sm">
+                <span className="text-nk-text">{t("fullLabel2")}</span>
+                <span className="text-nk-text">{formatIDR(fullFirst)}</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center justify-between border-t border-nk-border pt-3 text-sm">
