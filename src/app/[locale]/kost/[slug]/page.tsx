@@ -160,12 +160,6 @@ export default async function DetailPage({
                   </span>
                 ))}
               </div>
-              <p className="text-[10px] text-nk-text-muted">
-                {t("detail.iconsCredit")}{" "}
-                <a href="https://icons8.com" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-nk-text">
-                  Icons8
-                </a>
-              </p>
             </div>
 
             {/* Room Types */}
