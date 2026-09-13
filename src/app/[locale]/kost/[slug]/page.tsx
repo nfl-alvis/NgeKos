@@ -155,11 +155,17 @@ export default async function DetailPage({
                     key={f}
                     className="inline-flex items-center gap-1.5 border border-nk-border px-3 py-1.5 text-xs text-nk-text"
                   >
-                    <FacilityIcon facility={f} className="text-nk-accent" />
+                    <FacilityIcon facility={f} />
                     {FACILITY_META[f]?.labelId || f}
                   </span>
                 ))}
               </div>
+              <p className="text-[10px] text-nk-text-muted">
+                {t("detail.iconsCredit")}{" "}
+                <a href="https://icons8.com" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-nk-text">
+                  Icons8
+                </a>
+              </p>
             </div>
 
             {/* Room Types */}
