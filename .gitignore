@@ -45,3 +45,4 @@ next-env.d.ts
 /.agents/
 /.claude/
 /.codex/
+docs/diagram/__pycache__/
