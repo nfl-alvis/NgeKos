@@ -7,6 +7,8 @@ import { Link, useRouter as useI18nRouter } from "@/i18n/navigation";
 import { getPropertyBySlug } from "@/lib/data/properties";
 import { formatIDR, cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import StartDateField from "@/components/StartDateField";
 
 type Step = 0 | 1 | 2;
 const STEPS = ["kamar", "data", "konfirmasi"] as const;
@@ -95,7 +97,6 @@ export default function BookingApplyPage() {
 
   const room = rooms.find((r) => r.id === roomId) ?? rooms[0];
   const dp = property.dpAmount ?? 0;
-  const today = new Date().toISOString().slice(0, 10);
   const nice = (iso: string) =>
     iso
       ? new Date(iso + "T00:00:00").toLocaleDateString(
@@ -213,18 +214,8 @@ export default function BookingApplyPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="startDate" className={labelCls}>
-              {t("startDate")}
-            </label>
-            <input
-              id="startDate"
-              type="date"
-              min={today}
-              required
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className={cn(rowCls, "min-h-11")}
-            />
+            <Label className={labelCls}>{t("startDate")}</Label>
+            <StartDateField value={startDate} onChange={setStartDate} locale={params.locale} />
           </div>
         </div>
       )}

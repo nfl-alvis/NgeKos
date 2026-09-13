@@ -23,7 +23,7 @@ const isInsidePortaledPopup = (target: EventTarget | null) => {
   const el = target as HTMLElement | null;
   return (
     !!el?.closest?.(
-      '[data-slot="select-content"], [data-slot="select-popup"], [role="listbox"]'
+      '[data-slot="select-content"], [data-slot="select-popup"], [data-slot="popover-content"], [role="listbox"]'
     )
   );
 };

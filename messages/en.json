@@ -301,7 +301,8 @@
       "3 months",
       "6 months",
       "1 year"
-    ]
+    ],
+    "pickDate": "Pick a move-in date"
   },
   "myBookings": {
     "title": "My Bookings",

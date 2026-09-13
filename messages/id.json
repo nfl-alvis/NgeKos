@@ -301,7 +301,8 @@
       "3 bulan",
       "6 bulan",
       "1 tahun"
-    ]
+    ],
+    "pickDate": "Pilih tanggal masuk"
   },
   "myBookings": {
     "title": "Booking Saya",

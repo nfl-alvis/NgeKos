@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { formatIDR, cn } from "@/lib/utils";
+import { formatIDR } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -11,8 +11,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import StartDateField from "@/components/StartDateField";
+import { useParams } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -34,7 +35,7 @@ const DURATION_VALUES = ["1", "3", "6", "12"] as const;
 /**
  * Tombol ajukan sewa yang membuka popup (shadcn Dialog) di tempat —
  * tidak navigasi ke halaman baru dulu. Di dalam popup: pilih kamar,
- * tanggal masuk (shadcn Input type="date") dan durasi sewa
+ * tanggal masuk (shadcn Calendar di dalam Popover) dan durasi sewa
  * (shadcn Select, disampingnya), lalu Lanjut -> wizard data penyewa.
  */
 export default function BookingCta({
@@ -55,6 +56,7 @@ export default function BookingCta({
   children: ReactNode;
 }) {
   const t = useTranslations("booking");
+  const params = useParams<{ locale: string }>();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [roomId, setRoomId] = useState(initialRoomId ?? rooms[0]?.id ?? "");
@@ -63,7 +65,6 @@ export default function BookingCta({
 
   const room = rooms.find((r) => r.id === roomId) ?? rooms[0];
   const dp = dpAmount ?? 0;
-  const today = new Date().toISOString().slice(0, 10);
   const durationLabels = t.raw("durationOptions") as string[];
   const monthCount = Number(months);
 
@@ -111,18 +112,8 @@ export default function BookingCta({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-2 text-left">
-              <Label htmlFor={`start-${slug}-${initialRoomId ?? "x"}`}>{t("startDate")}</Label>
-              <Input
-                id={`start-${slug}-${initialRoomId ?? "x"}`}
-                type="date"
-                min={today}
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className={cn(
-                  "h-11 rounded-lg border-nk-border bg-nk-surface px-3 text-sm text-nk-text shadow-none transition-colors",
-                  "[&::-webkit-calendar-picker-indicator]:opacity-60"
-                )}
-              />
+              <Label>{t("startDate")}</Label>
+              <StartDateField value={date} onChange={setDate} locale={params.locale} />
             </div>
             <div className="flex flex-col gap-2 text-left">
               <Label>{t("duration")}</Label>
