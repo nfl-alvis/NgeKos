@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import {
   Accordion,
@@ -403,13 +404,15 @@ export default function LocationSearchPopup({
             onClick={handleNearby}
             className="inline-flex items-center gap-2 text-sm font-medium text-nk-accent transition-opacity hover:opacity-80"
           >
-            <svg
-              width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-            </svg>
+            <Image
+              src="/icons/nearby-map.png"
+              alt=""
+              width={28}
+              height={28}
+              loading="eager"
+              unoptimized
+              className="size-[15px] shrink-0"
+            />
             {t("popup.nearby")}
           </button>
         </div>
