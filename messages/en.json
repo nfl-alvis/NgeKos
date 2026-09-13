@@ -302,7 +302,18 @@
       "6 months",
       "1 year"
     ],
-    "pickDate": "Pick a move-in date"
+    "pickDate": "Pick a move-in date",
+    "detailBook": "Book Now",
+    "ifDp": "If you pay with a deposit:",
+    "dpLabel2": "Down payment (DP)",
+    "midLabel": "Remaining balance",
+    "ifFull": "If you pay in full:",
+    "fullLabel2": "Full payment",
+    "firstTotal": "First payment total",
+    "proceedWizard": "Continue with your details",
+    "change": "Change selection",
+    "dpAvailableTitle": "You can pay a deposit (DP) first.",
+    "dpAvailableBody": "The deposit locks your room now; the balance is paid when the rental starts."
   },
   "myBookings": {
     "title": "My Bookings",

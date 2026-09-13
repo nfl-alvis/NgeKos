@@ -6,6 +6,8 @@ import { getPropertyBySlug, getVerifiedProperties } from "@/lib/data/properties"
 import { FACILITY_META } from "@/lib/data/facilities";
 import { formatIDR, formatDistance, cn } from "@/lib/utils";
 import BookingCta from "@/components/BookingCta";
+import BookingSidebarActions from "@/components/BookingSidebarActions";
+import { BookingFlowProvider } from "@/components/BookingFlowProvider";
 
 export async function generateStaticParams() {
   const props = getVerifiedProperties();
@@ -39,8 +41,8 @@ export default async function DetailPage({
   if (!p) notFound();
 
   return (
-    <>
-      {/* Back link */}
+    <BookingFlowProvider>
+    <>      {/* Back link */}
       <div className="mx-auto w-full max-w-7xl px-6 pt-8 lg:px-10">
         <Link
           href="/kost"
@@ -195,7 +197,6 @@ export default async function DetailPage({
                     </div>
                     {rt.available > 0 && (
                       <BookingCta
-                        slug={p.slug}
                         propertyName={p.name}
                         dpAmount={p.dpAmount}
                         initialRoomId={rt.id}
@@ -249,15 +250,11 @@ export default async function DetailPage({
                 </div>
 
                 <div className="space-y-2.5 pt-1">
-                  <BookingCta
-                    slug={p.slug}
+                  <BookingSidebarActions
                     propertyName={p.name}
-                    dpAmount={p.dpAmount}
+                    dpAmount={p.dpAmount ?? 0}
                     rooms={p.roomTypes.filter((r) => r.available > 0)}
-                    className="inline-flex w-full items-center justify-center rounded-lg bg-nk-accent px-6 py-3.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
-                  >
-                    {t("detail.book")}
-                  </BookingCta>
+                  />
                   <button
                     className="inline-flex w-full items-center justify-center gap-2 border border-nk-border bg-nk-bg px-6 py-3.5 text-sm text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
                   >
@@ -273,5 +270,6 @@ export default async function DetailPage({
         </div>
       </div>
     </>
+    </BookingFlowProvider>
   );
 }

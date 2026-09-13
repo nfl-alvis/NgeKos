@@ -302,7 +302,18 @@
       "6 bulan",
       "1 tahun"
     ],
-    "pickDate": "Pilih tanggal masuk"
+    "pickDate": "Pilih tanggal masuk",
+    "detailBook": "Sewa Sekarang",
+    "ifDp": "Jika kamu bayar pakai DP:",
+    "dpLabel2": "Uang muka (DP)",
+    "midLabel": "Pelunasan",
+    "ifFull": "Jika kamu pakai pembayaran penuh:",
+    "fullLabel2": "Pembayaran Penuh",
+    "firstTotal": "Total Pembayaran Pertama",
+    "proceedWizard": "Lanjut Isi Data Penyewa",
+    "change": "Ubah Pilihan",
+    "dpAvailableTitle": "Bisa bayar DP (uang muka) dulu.",
+    "dpAvailableBody": "Uang muka dibayar di awal untuk mengunci kamar, sisanya dilunasi saat mulai sewa."
   },
   "myBookings": {
     "title": "Booking Saya",
