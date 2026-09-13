@@ -6,6 +6,7 @@ import { getPropertyBySlug, getVerifiedProperties } from "@/lib/data/properties"
 import { FACILITY_META } from "@/lib/data/facilities";
 import { formatIDR, formatDistance, cn } from "@/lib/utils";
 import BookingCta from "@/components/BookingCta";
+import FacilityIcon from "@/components/FacilityIcon";
 import BookingSidebarActions from "@/components/BookingSidebarActions";
 import { BookingFlowProvider } from "@/components/BookingFlowProvider";
 
@@ -154,9 +155,7 @@ export default async function DetailPage({
                     key={f}
                     className="inline-flex items-center gap-1.5 border border-nk-border px-3 py-1.5 text-xs text-nk-text"
                   >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-nk-accent" aria-hidden="true">
-                      <path d="M20 6 9 17l-5-5" />
-                    </svg>
+                    <FacilityIcon facility={f} className="text-nk-accent" />
                     {FACILITY_META[f]?.labelId || f}
                   </span>
                 ))}
