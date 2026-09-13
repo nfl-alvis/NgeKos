@@ -132,20 +132,25 @@ h1, h2, h3 {
   text-wrap: balance;
 }
 
-/* ===== accordion (Base UI) animation ===== */
-@keyframes accordion-down {
+/* ===== accordion (Base UI) animation =====
+   Nama keyframe HARUS unik (nk-accordion-*): tw-animate-css (di-import di
+   baris 2) sudah punya keyframes `accordion-down/up` milik Radix yang memakai
+   --radix-accordion-content-height — Base UI mengatur var(--accordion-panel-height),
+   bukan itu, sehingga dulunya panel langsung 'jomplang' buka tanpa animasi
+   (0 -> auto tidak bisa di-transition). */
+@keyframes nk-accordion-down {
   from { height: 0; }
   to { height: var(--accordion-panel-height); }
 }
 
-@keyframes accordion-up {
+@keyframes nk-accordion-up {
   from { height: var(--accordion-panel-height); }
   to { height: 0; }
 }
 
 /* register as Tailwind v4 animations so `animate-accordion-down/up` resolve */
 @theme inline {
-  --animate-accordion-down: accordion-down 0.25s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-in;
+  --animate-accordion-down: nk-accordion-down 0.25s ease-out;
+  --animate-accordion-up: nk-accordion-up 0.2s ease-in;
 }
 

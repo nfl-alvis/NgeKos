@@ -223,13 +223,19 @@ export default function LocationSearchPopup({
   open,
   onClose,
   onPick,
+  initialQuery = "",
+  onQueryChange,
 }: {
   open: boolean;
   onClose: () => void;
   onPick: (pick: LocationPick) => void;
+  /** teks yang sudah diketik di input hero — dibawa ke popup agar autocomplete jalan */
+  initialQuery?: string;
+  /** sinkron balik ketikan popup ke input hero (tombol Enter di hero memakai nilai ini) */
+  onQueryChange?: (v: string) => void;
 }) {
   const t = useTranslations("hero");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<GeoResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("campus");
@@ -271,16 +277,11 @@ export default function LocationSearchPopup({
     };
   }, [query, open]);
 
-  // focus input on open
+  // fokus + seed query dari input hero (pakai default value state, bukan
+  // setState-in-effect; efek hanya untuk fokus agar tidak memicu reset query)
   useEffect(() => {
     if (!open) return;
-    const raf = requestAnimationFrame(() => {
-      setQuery("");
-      setResults([]);
-      setActiveTab("campus");
-      inputRef.current?.focus();
-    });
-    return () => cancelAnimationFrame(raf);
+    inputRef.current?.focus();
   }, [open]);
 
   // Esc to close
@@ -347,7 +348,10 @@ export default function LocationSearchPopup({
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              onQueryChange?.(e.target.value);
+            }}
             placeholder={t("placeholder")}
             className="w-full bg-transparent text-sm text-nk-text outline-none placeholder:text-nk-text-muted"
             aria-label={t("placeholder")}
