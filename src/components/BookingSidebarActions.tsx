@@ -59,7 +59,7 @@ export default function BookingSidebarActions({
   return (
     <div className="flex flex-col gap-4 text-left">
       {/* pilihan saat ini */}
-      <div className="rounded-lg bg-nk-warm p-4 text-sm">
+      <div className="rounded-lg border border-nk-border bg-nk-surface p-4 text-sm">
         <p className="font-medium text-nk-text">{flow.roomName}</p>
         <p className="mt-1 text-nk-text-muted">
           {t("monthsCount", { count: flow.months })} ·{" "}
