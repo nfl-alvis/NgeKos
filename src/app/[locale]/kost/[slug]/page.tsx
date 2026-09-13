@@ -249,7 +249,7 @@ export default async function DetailPage({
                   </div>
                 </div>
 
-                <div className="space-y-2.5 pt-1">
+                <div className="space-y-3 border-t border-nk-border pt-5">
                   <BookingSidebarActions
                     propertyName={p.name}
                     dpAmount={p.dpAmount ?? 0}

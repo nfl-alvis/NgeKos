@@ -33,7 +33,7 @@ export default function BookingSidebarActions({
           propertyName={propertyName}
           dpAmount={dpAmount}
           rooms={rooms}
-          className="inline-flex w-full items-center justify-center bg-nk-accent px-6 py-3.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+          className="inline-flex w-full items-center justify-center border border-nk-border bg-nk-accent px-6 py-3.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
         >
           {t("detailBook")}
         </BookingCta>
@@ -105,7 +105,7 @@ export default function BookingSidebarActions({
       <div className="flex flex-col gap-2">
         <Link
           href={`/kost/${params.slug}/book?kamar=${flow.roomId}&tanggal=${flow.date}&bulan=${flow.months}`}
-          className="inline-flex min-h-11 items-center justify-center bg-nk-accent px-5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90"
+          className="inline-flex min-h-11 items-center justify-center border border-nk-border bg-nk-accent px-5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90"
         >
           {t("proceedWizard")}
         </Link>
