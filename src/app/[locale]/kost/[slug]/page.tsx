@@ -224,7 +224,7 @@ export default async function DetailPage({
 
           {/* Sidebar — CTA */}
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <div className="border border-nk-border bg-nk-section p-6">
+            <div className="border border-nk-dark-border bg-nk-section p-6">
               <div className="space-y-5">
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-3xl font-light tracking-tight text-nk-text">
