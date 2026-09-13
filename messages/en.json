@@ -166,7 +166,8 @@
     "roleOwnerDesc": "Manage your listings and bookings.",
     "cancel": "Cancel",
     "titleSeeker": "Log in as a Tenant",
-    "titleOwner": "Log in as an Owner"
+    "titleOwner": "Log in as an Owner",
+    "useDemo": "Use demo account (tempmail)"
   },
   "common": {
     "loading": "Loading...",
@@ -313,7 +314,32 @@
     "proceedWizard": "Continue with your details",
     "change": "Change selection",
     "dpAvailableTitle": "You can pay a deposit (DP) first.",
-    "dpAvailableBody": "The deposit locks your room now; the balance is paid when the rental starts."
+    "dpAvailableBody": "The deposit locks your room now; the balance is paid when the rental starts.",
+    "gateTitle": "Sign in to continue",
+    "gateBody": "You need an account to request a booking. Sign in, or continue after signing up.",
+    "gateSignIn": "Sign in",
+    "gateEmail": "Email",
+    "gatePassword": "Password",
+    "gateDemo": "Use demo account (tempmail)",
+    "gateDemoHint": "Demo mode: any credentials work; a tempmail account is provided.",
+    "gateGoogle": "Continue with Google",
+    "loggedInAs": "Signed in as {name}",
+    "summaryTitle": "Request Summary",
+    "checkIn": "Check-in date",
+    "durationLabel": "Duration",
+    "sewaBulan": "Rent per month",
+    "dpLabel": "Deposit (one-time)",
+    "totalEst": "Estimated total for this period",
+    "payAfterApproval": "You only pay after the owner approves your request. No charge when you apply.",
+    "privacyNote": "Rest assured, your personal data is kept private and is only shared with the boarding house owner.",
+    "refCode": "Referral Code",
+    "refCodePlaceholder": "Optional, if you have a promo code",
+    "fillData": "Fill in Your Details",
+    "changeChoice": "Change selection",
+    "chooseOnDetail": "Choose a room, date, and duration on the property detail page to continue.",
+    "goDetail": "Go to detail page",
+    "monthsN": "{count} months",
+    "gateOr": "or"
   },
   "myBookings": {
     "title": "My Bookings",

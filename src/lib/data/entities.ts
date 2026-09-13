@@ -42,6 +42,17 @@ export const ADMIN_ALLOWED_EMAILS = [
   "operator@ngekost.id",
 ];
 
+/**
+ * Akun demo pencari kos (tempmail sungguhan — dibuat via api.mail.tm,
+ * inbox bisa diakses untuk uji alur notifikasi). Dipakai tombol
+ * "Gunakan akun demo" di modal login alur pengajuan sewa.
+ */
+export const SEEKER_DEMO_ACCOUNT = {
+  email: "ngekostygocrudemo@uberip.com",
+  password: "NgekostDemo#2026",
+  name: "Budi Santoso",
+};
+
 /* ===== properti milik owner (subset dari properties.ts) ===== */
 
 export const OWNER_PROPERTY_SLUGS = [

@@ -166,7 +166,8 @@
     "roleOwnerDesc": "Kelola listing & sewa kostmu.",
     "cancel": "Batal",
     "titleSeeker": "Masuk sebagai Pencari Kos",
-    "titleOwner": "Masuk sebagai Pemilik Kos"
+    "titleOwner": "Masuk sebagai Pemilik Kos",
+    "useDemo": "Gunakan akun demo (tempmail)"
   },
   "common": {
     "loading": "Memuat...",
@@ -313,7 +314,32 @@
     "proceedWizard": "Lanjut Isi Data Penyewa",
     "change": "Ubah Pilihan",
     "dpAvailableTitle": "Bisa bayar DP (uang muka) dulu.",
-    "dpAvailableBody": "Uang muka dibayar di awal untuk mengunci kamar, sisanya dilunasi saat mulai sewa."
+    "dpAvailableBody": "Uang muka dibayar di awal untuk mengunci kamar, sisanya dilunasi saat mulai sewa.",
+    "gateTitle": "Masuk dulu untuk melanjutkan",
+    "gateBody": "Kamu perlu punya akun untuk mengajukan sewa. Masuk atau lanjut sebagai tamu setelah login.",
+    "gateSignIn": "Masuk",
+    "gateEmail": "Email",
+    "gatePassword": "Password",
+    "gateDemo": "Gunakan akun demo (tempmail)",
+    "gateDemoHint": "Mode demo: kredensial apa pun diterima; akun tempmail sudah disediakan.",
+    "gateGoogle": "Lanjutkan dengan Google",
+    "loggedInAs": "Masuk sebagai {name}",
+    "summaryTitle": "Ringkasan Pengajuan",
+    "checkIn": "Tanggal check-in",
+    "durationLabel": "Durasi",
+    "sewaBulan": "Sewa per bulan",
+    "dpLabel": "Deposit (sekali)",
+    "totalEst": "Estimasi total periode ini",
+    "payAfterApproval": "Kamu baru membayar setelah pengajuan disetujui pemilik. Tidak ada tagihan saat mengajukan.",
+    "privacyNote": "Tenang, data pribadi kamu terjamin kerahasiaannya dan hanya dikirim ke pemilik kost.",
+    "refCode": "Kode Referensi",
+    "refCodePlaceholder": "Opsional, jika ada kode promo",
+    "fillData": "Isi Data Pemesan",
+    "changeChoice": "Ubah pilihan",
+    "chooseOnDetail": "Pilih kamar, tanggal, dan durasi di halaman detail kost untuk melanjutkan.",
+    "goDetail": "Ke halaman detail",
+    "monthsN": "{count} bulan",
+    "gateOr": "atau"
   },
   "myBookings": {
     "title": "Booking Saya",

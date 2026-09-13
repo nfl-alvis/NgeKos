@@ -5,13 +5,39 @@ import { useTranslations } from "next-intl";
 import { useParams, useSearchParams } from "next/navigation";
 import { Link, useRouter as useI18nRouter } from "@/i18n/navigation";
 import { getPropertyBySlug } from "@/lib/data/properties";
+import type { Property, RoomType } from "@/lib/data/types";
 import { formatIDR, cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import StartDateField from "@/components/StartDateField";
+import { useSession } from "@/components/SessionProvider";
+import SeekerAuthModal from "@/components/SeekerAuthModal";
 
-type Step = 0 | 1 | 2;
-const STEPS = ["kamar", "data", "konfirmasi"] as const;
+/**
+ * Halaman "Ajukan Booking" bergaya Mamikos (/room/.../booking):
+ *  - butuh akun (modal login di tempat, opsi akun demo tempmail);
+ *  - form satu layar: data pemesan di kiri, Ringkasan Pengajuan di kanan
+ *    (kartu sticky ala panel pengajuan Mamikos);
+ *  - pembayaran TIDAK di sini — baru setelah pemilik menyetujui
+ *    (halaman /bookings/[id]/bayar).
+ * Kamar/tanggal/durasi sudah dipilih di popup halaman detail; ubah lewat
+ * tautan "Ubah pilihan" di ringkasan.
+ */
+
+function BackChevron() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function InfoIcon({ className }: { className?: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4M12 8h.01" />
+    </svg>
+  );
+}
 
 function CheckIcon({ className }: { className?: string }) {
   return (
@@ -21,68 +47,18 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
-function Stepper({ step, t }: { step: Step; t: ReturnType<typeof useTranslations> }) {
-  return (
-    <ol className="flex items-center gap-2" aria-label={t("stepsAria")}>
-      {STEPS.map((s, i) => (
-        <li key={s} className="flex flex-1 flex-col items-center gap-2">
-          <div className="flex w-full items-center">
-            <div className={cn("h-0.5 flex-1 rounded-full", i === 0 ? "bg-transparent" : i <= step ? "bg-nk-accent" : "bg-nk-border")} />
-            <span
-              className={cn(
-                "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-medium tabular-nums transition-colors duration-200",
-                i < step
-                  ? "bg-nk-accent text-nk-text-inverse"
-                  : i === step
-                    ? "border-2 border-nk-accent bg-nk-bg text-nk-accent"
-                    : "border-2 border-nk-border bg-nk-bg text-nk-text-muted"
-              )}
-              aria-current={i === step ? "step" : undefined}
-            >
-              {i < step ? <CheckIcon className="size-4" /> : i + 1}
-            </span>
-            <div className={cn("h-0.5 flex-1 rounded-full", i === STEPS.length - 1 ? "bg-transparent" : i < step ? "bg-nk-accent" : "bg-nk-border")} />
-          </div>
-          <span className={cn("text-xs", i === step ? "font-medium text-nk-text" : "text-nk-text-muted")}>
-            {t(`step.${s}`)}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 export default function BookingApplyPage() {
   const t = useTranslations("booking");
+  const lt = useTranslations("login");
   const params = useParams<{ locale: string; slug: string }>();
   const searchParams = useSearchParams();
-  const i18nRouter = useI18nRouter();
+
+  const { user, ready } = useSession();
+  const [authOpen, setAuthOpen] = useState(false);
 
   const slug = params.slug;
   const property = getPropertyBySlug(slug);
   const rooms = useMemo(() => (property ? property.roomTypes.filter((r) => r.available > 0) : []), [property]);
-
-  const initialRoom = searchParams.get("kamar") ?? rooms[0]?.id ?? "";
-  const prefillDate = searchParams.get("tanggal") ?? "";
-  const prefillMonths = Number(searchParams.get("bulan"));
-  const [step, setStep] = useState<Step>(
-    prefillDate && [1, 3, 6, 12].includes(prefillMonths) ? 1 : 0
-  );
-  const [roomId, setRoomId] = useState(rooms.some((r) => r.id === initialRoom) ? initialRoom : rooms[0]?.id ?? "");
-  const [months, setMonths] = useState(
-    [1, 3, 6, 12].includes(prefillMonths) ? prefillMonths : 3
-  );
-  const [startDate, setStartDate] = useState(
-    /^\d{4}-\d{2}-\d{2}$/.test(prefillDate) && prefillDate >= new Date().toISOString().slice(0, 10)
-      ? prefillDate
-      : ""
-  );
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [note, setNote] = useState("");
-  const [agree, setAgree] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   if (!property || rooms.length === 0) {
     return (
@@ -95,8 +71,88 @@ export default function BookingApplyPage() {
     );
   }
 
+  /* ===== gerbang login (Mamikos: harus punya akun untuk mengajukan) ===== */
+  if (!ready) {
+    return <div className="mx-auto max-w-5xl px-6 py-24 lg:px-10" aria-busy="true" />;
+  }
+  if (!user) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-6 py-24 text-center lg:px-10">
+        <span className="inline-flex size-12 items-center justify-center rounded-full bg-nk-accent/10 text-nk-accent">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+        </span>
+        <h1 className="mt-4 text-xl font-medium tracking-tight text-nk-text">{t("gateTitle")}</h1>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-nk-text-muted">{t("gateBody")}</p>
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setAuthOpen(true)}
+            className="inline-flex min-h-12 w-full max-w-sm items-center justify-center rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+          >
+            {t("gateSignIn")}
+          </button>
+          <Link
+            href="/daftar?role=seeker"
+            className="text-sm font-medium text-nk-accent transition-opacity hover:opacity-80"
+          >
+            {lt("register")}
+          </Link>
+        </div>
+        <SeekerAuthModal open={authOpen} onOpenChange={setAuthOpen} onSuccess={() => setAuthOpen(false)} />
+      </div>
+    );
+  }
+
+  return (
+    <BookingForm
+      property={property}
+      rooms={rooms}
+      search={searchParams}
+      userName={user.name}
+      userEmail={user.email}
+    />
+  );
+}
+
+/* ===== form pemesan + ringkasan (hanya ter-mount setelah login,
+   jadi prefill data akun aman lewat initializer, bukan effect) ===== */
+
+function BookingForm({
+  property,
+  rooms,
+  search,
+  userName,
+  userEmail,
+}: {
+  property: Property;
+  rooms: RoomType[];
+  search: URLSearchParams;
+  userName: string;
+  userEmail: string;
+}) {
+  const t = useTranslations("booking");
+  const params = useParams<{ locale: string; slug: string }>();
+  const i18nRouter = useI18nRouter();
+
+  const roomId = search.get("kamar") ?? rooms[0]?.id ?? "";
+  const prefillDate = search.get("tanggal") ?? "";
+  const monthsParam = Number(search.get("bulan"));
+  const months = [1, 3, 6, 12].includes(monthsParam) ? monthsParam : 1;
+
+  const [name, setName] = useState(userName);
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState(userEmail);
+  const [refCode, setRefCode] = useState("");
+  const [note, setNote] = useState("");
+  const [agree, setAgree] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
   const room = rooms.find((r) => r.id === roomId) ?? rooms[0];
   const dp = property.dpAmount ?? 0;
+  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(prefillDate);
   const nice = (iso: string) =>
     iso
       ? new Date(iso + "T00:00:00").toLocaleDateString(
@@ -104,12 +160,10 @@ export default function BookingApplyPage() {
           { day: "numeric", month: "long", year: "numeric" }
         )
       : "—";
-  const stepOk = [
-    Boolean(startDate),
-    name.trim().length >= 3 && phone.replace(/\D/g, "").length >= 9,
-    agree,
-  ][step];
-  const bookingCode = `BK-${startDate.replace(/-/g, "").slice(4)}${months}`;
+  const totalPeriod = room.pricePerMonth * months;
+  const firstPay = room.pricePerMonth + dp;
+  const formOk = name.trim().length >= 3 && phone.replace(/\D/g, "").length >= 9 && validDate && agree;
+  const bookingCode = `BK-${(prefillDate || "00000000").replace(/-/g, "").slice(4)}${months}`;
   const waText = encodeURIComponent(
     t("waMessage", { name, property: property.name, room: room.name, code: bookingCode })
   );
@@ -119,110 +173,31 @@ export default function BookingApplyPage() {
   const labelCls = "text-sm font-medium text-nk-text";
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-10 lg:px-10">
-      {/* breadcrumb */}
-      <nav aria-label="Breadcrumb" className="mb-8 flex items-center gap-2 text-sm text-nk-text-muted">
-        <Link href={`/kost/${property.slug}`} className="transition-colors hover:text-nk-text">
+    <div className="mx-auto w-full max-w-5xl px-6 py-10 lg:px-10">
+      {/* header */}
+      <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-sm text-nk-text-muted">
+        <Link href={`/kost/${property.slug}`} className="inline-flex items-center gap-1 transition-colors hover:text-nk-text">
+          <BackChevron />
           {property.name}
         </Link>
         <span aria-hidden="true">/</span>
         <span className="text-nk-text">{t("title")}</span>
       </nav>
 
-      {/* sticky room summary */}
-      <section className="mb-8 flex items-center gap-4 rounded-lg border border-nk-border bg-nk-surface p-4">
-        <img
-          src={`https://picsum.photos/seed/${property.imageSeed}/160/120`}
-          alt={property.name}
-          className="h-16 w-24 shrink-0 rounded-md object-cover"
-          loading="lazy"
-        />
-        <div className="min-w-0">
-          <h2 className="truncate text-base font-medium text-nk-text">{property.name}</h2>
-          <p className="truncate text-sm text-nk-text-muted">
-            {property.district}, {property.city} · {formatIDR(room.pricePerMonth)} {t("perMonth")}
-          </p>
-        </div>
-      </section>
+      <h1 className="text-2xl font-light tracking-tight text-nk-text">{t("title")}</h1>
+      <p className="mt-1.5 text-sm text-nk-text-muted">{t("loggedInAs", { name: userName })}</p>
 
-      <h1 className="sr-only">{t("title")}</h1>
-      <div className="mb-10">
-        <Stepper step={step} t={t} />
-      </div>
-
-      {/* ===== STEP 1 — kamar + durasi + tanggal ===== */}
-      {step === 0 && (
-        <div className="flex flex-col gap-8">
-          <fieldset>
-            <legend className={cn(labelCls, "mb-3")}>{t("chooseRoom")}</legend>
-            <div className="grid gap-3">
-              {rooms.map((r) => (
-                <label
-                  key={r.id}
-                  className={cn(
-                    "flex cursor-pointer items-center justify-between gap-4 rounded-lg border p-4 transition-colors duration-200",
-                    roomId === r.id ? "border-nk-accent bg-nk-accent/5" : "border-nk-border bg-nk-surface hover:border-nk-accent/50"
-                  )}
-                >
-                  <span className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="room"
-                      value={r.id}
-                      checked={roomId === r.id}
-                      onChange={() => setRoomId(r.id)}
-                      className="size-4 accent-[#3A2618]"
-                    />
-                    <span>
-                      <span className="block text-sm font-medium text-nk-text">{r.name}</span>
-                      <span className="block text-xs text-nk-text-muted">
-                        {r.sizeM2} m&sup2; · {t("roomsLeft", { count: r.available })}
-                      </span>
-                    </span>
-                  </span>
-                  <span className="text-sm font-medium text-nk-text">
-                    {formatIDR(r.pricePerMonth)}
-                    <span className="text-xs font-normal text-nk-text-muted"> {t("perMonth")}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <div>
-            <span className={cn(labelCls, "mb-3 block")}>{t("duration")}</span>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t("duration")}>
-              {[1, 3, 6, 12].map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  role="radio"
-                  aria-checked={months === m}
-                  onClick={() => setMonths(m)}
-                  className={cn(
-                    "min-h-11 rounded-lg border px-5 text-sm transition-colors duration-200",
-                    months === m
-                      ? "border-nk-accent bg-nk-accent text-nk-text-inverse"
-                      : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/50"
-                  )}
-                >
-                  {t("monthsCount", { count: m })}
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-nk-text-muted">{t("durationHint")}</p>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label className={labelCls}>{t("startDate")}</Label>
-            <StartDateField value={startDate} onChange={setStartDate} locale={params.locale} />
-          </div>
-        </div>
-      )}
-
-      {/* ===== STEP 2 — data penyewa ===== */}
-      {step === 1 && (
-        <div className="flex flex-col gap-5">
+      {/* ===== dua kolom ala Mamikos: form kiri, ringkasan kanan ===== */}
+      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+        {/* ---------- form data pemesan ---------- */}
+        <form
+          className="flex flex-col gap-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (formOk) setSubmitted(true);
+          }}
+        >
+          <h2 className="text-sm font-medium text-nk-text">{t("fillData")}</h2>
           <div className="flex flex-col gap-2">
             <label htmlFor="name" className={labelCls}>{t("fullName")}</label>
             <input id="name" type="text" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} className={cn(rowCls, "min-h-11")} />
@@ -237,51 +212,12 @@ export default function BookingApplyPage() {
             <p className="text-xs text-nk-text-muted">{t("emailOptional")}</p>
           </div>
           <div className="flex flex-col gap-2">
+            <label htmlFor="ref" className={labelCls}>{t("refCode")}</label>
+            <input id="ref" type="text" value={refCode} onChange={(e) => setRefCode(e.target.value)} placeholder={t("refCodePlaceholder")} className={cn(rowCls, "min-h-11")} />
+          </div>
+          <div className="flex flex-col gap-2">
             <label htmlFor="note" className={labelCls}>{t("note")}</label>
             <textarea id="note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("notePlaceholder")} className={cn(rowCls, "resize-none")} />
-          </div>
-        </div>
-      )}
-
-      {/* ===== STEP 3 — konfirmasi biaya ===== */}
-      {step === 2 && (
-        <div className="flex flex-col gap-6">
-          <div className="rounded-lg border border-nk-border bg-nk-surface p-5">
-            <h2 className="mb-4 text-sm font-medium text-nk-text">{t("costSummary")}</h2>
-            <dl className="flex flex-col gap-2.5 text-sm">
-              <div className="flex items-center justify-between">
-                <dt className="text-nk-text-muted">{t("rent")}</dt>
-                <dd className="text-nk-text">{formatIDR(room.pricePerMonth)} {t("perMonth")}</dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-nk-text-muted">{t("duration")}</dt>
-                <dd className="text-nk-text">{t("monthsCount", { count: months })}</dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-nk-text-muted">{t("startDate")}</dt>
-                <dd className="text-nk-text">{nice(startDate)}</dd>
-              </div>
-              {dp > 0 && (
-                <div className="flex items-center justify-between">
-                  <dt className="text-nk-text-muted">{t("dpOnce")}</dt>
-                  <dd className="text-nk-text">{formatIDR(dp)}</dd>
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <dt className="text-nk-text-muted">{t("totalPeriod", { count: months })}</dt>
-                <dd className="text-nk-text">{formatIDR(room.pricePerMonth * months)}</dd>
-              </div>
-              <div className="mt-2 flex items-center justify-between border-t border-nk-border pt-3">
-                <dt className="font-medium text-nk-text">{t("payFirst")}</dt>
-                <dd className="font-medium text-nk-text">{formatIDR(room.pricePerMonth + dp)}</dd>
-              </div>
-            </dl>
-            <p className="mt-3 text-xs leading-relaxed text-nk-text-muted">{t("payHow")}</p>
-          </div>
-
-          <div className="rounded-lg border border-nk-border bg-nk-section p-4 text-sm">
-            <p className="font-medium text-nk-text">{name || t("yourData")}</p>
-            <p className="mt-1 text-nk-text-muted">{phone} · {room.name}</p>
           </div>
 
           <label className="flex cursor-pointer items-start gap-3 text-sm text-nk-text">
@@ -292,34 +228,95 @@ export default function BookingApplyPage() {
               {t("agreeSuffix")}
             </span>
           </label>
-        </div>
-      )}
+          <p className="text-xs leading-relaxed text-nk-text-muted">{t("privacyNote")}</p>
 
-      {/* ===== nav buttons ===== */}
-      <div className="mt-10 flex items-center gap-3">
-        {step > 0 && (
+          {!validDate && (
+            <p className="rounded-lg border border-[#E7C9A8] bg-[#FBF3E6] p-3 text-xs leading-relaxed text-[#7A5A33]">
+              {t("chooseOnDetail")}{" "}
+              <Link href={`/kost/${property.slug}`} className="font-medium underline underline-offset-2">
+                {t("goDetail")}
+              </Link>
+            </p>
+          )}
+
           <button
-            type="button"
-            onClick={() => setStep((s) => (s - 1) as Step)}
-            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-lg border border-nk-border bg-nk-bg px-6 text-sm font-medium text-nk-text transition-colors duration-200 hover:border-nk-accent hover:text-nk-accent"
+            type="submit"
+            disabled={!formOk}
+            className="inline-flex min-h-12 items-center justify-center rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-opacity duration-200 hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {t("back")}
+            {t("submit")}
           </button>
-        )}
-        <button
-          type="button"
-          disabled={!stepOk}
-          onClick={() => {
-            if (step < 2) setStep((s) => (s + 1) as Step);
-            else setSubmitted(true);
-          }}
-          className="inline-flex min-h-12 flex-1 items-center justify-center rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-opacity duration-200 hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {step < 2 ? t("continue") : t("submit")}
-        </button>
+        </form>
+
+        {/* ---------- ringkasan pengajuan (sticky) ---------- */}
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-lg border border-nk-border bg-nk-surface">
+            <div className="flex items-start gap-3 border-b border-nk-border p-4">
+              <img
+                src={`https://picsum.photos/seed/${property.imageSeed}/120/96`}
+                alt={property.name}
+                className="h-14 w-20 shrink-0 rounded-md object-cover"
+                loading="lazy"
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-nk-text-muted">{t("summaryTitle")}</p>
+                <p className="mt-0.5 truncate text-sm font-medium text-nk-text">{property.name}</p>
+                <p className="truncate text-xs text-nk-text-muted">{property.district}, {property.city}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 p-4 text-sm">
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-nk-text-muted">{t("chooseRoom")}</span>
+                <span className="text-right font-medium text-nk-text">{room.name}</span>
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-nk-text-muted">{t("checkIn")}</span>
+                <span className="text-right font-medium text-nk-text">{validDate ? nice(prefillDate) : "—"}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-nk-text-muted">{t("durationLabel")}</span>
+                <span className="font-medium text-nk-text">{t("monthsN", { count: months })}</span>
+              </div>
+
+              <div className="my-1 h-px bg-nk-border" aria-hidden="true" />
+
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-nk-text-muted">{t("sewaBulan")}</span>
+                <span className="text-nk-text">{formatIDR(room.pricePerMonth)}</span>
+              </div>
+              {dp > 0 && (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-nk-text-muted">{t("dpLabel")}</span>
+                  <span className="text-nk-text">{formatIDR(dp)}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-nk-text-muted">{t("totalPeriod", { count: months })}</span>
+                <span className="text-nk-text">{formatIDR(totalPeriod)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 border-t border-nk-border pt-3">
+                <span className="font-medium text-nk-text">{t("firstTotal")}</span>
+                <span className="font-semibold text-nk-text">{formatIDR(firstPay)}</span>
+              </div>
+
+              <div className="flex items-start gap-2 rounded-lg bg-nk-warm p-3 text-xs leading-relaxed text-nk-text-muted">
+                <InfoIcon className="mt-0.5 shrink-0 text-nk-accent" />
+                <span>{t("payAfterApproval")}</span>
+              </div>
+
+              <Link
+                href={`/kost/${property.slug}`}
+                className="mt-1 inline-flex min-h-10 items-center justify-center rounded-lg border border-nk-border text-sm font-medium text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
+              >
+                {t("changeChoice")}
+              </Link>
+            </div>
+          </div>
+        </aside>
       </div>
 
-      {/* ===== success ===== */}
+      {/* ===== sukses ===== */}
       <Dialog open={submitted} onOpenChange={(o) => !o && setSubmitted(false)}>
         <DialogContent className="max-w-md text-center">
           <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-[#E9F4EC] text-[#2F6B3C]">
@@ -329,6 +326,7 @@ export default function BookingApplyPage() {
           <p className="mt-2 text-sm leading-relaxed text-nk-text-muted">
             {t("successBody", { code: bookingCode })}
           </p>
+          <p className="mt-2 text-xs leading-relaxed text-nk-text-muted">{t("payAfterApproval")}</p>
           <div className="mt-6 flex flex-col gap-2.5">
             <a
               href={`https://wa.me/6281122334455?text=${waText}`}

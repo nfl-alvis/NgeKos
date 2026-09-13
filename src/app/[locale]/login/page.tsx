@@ -2,9 +2,11 @@
 
 import { Suspense, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter as useI18nRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import Logo from "@/components/Logo";
+import { useSession } from "@/components/SessionProvider";
+import { SEEKER_DEMO_ACCOUNT } from "@/lib/data/entities";
 
 export default function LoginPage() {
   return (
@@ -22,6 +24,21 @@ function LoginInner() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
+  const { login } = useSession();
+  const i18nRouter = useI18nRouter();
+
+  const attemptLogin = (mail: string) => {
+    const name =
+      mail === SEEKER_DEMO_ACCOUNT.email
+        ? SEEKER_DEMO_ACCOUNT.name
+        : mail.split("@")[0].replace(/[._-]+/g, " ").trim() || "Tamu";
+    login({
+      role: role === "owner" ? "owner" : "seeker",
+      name: name.replace(/\b\w/g, (c) => c.toUpperCase()),
+      email: mail,
+    });
+    i18nRouter.push(role === "owner" ? "/owner" : "/bookings");
+  };
 
   return (
     <div className="grain flex min-h-[calc(100dvh-4rem)] items-center justify-center bg-nk-bg px-6 py-16">
@@ -49,7 +66,7 @@ function LoginInner() {
             className="mt-8 flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              window.alert("Auth stub — form submitted");
+              if (email && password) attemptLogin(email);
             }}
           >
             <label className="flex flex-col gap-1.5">
@@ -117,12 +134,23 @@ function LoginInner() {
             >
               {t("submit")}
             </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEmail(SEEKER_DEMO_ACCOUNT.email);
+                setPassword(SEEKER_DEMO_ACCOUNT.password);
+              }}
+              className="text-center text-xs text-nk-text-muted underline-offset-4 transition-colors hover:text-nk-accent hover:underline"
+            >
+              {t("useDemo")}
+            </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-nk-text-muted">
             {t("noAccount")}{" "}
             <Link
-              href="/login"
+              href="/daftar"
               className="font-medium text-nk-accent transition-colors hover:opacity-80"
             >
               {t("register")}
