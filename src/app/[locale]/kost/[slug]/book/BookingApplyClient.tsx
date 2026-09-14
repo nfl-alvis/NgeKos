@@ -189,9 +189,9 @@ function BookingForm({
 
       {/* ===== dua kolom ala Mamikos: form kiri, ringkasan kanan ===== */}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-        {/* ---------- form data pemesan ---------- */}
+        {/* ---------- form data pemesan: card putih berborder ala Mamikos ---------- */}
         <form
-          className="flex flex-col gap-5"
+          className="flex flex-col gap-5 rounded-lg border border-nk-border bg-nk-surface p-5 sm:p-8"
           onSubmit={(e) => {
             e.preventDefault();
             if (formOk) setSubmitted(true);
