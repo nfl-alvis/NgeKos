@@ -5,7 +5,7 @@
 **Sumber:** PRD-Ngekost-FULL.md v3.5/v3.6, API.md v3.5, DATABASE.md v3.5, Daftar-Fitur-Gratis-vs-Premium.md, Penjelasan-Usecase-Ngekost.md
 **Format layout:** swimlane vertikal hitam-putih, konsisten dengan `gen_activity_diagrams.py` (proyek TumbuhKita)
 
-**Total:** 11 halaman, 168 node alur (start/end/action/decision) + 24 elemen swimlane = 192 vertex, 172 edge — semua lolos validator struktural (tanpa duplicate ID, tanpa dangling edge, tanpa node orphan). Kolom "Node" di tabel bawah menghitung node alur saja.
+**Total:** 11 halaman, 166 node alur (start/end/action/decision) + 24 elemen swimlane = 190 vertex, 170 edge — semua lolos validator struktural (tanpa duplicate ID, tanpa dangling edge, tanpa node orphan). Kolom "Node" di tabel bawah menghitung node alur saja.
 
 ---
 
@@ -44,7 +44,8 @@
 
 Referensi dianalisis dari file `Activity Diagram-Contoh Teman Saya yang sudah benar.drawio` (15 alur, tiap alur = pasangan lane) + artikel UML (Visual Paradigm notation guide, viz-note fork-vs-decision). Aturan yang dipatuhi diagram ini:
 
-1. **Fork/join hanya untuk pekerjaan paralel yang menyentuh database** — tiap fork di sini cabangnya `memasukkan data ke database` ∥ `menampilkan halaman/pesan`. Decision = pilihan (guard `[ya]/[tidak]`); fork = TANPA kondisi, semua cabang jalan sekaligus. Audit 11/11 halaman: 10 fork, semuanya bercabang ke aksi database; 0 fork tanpa DB.
+1. **Fork = 1 masuk, 2 keluar: aksi database ∥ tampilkan halaman/pesan.** Masuknya dari SATU sumber (action atau decision) — cabang decision yang saling eksklusif TIDAK BOLEH dilebur ke fork (itu artinya 'keduanya jalan bareng', ngawur). Audit 11/11 halaman: 10 fork, semuanya 1-in/2-out dengan tepat satu cabang `memasukkan data ke database`; 0 pelanggaran.
+   - Revisi: halaman 1 dulu menggabungkan decision login DAN decision register ke satu fork → login benar tak menulis DB, kini jalur login langsung ke `masuk dashboard`, hanya jalur register masuk fork. Halaman 11 dulu menggabungkan cabang approve+reject ke fork → kini decision `terverifikasi?` memilih dulu: approve → fork (DB ∥ tampilkan+notif), reject → jalur samping kembali ke antrean (pola sama dgn decision pembayaran di referensi).
 2. **Bar fork/join selalu di lane Sistem**, di bawah action, bentuk `5x160 rotation=90`.
 3. **Final node (elips putih) selalu di lane Sistem** — konsisten dengan referensi (15/15 alur); action terakhir aktor (`lihat …`) tetap di lane aktor, lalu alur pindah ke Sistem untuk berakhir.
 4. **Guard label format `[kondisi]`** sebagai edge label terpisah.
