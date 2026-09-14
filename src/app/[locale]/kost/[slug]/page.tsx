@@ -167,11 +167,11 @@ export default async function DetailPage({
               <h2 className="text-xl font-light tracking-tight text-nk-text">
                 {t("detail.roomTypes")}
               </h2>
-              <div className="grid gap-[1px] bg-nk-border sm:grid-cols-2">
+              <div className="grid sm:grid-cols-2">
                 {p.roomTypes.map((rt) => (
                   <div
                     key={rt.id}
-                    className="bg-nk-bg p-6"
+                    className="-mb-px -mr-px border border-nk-border bg-nk-bg p-6"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-lg font-medium tracking-tight text-nk-text">
