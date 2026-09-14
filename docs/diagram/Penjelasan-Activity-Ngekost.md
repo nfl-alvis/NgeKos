@@ -5,7 +5,7 @@
 **Sumber:** PRD-Ngekost-FULL.md v3.5/v3.6, API.md v3.5, DATABASE.md v3.5, Daftar-Fitur-Gratis-vs-Premium.md, Penjelasan-Usecase-Ngekost.md
 **Format layout:** swimlane vertikal hitam-putih, konsisten dengan `gen_activity_diagrams.py` (proyek TumbuhKita)
 
-**Total:** 11 halaman, 166 node alur (start/end/action/decision) + 24 elemen swimlane = 190 vertex, 170 edge — semua lolos validator struktural (tanpa duplicate ID, tanpa dangling edge, tanpa node orphan). Kolom "Node" di tabel bawah menghitung node alur saja.
+**Total:** 11 halaman, 167 node alur (start/end/action/decision) + 24 elemen swimlane = 191 vertex, 171 edge — semua lolos validator struktural (tanpa duplicate ID, tanpa dangling edge, tanpa node orphan). Kolom "Node" di tabel bawah menghitung node alur saja.
 
 ---
 
@@ -50,6 +50,7 @@ Referensi dianalisis dari file `Activity Diagram-Contoh Teman Saya yang sudah be
 3. **Final node (elips putih) selalu di lane Sistem** — konsisten dengan referensi (15/15 alur); action terakhir aktor (`lihat …`) tetap di lane aktor, lalu alur pindah ke Sistem untuk berakhir.
 4. **Guard label format `[kondisi]`** sebagai edge label terpisah.
 5. Satu initial node di lane aktor (bukan Sistem), mengikuti referensi.
+6. **Setiap jalur yang berakhir di final node wajib melewati action `menampilkan …`/`memuat ulang …` di lane Sistem lebih dulu** — pola referensi 15/15: node sebelum END selalu tampilan hasil (halaman sukses, halaman data, pesan), bukan aksi aktor dan bukan join langsung. Aksi `lihat …` milik aktor diletakkan di tengah alur, bukan sebagai penutup.
 
 Semua hitam-putih, tanpa warna — aman untuk dicetak di laporan grayscale. Kalau nanti butuh penanda gating berwarna merah seperti di use case diagram, cukup ubah konstanta `ST_ACTION` di generator.
 
