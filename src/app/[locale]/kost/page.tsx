@@ -88,7 +88,7 @@ export default async function ListPage({
             {t("list.resultCount", { count: filtered.length })}
           </p>
           {filtered.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {filtered.map((p) => (
                 <PropertyCard key={p.slug} property={p} />
               ))}

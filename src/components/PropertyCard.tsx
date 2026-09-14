@@ -17,7 +17,7 @@ export default async function PropertyCard({ property }: { property: Property })
   return (
     <Link
       href={`/kost/${property.slug}`}
-      className="group flex h-full flex-col border border-nk-border bg-nk-bg p-6 transition-colors hover:bg-nk-section focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
+      className="group flex h-full flex-col border border-nk-border -mb-px -mr-px bg-nk-bg p-6 transition-colors hover:bg-nk-section focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
     >
       <div className="relative mb-6 aspect-[16/9] w-full overflow-hidden bg-nk-section">
         <Image
