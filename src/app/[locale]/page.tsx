@@ -78,10 +78,10 @@ export default async function HomePage({
         <img
           src="/assets/hero-bg.png"
           alt=""
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right opacity-30"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right opacity-40"
         />
-        {/* overlay: solid white on left (text zone), fades from 40% */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-nk-bg from-40% via-nk-bg/55 via-70% to-transparent" aria-hidden="true" />
+        {/* overlay: solid white on left (text zone), fades from 20% */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-nk-bg from-20% via-nk-bg/55 via-60% to-transparent" aria-hidden="true" />
         <div className="relative mx-auto w-full max-w-7xl px-6 py-24 md:py-32 lg:px-10">
           <p className="mb-6 text-sm font-medium text-nk-text-muted">
             {t("hero.tagline")}
