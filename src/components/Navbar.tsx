@@ -6,7 +6,7 @@ import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Logo from "@/components/Logo";
 import { useSession } from "@/components/SessionProvider";
-import LoginForm from "@/components/LoginForm";
+import AuthPopupForm from "@/components/AuthPopupForm";
 
 export default function Navbar() {
   const t = useTranslations("nav");
@@ -169,10 +169,14 @@ export default function Navbar() {
 
             {authRole ? (
               <div className="mt-4">
-                <LoginForm
+                <AuthPopupForm
                   role={authRole}
-                  onBack={() => setAuthRole(null)}
-                  onDone={closeRole}
+                  onClose={closeRole}
+                  onSuccess={() => {
+                    const dest = authRole === "owner" ? "/owner" : "/bookings";
+                    closeRole();
+                    router.push(dest);
+                  }}
                 />
               </div>
             ) : (
