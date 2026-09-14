@@ -648,7 +648,9 @@
       "title": "Masuk sebagai Admin",
       "google": "Lanjutkan dengan Google",
       "error": "Akun ini tidak memiliki akses Admin. Hubungi operator platform jika ini keliru.",
-      "demo": "Demo: gunakan bayu.pratama@ngekost.id"
+      "demo": "Demo: gunakan bayu.pratama@ngekost.id",
+      "pickerTitle": "Pilih akun Google",
+      "pickerSubtitle": "Demo — akun di luar daftar admin akan ditolak."
     },
     "queue": {
       "title": "Antrian Verifikasi",
@@ -671,7 +673,37 @@
       "approveConfirmBody": "Properti akan langsung tampil di pencarian publik dengan badge terverifikasi.",
       "approveConfirmCta": "Ya, Approve",
       "empty": "Tidak ada properti yang menunggu verifikasi saat ini",
-      "pendingBadge": "{count} pending"
+      "pendingBadge": "{count} pending",
+      "searchPlaceholder": "Cari properti, owner, kota, atau ID…",
+      "sortLabel": "Urutkan antrian",
+      "sortOldest": "Terlama menunggu",
+      "sortNewest": "Paling baru masuk",
+      "colWaiting": "Menunggu",
+      "daysUnit": "{count, plural, other {# hari}}",
+      "daysWaiting": "Menunggu {count, plural, other {# hari}}",
+      "waitingTooltip": "Sejak diajukan {days} hari lalu",
+      "noSearch": "Tidak ada hasil untuk \"{query}\"",
+      "emptySubtitle": "Semua pengajuan sudah ditinjau. Kerja bagus!",
+      "statWaiting": "Menunggu Ditinjau",
+      "statOldest": "Antrian Terlama",
+      "statOldestNote": "Usia pengajuan paling tua di antrian",
+      "oldestNote": "Terlama menunggu {count, plural, other {# hari}}",
+      "statDecidedToday": "Putusan Hari Ini",
+      "statDecidedTodayNote": "Termasuk keputusan sesi ini",
+      "decidedToast": "{decision}: {name}",
+      "decidedApproved": "Disetujui",
+      "decidedRejected": "Ditolak",
+      "propertyData": "Data Properti Diajukan",
+      "address": "Alamat",
+      "priceFrom": "Harga mulai",
+      "perMonth": "per bulan",
+      "toCampus": "Ke kampus terdekat",
+      "roomTypes": "Tipe kamar (tersedia/total)",
+      "deposit": "DP / deposit",
+      "facilities": "Fasilitas",
+      "viewListing": "Lihat halaman publik",
+      "decisionResult": "Hasil Keputusan",
+      "cancel": "Batal"
     },
     "history": {
       "title": "Riwayat Verifikasi",
@@ -689,7 +721,10 @@
       "statusApproved": "Disetujui",
       "statusRejected": "Ditolak",
       "detailTitle": "Detail Verifikasi",
-      "rejectionReason": "Alasan Penolakan"
+      "rejectionReason": "Alasan Penolakan",
+      "searchPlaceholder": "Cari properti, owner, atau pemutus…",
+      "empty": "Tidak ada riwayat",
+      "emptySubtitle": "Ubah filter atau kata kunci pencarian."
     }
   },
   "blog": {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import {
   Bell,
@@ -16,6 +16,18 @@ import {
   Users,
 } from "lucide-react";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +55,7 @@ import { Separator } from "@/components/ui/separator";
 import Logo from "@/components/Logo";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useSession } from "@/components/SessionProvider";
+import { Skeleton } from "@/components/ui/skeleton";
 import { notifications } from "@/lib/data/entities";
 import { cn } from "@/lib/utils";
 
@@ -76,8 +89,16 @@ export default function DashboardShell({
   const navT = useTranslations("nav");
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useSession();
+  const { user, ready, logout } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // guard: halaman dashboard butuh sesi dengan role yang cocok (admin → /admin/login, owner → /login)
+  useEffect(() => {
+    if (!ready) return;
+    if (!user || user.role !== role) {
+      router.replace(role === "admin" ? "/admin/login" : "/login");
+    }
+  }, [ready, user, role, router]);
 
   const items = role === "owner" ? OWNER_ITEMS : ADMIN_ITEMS;
   const isActive = (href: string) =>
@@ -85,7 +106,22 @@ export default function DashboardShell({
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
-  const userName = user?.name ?? (role === "owner" ? "Ratri Wulandari" : "Bayu Pratama");
+  // sebelum sesi jelas/valid: tampilkan skeleton (redirect diarahkan effect di atas)
+  if (!ready || !user || user.role !== role) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center px-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="size-10 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-44" />
+            <Skeleton className="h-3 w-28" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const userName = user.name;
   const initial = userName.trim().charAt(0).toUpperCase();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -149,21 +185,31 @@ export default function DashboardShell({
         <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 rounded-t-xl border-b border-nk-border bg-nk-bg/80 px-4 backdrop-blur-md">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="h-4" />
-          {/* breadcrumb */}
-          <div className="flex min-w-0 items-center gap-1.5 text-sm">
-            <span className="text-nk-text-muted">{roleLabel}</span>
-            {pageTitle && pageTitle !== roleLabel && (
-              <>
-                <span className="text-nk-text-muted">/</span>
-                <span className="truncate font-medium text-nk-text">{pageTitle}</span>
-              </>
-            )}
-          </div>
+          {/* breadcrumb (shadcn Breadcrumb) */}
+          <Breadcrumb className="min-w-0">
+            <BreadcrumbList className="min-w-0">
+              <BreadcrumbItem>
+                <span className="text-nk-text-muted">{roleLabel}</span>
+              </BreadcrumbItem>
+              {pageTitle && pageTitle !== roleLabel && (
+                <>
+                  <BreadcrumbSeparator className="hidden sm:flex" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="truncate font-medium text-nk-text">
+                      {pageTitle}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+                </>
+              )}
+            </BreadcrumbList>
+          </Breadcrumb>
 
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher />
 
-            {/* bell notifikasi — dropdown shadcn/ui */}
+            {/* bell notifikasi — khusus owner (dataset notifikasi milik owner);
+                admin belum punya kanal notifikasi sendiri */}
+            {role === "owner" && (
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="relative flex size-9 items-center justify-center rounded-full border border-nk-border bg-nk-surface text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nk-accent"
@@ -222,17 +268,26 @@ export default function DashboardShell({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
 
-            {/* avatar menu */}
+            {/* avatar menu (shadcn Avatar) */}
             <div className="relative">
               <button
                 type="button"
                 aria-label={userName}
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((v) => !v)}
-                className="flex size-8 items-center justify-center rounded-full bg-nk-accent text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90"
+                className="rounded-full transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
               >
-                {initial}
+                <Avatar size="sm">
+                  <AvatarImage
+                    src={`https://picsum.photos/seed/user-${user.email.split("@")[0]}/64/64`}
+                    alt=""
+                  />
+                  <AvatarFallback className="bg-nk-accent font-medium text-nk-text-inverse">
+                    {initial}
+                  </AvatarFallback>
+                </Avatar>
               </button>
 
               {menuOpen && (

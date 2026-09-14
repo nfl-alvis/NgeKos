@@ -648,7 +648,9 @@
       "title": "Sign in as Admin",
       "google": "Continue with Google",
       "error": "This account has no Admin access. Contact the platform operator if you think this is a mistake.",
-      "demo": "Demo: use bayu.pratama@ngekost.id"
+      "demo": "Demo: use bayu.pratama@ngekost.id",
+      "pickerTitle": "Choose a Google account",
+      "pickerSubtitle": "Demo — accounts outside the admin list are rejected."
     },
     "queue": {
       "title": "Verification Queue",
@@ -671,7 +673,37 @@
       "approveConfirmBody": "The property will appear in public search with a verified badge.",
       "approveConfirmCta": "Yes, Approve",
       "empty": "No properties awaiting verification right now",
-      "pendingBadge": "{count} pending"
+      "pendingBadge": "{count} pending",
+      "searchPlaceholder": "Search property, owner, city, or ID…",
+      "sortLabel": "Sort queue",
+      "sortOldest": "Waiting longest",
+      "sortNewest": "Newest first",
+      "colWaiting": "Waiting",
+      "daysUnit": "{count, plural, one {# day} other {# days}}",
+      "daysWaiting": "Waiting {count, plural, one {# day} other {# days}}",
+      "waitingTooltip": "Submitted {days} days ago",
+      "noSearch": "No results for \"{query}\"",
+      "emptySubtitle": "All submissions have been reviewed. Nice work!",
+      "statWaiting": "Awaiting Review",
+      "statOldest": "Oldest in Queue",
+      "statOldestNote": "Age of the longest pending submission",
+      "oldestNote": "Oldest waiting {count, plural, one {# day} other {# days}}",
+      "statDecidedToday": "Decided Today",
+      "statDecidedTodayNote": "Includes this session's decisions",
+      "decidedToast": "{decision}: {name}",
+      "decidedApproved": "Approved",
+      "decidedRejected": "Rejected",
+      "propertyData": "Submitted Property Data",
+      "address": "Address",
+      "priceFrom": "Price from",
+      "perMonth": "per month",
+      "toCampus": "To nearest campus",
+      "roomTypes": "Room types (avail./total)",
+      "deposit": "DP / deposit",
+      "facilities": "Facilities",
+      "viewListing": "View public page",
+      "decisionResult": "Decision Result",
+      "cancel": "Cancel"
     },
     "history": {
       "title": "Verification History",
@@ -689,7 +721,10 @@
       "statusApproved": "Approved",
       "statusRejected": "Rejected",
       "detailTitle": "Verification Detail",
-      "rejectionReason": "Rejection Reason"
+      "rejectionReason": "Rejection Reason",
+      "searchPlaceholder": "Search property, owner, or reviewer…",
+      "empty": "No history",
+      "emptySubtitle": "Try a different filter or search term."
     }
   },
   "blog": {
