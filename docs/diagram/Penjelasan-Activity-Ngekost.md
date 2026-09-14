@@ -37,7 +37,18 @@
 | Persegi rounded | Action / activity |
 | Belah ketupat (rhombus) | Decision node, keluar dengan label `Ya` / `Tidak` |
 | Garis vertikal tipis | Pembatas lane |
+| Batang hitam tebal horizontal | Fork/join node — HANYA saat alur menyentuh database |
 | Panah lewat sisi kanan | Jalur error / retry / kembali (routing samping, tiap edge punya offset sendiri agar tidak tumpang tindih) |
+
+## Aturan Layout (divalidkan terhadap referensi "Contoh Teman Saya yang sudah benar")
+
+Referensi dianalisis dari file `Activity Diagram-Contoh Teman Saya yang sudah benar.drawio` (15 alur, tiap alur = pasangan lane) + artikel UML (Visual Paradigm notation guide, viz-note fork-vs-decision). Aturan yang dipatuhi diagram ini:
+
+1. **Fork/join hanya untuk pekerjaan paralel yang menyentuh database** — tiap fork di sini cabangnya `memasukkan data ke database` ∥ `menampilkan halaman/pesan`. Decision = pilihan (guard `[ya]/[tidak]`); fork = TANPA kondisi, semua cabang jalan sekaligus. Audit 11/11 halaman: 10 fork, semuanya bercabang ke aksi database; 0 fork tanpa DB.
+2. **Bar fork/join selalu di lane Sistem**, di bawah action, bentuk `5x160 rotation=90`.
+3. **Final node (elips putih) selalu di lane Sistem** — konsisten dengan referensi (15/15 alur); action terakhir aktor (`lihat …`) tetap di lane aktor, lalu alur pindah ke Sistem untuk berakhir.
+4. **Guard label format `[kondisi]`** sebagai edge label terpisah.
+5. Satu initial node di lane aktor (bukan Sistem), mengikuti referensi.
 
 Semua hitam-putih, tanpa warna — aman untuk dicetak di laporan grayscale. Kalau nanti butuh penanda gating berwarna merah seperti di use case diagram, cukup ubah konstanta `ST_ACTION` di generator.
 

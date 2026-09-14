@@ -203,7 +203,7 @@ PAGES = [
         [("decision", "buka detail?", 0)],
         [("action", "ambil detail by slug\n+ ketersediaan", 1)],
         [("action", "lihat detail &\nkamar tersedia", 0)],
-        [("end", "", 0)],
+        [("end", "", 1)],
     ], edges=[
         ("r0-0", "r1-0", ""),
         ("r1-0", "r2-0", ""),
@@ -235,7 +235,7 @@ PAGES = [
          ("action", "menampilkan halaman\nstatus booking", 1)],
         [("join", "", 1)],
         [("action", "lihat status\nPENDING_APPROVAL", 0)],
-        [("end", "", 0)],
+        [("end", "", 1)],
     ], edges=[
         ("r0-0", "r1-0", ""),
         ("r1-0", "r2-0", ""),
@@ -267,7 +267,7 @@ PAGES = [
          ("action", "menampilkan status\nWAITING_PAYMENT", 1)],
         [("join", "", 1)],
         [("action", "lihat booking\nWAITING_PAYMENT", 0)],
-        [("end", "", 0)],
+        [("end", "", 1)],
     ], edges=[
         ("r0-0", "r1-0", ""),
         ("r1-0", "r2-0", ""),
@@ -299,7 +299,7 @@ PAGES = [
          ("action", "menampilkan status\nREJECTED", 1)],
         [("join", "", 1)],
         [("action", "lihat booking\nREJECTED", 0)],
-        [("end", "", 0)],
+        [("end", "", 1)],
     ], edges=[
         ("r0-0", "r1-0", ""),
         ("r1-0", "r2-0", ""),
@@ -338,7 +338,7 @@ PAGES = [
          ("action", "menampilkan status\npembayaran berhasil", 1)],
         [("join", "", 1)],
         [("action", "lihat status\nberhasil", 0)],
-        [("end", "", 0)],
+        [("end", "", 1)],
     ], edges=[
         ("r0-0", "r1-0", ""),
         ("r1-0", "r2-0", ""),
@@ -407,7 +407,7 @@ PAGES = [
          ("action", "menampilkan property\ndi daftar", 1)],
         [("join", "", 1)],
         [("action", "lihat property baru", 0)],
-        [("end", "", 0)],
+        [("end", "", 1)],
     ], edges=[
         ("r0-0", "r1-0", ""),
         ("r1-0", "r2-0", ""),
