@@ -6,6 +6,7 @@ import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Logo from "@/components/Logo";
 import { useSession } from "@/components/SessionProvider";
+import LoginForm from "@/components/LoginForm";
 
 export default function Navbar() {
   const t = useTranslations("nav");
@@ -14,6 +15,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [roleOpen, setRoleOpen] = useState(false);
+  const [authRole, setAuthRole] = useState<"seeker" | "owner" | null>(null);
   const [avatarOpen, setAvatarOpen] = useState(false);
 
   const initial = user ? user.name.trim().charAt(0).toUpperCase() : "";
@@ -32,9 +34,11 @@ export default function Navbar() {
     { href: "/about", label: t("about") },
   ];
 
-  const goRole = (role: "seeker" | "owner") => {
+  const goRole = (role: "seeker" | "owner") => setAuthRole(role);
+
+  const closeRole = () => {
     setRoleOpen(false);
-    router.push(`/login?role=${role}`);
+    setAuthRole(null);
   };
 
   return (
@@ -109,7 +113,10 @@ export default function Navbar() {
           ) : (
           <button
             type="button"
-            onClick={() => setRoleOpen(true)}
+            onClick={() => {
+              setAuthRole(null);
+              setRoleOpen(true);
+            }}
             className="inline-flex items-center bg-nk-accent px-5 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
           >
             {t("login")}
@@ -138,20 +145,20 @@ export default function Navbar() {
       {roleOpen && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-nk-dark/40 p-4 backdrop-blur-sm"
-          onClick={() => setRoleOpen(false)}
+          onClick={closeRole}
         >
           <div
-            className="w-full max-w-sm rounded-lg border border-nk-border bg-nk-surface p-6 shadow-xl"
+            className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-nk-border bg-nk-surface p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
               <h2 className="text-lg font-medium tracking-tight text-nk-text">
-                {loginT("roleTitle")}
+                {authRole ? loginT("title") : loginT("roleTitle")}
               </h2>
               <button
                 type="button"
                 aria-label={loginT("cancel")}
-                onClick={() => setRoleOpen(false)}
+                onClick={closeRole}
                 className="text-nk-text-muted transition-colors hover:text-nk-text"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -160,6 +167,16 @@ export default function Navbar() {
               </button>
             </div>
 
+            {authRole ? (
+              <div className="mt-4">
+                <LoginForm
+                  role={authRole}
+                  onBack={() => setAuthRole(null)}
+                  onDone={closeRole}
+                />
+              </div>
+            ) : (
+            <>
             <div className="mt-5 flex flex-col gap-3">
               <button
                 type="button"
@@ -212,11 +229,13 @@ export default function Navbar() {
 
             <button
               type="button"
-              onClick={() => setRoleOpen(false)}
+              onClick={closeRole}
               className="mt-4 w-full text-center text-sm text-nk-text-muted transition-colors hover:text-nk-text"
             >
               {loginT("cancel")}
             </button>
+            </>
+            )}
           </div>
         </div>
       )}
