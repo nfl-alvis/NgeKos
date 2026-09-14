@@ -15,10 +15,13 @@ export default function LoginForm({
   role,
   onBack,
   onDone,
+  redirectAfter = true,
 }: {
   role: "seeker" | "owner";
   onBack?: () => void;
   onDone?: () => void;
+  /** false = tetap di halaman saat ini setelah login (mis. gate di halaman book) */
+  redirectAfter?: boolean;
 }) {
   const t = useTranslations("login");
   const [email, setEmail] = useState("");
@@ -38,7 +41,7 @@ export default function LoginForm({
       email: mail,
     });
     onDone?.();
-    i18nRouter.push(role === "owner" ? "/owner" : "/bookings");
+    if (redirectAfter) i18nRouter.push(role === "owner" ? "/owner" : "/bookings");
   };
 
   return (
