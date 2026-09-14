@@ -81,7 +81,7 @@ export default async function HomePage({
           loop
           playsInline
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right opacity-40"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right opacity-70"
         >
           <source src="/assets/hero-bg-flipped.mp4" type="video/mp4" />
         </video>
