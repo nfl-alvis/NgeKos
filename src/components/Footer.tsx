@@ -33,7 +33,7 @@ export default function Footer() {
       <div className="border-b border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-10 md:flex-row md:items-end md:justify-between lg:px-10">
           <div>
-            <Logo className="mb-4 h-8 w-auto text-nk-text-inverse" />
+            <Logo className="mb-4 h-8 w-auto" variant="white" />
             <p className="max-w-md text-sm font-light leading-relaxed text-nk-dark-border">
               {t("tagline")}
             </p>
