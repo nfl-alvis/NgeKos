@@ -121,6 +121,8 @@ export default function Footer() {
         <div className="mt-12 flex flex-col items-center justify-between border-t border-white/10 pt-8 text-xs font-light text-nk-dark-border md:flex-row">
           <span>© 2026 NgeKost. {t("rights")}</span>
           <div className="mt-4 flex items-center gap-4 md:mt-0">
+            <a href="https://icons8.com/license" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">{t("iconsCredit")}</a>
+            <span>·</span>
             <a href="#" className="transition-colors hover:text-white">{t("privacy")}</a>
             <span>·</span>
             <a href="#" className="transition-colors hover:text-white">{t("terms")}</a>
