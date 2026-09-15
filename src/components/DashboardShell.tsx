@@ -7,12 +7,21 @@ import {
   Building2,
   CalendarCheck,
   CreditCard,
+  DoorOpen,
+  Flag,
   History,
+  Images,
   LayoutDashboard,
+  Megaphone,
   MessageSquare,
   Receipt,
   Settings,
+  Shield,
   ShieldCheck,
+  Star,
+  TrendingUp,
+  Undo2,
+  UserCog,
   Users,
 } from "lucide-react";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
@@ -72,10 +81,39 @@ const OWNER_ITEMS: Item[] = [
   { href: "/owner/settings", label: "settings", icon: Settings },
 ];
 
-const ADMIN_ITEMS: Item[] = [
-  { href: "/admin/verification", label: "queue", icon: ShieldCheck },
-  { href: "/admin/verification/history", label: "history", icon: History },
+const ADMIN_GROUPS: { groupKey?: string; items: Item[] }[] = [
+  { items: [
+    { href: "/admin", label: "dashboard", icon: LayoutDashboard },
+  ]},
+  { groupKey: "operations", items: [
+    { href: "/admin/verification", label: "verification", icon: ShieldCheck },
+    { href: "/admin/verification/history", label: "history", icon: History },
+    { href: "/admin/properties", label: "properties", icon: Building2 },
+    { href: "/admin/rooms", label: "rooms", icon: DoorOpen },
+  ]},
+  { groupKey: "people", items: [
+    { href: "/admin/owners", label: "owners", icon: UserCog },
+    { href: "/admin/users", label: "users", icon: Users },
+  ]},
+  { groupKey: "money", items: [
+    { href: "/admin/bookings", label: "bookings", icon: CalendarCheck },
+    { href: "/admin/payments", label: "payments", icon: CreditCard },
+    { href: "/admin/refunds", label: "refunds", icon: Undo2 },
+    { href: "/admin/finance", label: "finance", icon: TrendingUp },
+  ]},
+  { groupKey: "moderation", items: [
+    { href: "/admin/reports", label: "reports", icon: Flag },
+    { href: "/admin/reviews", label: "reviews", icon: Star },
+  ]},
+  { groupKey: "platform", items: [
+    { href: "/admin/content", label: "content", icon: Images },
+    { href: "/admin/notices", label: "notices", icon: Megaphone },
+    { href: "/admin/admins", label: "admins", icon: Shield },
+    { href: "/admin/audit", label: "audit", icon: History },
+  ]},
 ];
+
+const ADMIN_ITEMS: Item[] = ADMIN_GROUPS.flatMap((g) => g.items);
 
 const TENANT_ITEMS: Item[] = [
   { href: "/tenant", label: "dashboard", icon: LayoutDashboard },
@@ -103,7 +141,7 @@ export default function DashboardShell({
 
   const items = role === "owner" ? OWNER_ITEMS : role === "admin" ? ADMIN_ITEMS : TENANT_ITEMS;
   const isActive = (href: string) =>
-    href === "/owner" || href === "/admin/verification" || href === "/tenant"
+    href === "/owner" || href === "/admin" || href === "/admin/verification" || href === "/tenant"
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
@@ -143,6 +181,34 @@ export default function DashboardShell({
         </SidebarHeader>
 
         <SidebarContent>
+          {role === "admin" ? (
+            ADMIN_GROUPS.map((g, gi) => (
+              <SidebarGroup key={g.groupKey ?? `g-${gi}`}>
+                {g.groupKey && (
+                  <SidebarGroupLabel>{navT(`adminGroups.${g.groupKey}`)}</SidebarGroupLabel>
+                )}
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {g.items.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.href)}
+                          tooltip={t(item.label)}
+                          className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
+                        >
+                          <Link href={item.href}>
+                            <item.icon />
+                            <span>{t(item.label)}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))
+          ) : (
           <SidebarGroup>
             <SidebarGroupLabel>{roleLabel}</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -165,6 +231,7 @@ export default function DashboardShell({
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+          )}
         </SidebarContent>
         <SidebarRail />
       </Sidebar>
