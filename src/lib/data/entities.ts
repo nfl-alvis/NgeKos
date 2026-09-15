@@ -648,6 +648,49 @@ export const verificationHistory: AdminReviewEntry[] = [
   },
 ];
 
+/* ===== ulasan penyewa untuk widget rating dashboard owner ===== */
+
+export interface OwnerReview {
+  id: string;
+  authorName: string;
+  propertySlug: string;
+  rating: number;
+  /** ISO date */
+  at: string;
+  bodyId: string;
+  bodyEn: string;
+}
+
+export const ownerReviews: OwnerReview[] = [
+  {
+    id: "rv-1",
+    authorName: "Anindya P.",
+    propertySlug: "kost-griya-cemara-dago",
+    rating: 5,
+    at: "2026-09-01",
+    bodyId: "Kamar bersih, air panas lancar, pemilik responsif. recommended untuk mahasiswa.",
+    bodyEn: "Clean room, hot water works well, responsive owner. Recommended for students.",
+  },
+  {
+    id: "rv-2",
+    authorName: "Kevin H.",
+    propertySlug: "kost-kenanga-setiabudi",
+    rating: 4,
+    at: "2026-08-24",
+    bodyId: "Lokasi strategis dan parkir luas. Dinding kamar agak tipis saat malam.",
+    bodyEn: "Strategic location and wide parking. Room walls are a bit thin at night.",
+  },
+  {
+    id: "rv-3",
+    authorName: "Sarah A.",
+    propertySlug: "kost-al-amin-wonokromo",
+    rating: 5,
+    at: "2026-08-17",
+    bodyId: "WiFi stabil untuk kerja remote, dapur bersama selalu bersih. Betah tinggal di sini.",
+    bodyEn: "Stable WiFi for remote work, shared kitchen always clean. Feels great living here.",
+  },
+];
+
 /* ===== room grid untuk Halaman 10 (dummy per property slug) ===== */
 
 export interface RoomUnit {

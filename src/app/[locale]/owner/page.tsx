@@ -1,10 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { AlertCircle, BedDouble, CalendarClock, ChevronDown, TrendingUp } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import {
+  AlertCircle,
+  BedDouble,
+  CalendarClock,
+  ChevronDown,
+  Download,
+  Ellipsis,
+  TrendingUp,
+} from "lucide-react";
+import Image from "next/image";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -15,14 +24,31 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { Link } from "@/i18n/navigation";
 import DashboardShell from "@/components/DashboardShell";
 import OwnerDashboardInsights from "@/components/OwnerDashboardInsights";
 import { StatusBadge } from "@/components/StatusBadge";
-import { OWNER_PROFILE, ownerBookings, roomUnits, tenants } from "@/lib/data/entities";
+import {
+  OWNER_PROFILE,
+  ownerBookings,
+  ownerReviews,
+  roomUnits,
+  tenants,
+} from "@/lib/data/entities";
+import { properties } from "@/lib/data/properties";
 import { cn, formatIDR } from "@/lib/utils";
 
 const REVENUE = [24.1, 26.8, 25.3, 28.9, 31.2, 33.7]; // juta Rp
@@ -52,18 +78,48 @@ type Stat = {
   badge?: boolean;
   icon: StatIcon;
   tint: { card: string; icon: string };
+  /** sparkline mini ala kartu MRR di referensi shadcnuikit */
+  spark: number[];
+  sparkColor: string;
 };
+
+// sparkline demo — pola 8 titik terakhir dari tren dataset
+const SPARKS = {
+  revenue: [19.2, 21.4, 20.1, 23.8, 22.6, 26.9, 29.4, 33.7],
+  occupancy: [52, 55, 55, 58, 58, 55, 55, 55],
+  arrears: [4.2, 3.9, 3.6, 3.4, 3.0, 2.9, 2.6, 2.5],
+  bookings: [1, 2, 2, 3, 4, 4, 5, 5],
+};
+
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
 
 export default function OwnerDashboardPage() {
   const t = useTranslations("owner");
   const router = useRouter();
+  const locale = useLocale();
   const monthNames = t.raw("months") as string[];
 
   const pending = ownerBookings.filter((b) => b.status === "pending");
-  const filled = Object.values(roomUnits)
-    .flat()
-    .filter((r) => r.status === "terisi").length;
-  const totalRooms = Object.values(roomUnits).flat().length;
+  const allRooms = Object.values(roomUnits).flat();
+  const filled = allRooms.filter((r) => r.status === "terisi").length;
+  const totalRooms = allRooms.length;
   const arrears = tenants.filter((tn) => tn.paymentStatus === "menunggak").length;
   const arrearsSum = tenants
     .filter((tn) => tn.paymentStatus === "menunggak")
@@ -75,6 +131,69 @@ export default function OwnerDashboardPage() {
     month: "long",
     year: "numeric",
   });
+
+  // ===== data turunan properti (performa, spotlight, ulasan) =====
+  const ownerProps = properties.filter((p) =>
+    ["kost-griya-cemara-dago", "kost-kenanga-setiabudi", "kost-al-amin-wonokromo", "kost-sara-theresa-cibubur", "kost-zinnia-cimahi"].includes(p.slug)
+  );
+  const perfRows = ownerProps.map((p) => {
+    const rooms = roomUnits[p.slug] ?? [];
+    const occ = rooms.filter((r) => r.status === "terisi").length;
+    const pct = rooms.length > 0 ? Math.round((occ / rooms.length) * 100) : 0;
+    const monthly = tenants
+      .filter((tn) => tn.propertySlug === p.slug)
+      .reduce((sum, tn) => sum + tn.monthlyRent, 0);
+    return { property: p, rooms: rooms.length, occ, pct, monthly };
+  });
+  const best = [...perfRows]
+    .filter((r) => r.property.rating > 0)
+    .sort((a, b) => b.monthly * b.pct - a.monthly * a.pct)[0];
+
+  const rated = perfRows.filter((r) => r.property.rating > 0);
+  const reviewTotal = rated.reduce((s, r) => s + r.property.reviewCount, 0);
+  const reviewAvg =
+    reviewTotal > 0
+      ? rated.reduce((s, r) => s + r.property.rating * r.property.reviewCount, 0) / reviewTotal
+      : 0;
+  // distribusi bintang demo — dihitung deterministik dari rata-rata rating
+  const dist = [5, 4, 3, 2, 1].map((star) => ({
+    star,
+    weight: Math.max(0, Math.exp(-Math.abs(star - reviewAvg) * 1.1)),
+  }));
+  const distSum = dist.reduce((s, d) => s + d.weight, 0) || 1;
+
+  const fmtDate = (iso: string) =>
+    new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+
+  const exportCsv = () => {
+    const header = ["ID", "Calon penyewa", "Properti", "Kamar", "Status", "Harga/bulan", "Diajukan"];
+    const rows = ownerBookings.map((b) => [
+      b.id,
+      b.applicantName,
+      b.propertyName,
+      `${b.roomType} (${b.roomNumber})`,
+      b.status,
+      String(b.monthlyPrice),
+      b.createdAt,
+    ]);
+    const csv = [header, ...rows]
+      .map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "booking-owner.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportBtn =
+    "flex items-center gap-1.5 rounded-md bg-nk-surface px-3 py-1.5 text-sm text-nk-text ring-1 ring-foreground/10 transition-colors hover:bg-nk-accent-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent";
 
   const [range, setRange] = useState<RevenueRange>("monthly");
   const revenue = REVENUE_RANGES[range];
@@ -102,6 +221,8 @@ export default function OwnerDashboardPage() {
         card: "bg-[#E9F4EC]",
         icon: "bg-[#CFE8D6] text-[#2F6B3C]",
       },
+      spark: SPARKS.revenue,
+      sparkColor: "var(--chart-3)",
     },
     {
       label: t("statOccupancy"),
@@ -112,6 +233,8 @@ export default function OwnerDashboardPage() {
         card: "bg-[#E8EFF8]",
         icon: "bg-[#D3E0F0] text-[#33517C]",
       },
+      spark: SPARKS.occupancy,
+      sparkColor: "var(--chart-4)",
     },
     {
       label: t("statArrears"),
@@ -122,6 +245,8 @@ export default function OwnerDashboardPage() {
         card: "bg-[#FAEAE8]",
         icon: "bg-[#F3D7D3] text-[#9C3B32]",
       },
+      spark: SPARKS.arrears,
+      sparkColor: "var(--chart-5)",
     },
     {
       label: t("statNewBookings"),
@@ -133,17 +258,25 @@ export default function OwnerDashboardPage() {
         card: "bg-[#FBF3DC]",
         icon: "bg-[#F3E3B8] text-[#8A6A1F]",
       },
+      spark: SPARKS.bookings,
+      sparkColor: "var(--chart-2)",
     },
   ];
 
   return (
     <DashboardShell role="owner">
-      {/* header */}
-      <div className="mb-8 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <h1 className="text-2xl font-medium tracking-tight text-nk-text sm:text-3xl">
-          {t("welcome", { name: OWNER_PROFILE.name.split(" ")[0] })}
-        </h1>
-        <p className="text-sm text-nk-text-muted">{today}</p>
+      {/* header — judul + tanggal kiri, ekspor kanan (ala baris tanggal+Download di referensi) */}
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-medium tracking-tight text-nk-text sm:text-3xl">
+            {t("welcome", { name: OWNER_PROFILE.name.split(" ")[0] })}
+          </h1>
+          <p className="text-sm text-nk-text-muted">{today}</p>
+        </div>
+        <button type="button" onClick={exportCsv} className={exportBtn}>
+          <Download className="size-4 text-nk-text-muted" aria-hidden="true" />
+          {t("exportCsv")}
+        </button>
       </div>
 
       {/* stat cards — band judul tinted di atas, card putih menyatu di bawah */}
@@ -157,7 +290,7 @@ export default function OwnerDashboardPage() {
             )}
           >
             <p className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{s.label}</p>
-            <div className="flex-1 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">
+            <div className="flex flex-1 flex-col rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">
               <div className="flex items-center gap-3">
                 <div
                   className={cn(
@@ -200,20 +333,76 @@ export default function OwnerDashboardPage() {
                   )}
                 </div>
               </div>
+              {/* sparkline mini ala kartu MRR referensi */}
+              <ChartContainer
+                config={{ v: { label: s.label, color: s.sparkColor } } satisfies ChartConfig}
+                className="mt-3 h-10 w-full"
+                aria-hidden="true"
+              >
+                <AreaChart data={s.spark.map((v, i) => ({ i, v }))} margin={{ top: 2, left: 0, right: 0, bottom: 0 }}>
+                  <Area
+                    type="monotone"
+                    dataKey="v"
+                    stroke={s.sparkColor}
+                    strokeWidth={1.5}
+                    fill={s.sparkColor}
+                    fillOpacity={0.12}
+                    isAnimationActive={false}
+                  />
+                </AreaChart>
+              </ChartContainer>
             </div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* kolom kiri: booking pending + chart */}
+        {/* kolom kiri: spotlight + booking pending + chart */}
         <div className="flex flex-col gap-6 lg:col-span-2">
+          {/* kartu spotlight — padanan "Best seller of the month" di referensi */}
+          {best && (
+            <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#FBF3DC]">
+              <div className="flex items-center justify-between px-4 pb-1 pt-3">
+                <h2 className="text-sm font-semibold text-nk-text">{t("topPerformer")}</h2>
+                <span className="flex items-center gap-1 text-xs font-medium text-[#8A6A1F]">
+                  <StarIcon className="text-nk-star" />
+                  {best.property.rating.toFixed(1)}
+                </span>
+              </div>
+              <div className="flex flex-1 items-center gap-4 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">
+                <Image
+                  src={`https://picsum.photos/seed/${best.property.imageSeed}/240/240`}
+                  alt=""
+                  width={96}
+                  height={96}
+                  className="hidden size-24 shrink-0 rounded-lg object-cover sm:block"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-semibold text-nk-text">{best.property.name}</p>
+                  <p className="mt-0.5 truncate text-xs text-nk-text-muted">
+                    {best.property.city} · {t("statOccupancyNote", { filled: best.occ, total: best.rooms })}
+                  </p>
+                  <p className="mt-2 text-xl font-semibold tracking-tight text-nk-text tabular-nums">
+                    {formatIDR(best.monthly)}
+                    <span className="ml-1 text-xs font-normal text-nk-text-muted">{t("perMonth")}</span>
+                  </p>
+                </div>
+                <Link
+                  href={`/owner/properties/${best.property.slug}`}
+                  className="hidden shrink-0 rounded-md bg-nk-accent px-3.5 py-2 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent sm:block"
+                >
+                  {t("manageProperty")}
+                </Link>
+              </div>
+            </section>
+          )}
+
           <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-nk-section">
             <div className="flex items-center justify-between px-4 pb-1 pt-3">
               <h2 className="text-sm font-semibold text-nk-text">{t("bookingPending")}</h2>
               <Link
                 href="/owner/bookings"
-                className="text-sm text-nk-text underline underline-offset-4 transition-colors hover:text-nk-text-muted"
+                className="rounded-sm text-sm text-nk-text underline underline-offset-4 transition-colors hover:text-nk-text-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-nk-accent"
               >
                 {t("seeAll")}
               </Link>
@@ -254,6 +443,9 @@ export default function OwnerDashboardPage() {
                   </div>
                 </div>
               ))}
+              {pending.length === 0 && (
+                <p className="p-5 text-sm text-nk-text-muted">{t("noPending")}</p>
+              )}
             </div>
           </section>
 
@@ -321,19 +513,194 @@ export default function OwnerDashboardPage() {
           </section>
         </div>
 
-        {/* sidebar kanan: aktivitas */}
-        <aside className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-nk-section lg:order-last">
-          <h2 className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{t("activity")}</h2>
-          <ol className="flex flex-1 flex-col rounded-lg bg-nk-surface px-5 ring-1 ring-foreground/10">
-            {ACTIVITIES.map((a) => (
-              <li key={a.id} className="border-b border-nk-border py-3 last:border-b-0">
-                <p className="text-sm text-nk-text">{a.text}</p>
-                <p className="mt-0.5 text-xs text-nk-text-muted">{a.at}</p>
-              </li>
-            ))}
-          </ol>
-        </aside>
+        {/* sidebar kanan: ulasan + aktivitas */}
+        <div className="flex flex-col gap-6">
+          {/* widget ulasan — padanan "Customer Reviews" di referensi */}
+          <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-nk-section">
+            <h2 className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{t("reviewsTitle")}</h2>
+            <div className="flex flex-1 flex-col gap-4 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">
+              <div className="flex items-center gap-4">
+                <div className="shrink-0 text-center">
+                  <p className="text-3xl font-semibold tracking-tight text-nk-text tabular-nums">
+                    {reviewAvg.toFixed(1)}
+                  </p>
+                  <div className="mt-1 flex items-center justify-center gap-0.5 text-nk-star">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <StarIcon key={i} className={i <= Math.round(reviewAvg) ? "" : "opacity-25"} />
+                    ))}
+                  </div>
+                </div>
+                <ul className="min-w-0 flex-1 space-y-1">
+                  {dist.map((d) => {
+                    const count = Math.round((reviewTotal * d.weight) / distSum);
+                    const pct = Math.round((d.weight / distSum) * 100);
+                    return (
+                      <li key={d.star} className="flex items-center gap-2 text-xs text-nk-text-muted">
+                        <span className="flex w-6 shrink-0 items-center gap-0.5 tabular-nums">
+                          {d.star}
+                          <StarIcon className="size-2.5 text-nk-star" />
+                        </span>
+                        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-nk-border">
+                          <span
+                            className="block h-full rounded-full bg-nk-star"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </span>
+                        <span className="w-9 shrink-0 text-right font-medium tabular-nums text-nk-text">
+                          {count}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+              <p className="text-xs text-nk-text-muted">
+                {t("reviewsCount", { count: reviewTotal, properties: rated.length })}
+              </p>
+              <ul className="space-y-3 border-t border-nk-border pt-3">
+                {ownerReviews.map((rv) => (
+                  <li key={rv.id} className="rounded-md bg-nk-section p-3 ring-1 ring-foreground/10">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-medium text-nk-text">{rv.authorName}</p>
+                      <span className="flex shrink-0 items-center gap-0.5 text-nk-star">
+                        {Array.from({ length: rv.rating }).map((_, i) => (
+                          <StarIcon key={i} className="size-3" />
+                        ))}
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-xs text-nk-text-muted">
+                      {locale === "id" ? rv.bodyId : rv.bodyEn}
+                    </p>
+                    <p className="mt-1 text-[10px] text-nk-text-muted">{fmtDate(rv.at)}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
+          {/* aktivitas */}
+          <aside className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-nk-section">
+            <h2 className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{t("activity")}</h2>
+            <ol className="flex flex-1 flex-col rounded-lg bg-nk-surface px-5 ring-1 ring-foreground/10">
+              {ACTIVITIES.map((a) => (
+                <li key={a.id} className="border-b border-nk-border py-3 last:border-b-0">
+                  <p className="text-sm text-nk-text">{a.text}</p>
+                  <p className="mt-0.5 text-xs text-nk-text-muted">{a.at}</p>
+                </li>
+              ))}
+            </ol>
+          </aside>
+        </div>
       </div>
+
+      {/* tabel performa properti — padanan "Recent Orders"/"Best Selling Products" di referensi */}
+      <section className="mt-6 flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-nk-section">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-1 pt-3">
+          <h2 className="text-sm font-semibold text-nk-text">{t("perfTitle")}</h2>
+          <Link
+            href="/owner/properties"
+            className="rounded-sm text-sm text-nk-text underline underline-offset-4 transition-colors hover:text-nk-text-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-nk-accent"
+          >
+            {t("seeAll")}
+          </Link>
+        </div>
+        <div className="flex-1 overflow-hidden rounded-lg bg-nk-surface ring-1 ring-foreground/10">
+          <div className="overflow-x-auto">
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-nk-border text-left text-xs text-nk-text-muted">
+                  <TableHead className="px-4 py-3 font-medium">{t("perfColProperty")}</TableHead>
+                  <TableHead className="px-4 py-3 font-medium">{t("perfColTenants")}</TableHead>
+                  <TableHead className="px-4 py-3 font-medium">{t("perfColOccupancy")}</TableHead>
+                  <TableHead className="px-4 py-3 font-medium">{t("perfColRevenue")}</TableHead>
+                  <TableHead className="px-4 py-3 font-medium">{t("perfColRating")}</TableHead>
+                  <TableHead className="w-10 px-2 py-3">
+                    <span className="sr-only">{t("perfColAction")}</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {perfRows.map((r) => {
+                  const tenantCount = tenants.filter((tn) => tn.propertySlug === r.property.slug).length;
+                  return (
+                    <TableRow key={r.property.slug} className="border-b border-nk-border last:border-b-0">
+                      <TableCell className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <Image
+                            src={`https://picsum.photos/seed/${r.property.imageSeed}/80/80`}
+                            alt=""
+                            width={32}
+                            height={32}
+                            className="size-8 shrink-0 rounded-md object-cover"
+                          />
+                          <div className="min-w-0">
+                            <Link
+                              href={`/owner/properties/${r.property.slug}`}
+                              className="block truncate font-medium text-nk-text hover:underline"
+                            >
+                              {r.property.name}
+                            </Link>
+                            <p className="truncate text-xs text-nk-text-muted">{r.property.city}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 tabular-nums text-nk-text">{tenantCount}</TableCell>
+                      <TableCell className="px-4 py-3">
+                        {r.rooms > 0 ? (
+                          <div className="flex min-w-28 items-center gap-2">
+                            <Progress value={r.pct} className="h-1.5 w-20 bg-nk-border" />
+                            <span className="text-xs tabular-nums text-nk-text-muted">{r.pct}%</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-nk-text-muted">{t("perfNoRooms")}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text">
+                        {r.monthly > 0 ? `${formatIDR(r.monthly)}${t("perMonth")}` : "—"}
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        {r.property.rating > 0 ? (
+                          <span className="flex items-center gap-1 whitespace-nowrap tabular-nums text-nk-text">
+                            <StarIcon className="text-nk-star" />
+                            {r.property.rating.toFixed(1)}
+                            <span className="text-xs text-nk-text-muted">({r.property.reviewCount})</span>
+                          </span>
+                        ) : (
+                          <StatusBadge color="gray">{t("perfNoRating")}</StatusBadge>
+                        )}
+                      </TableCell>
+                      <TableCell className="px-2 py-3 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            aria-label={t("perfColAction")}
+                            className="flex size-8 items-center justify-center rounded-md text-nk-text-muted transition-colors hover:bg-nk-accent-subtle hover:text-nk-text focus-visible:outline-2 focus-visible:outline-nk-accent"
+                          >
+                            <Ellipsis className="size-4" aria-hidden="true" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/owner/properties/${r.property.slug}`)}>
+                              {t("perfViewDetail")}
+                            </DropdownMenuItem>
+                            {r.property.verified && (
+                              <DropdownMenuItem onClick={() => router.push(`/kost/${r.property.slug}`)}>
+                                {t("perfViewPublic")}
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => router.push("/owner/bookings")}>
+                              {t("perfManageBookings")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </section>
+
       <OwnerDashboardInsights />
     </DashboardShell>
   );

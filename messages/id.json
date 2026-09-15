@@ -636,7 +636,26 @@
       "langEn": "English",
       "save": "Simpan Perubahan",
       "saved": "Preferensi disimpan."
-    }
+    },
+    "exportCsv": "Ekspor CSV",
+    "topPerformer": "Kos performa terbaik",
+    "perMonth": "/bulan",
+    "manageProperty": "Kelola",
+    "noPending": "Tidak ada booking yang menunggu persetujuan.",
+    "reviewsTitle": "Ulasan Penyewa",
+    "reviewsCount": "{count} ulasan dari {properties} kos",
+    "perfTitle": "Performa Properti",
+    "perfColProperty": "Properti",
+    "perfColTenants": "Tenant",
+    "perfColOccupancy": "Okupansi",
+    "perfColRevenue": "Sewa berjalan",
+    "perfColRating": "Rating",
+    "perfColAction": "Aksi",
+    "perfNoRooms": "Belum ada kamar",
+    "perfNoRating": "Belum dinilai",
+    "perfViewDetail": "Lihat detail",
+    "perfViewPublic": "Buka halaman publik",
+    "perfManageBookings": "Kelola booking"
   },
   "admin": {
     "nav": {

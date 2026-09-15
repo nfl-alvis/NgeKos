@@ -636,7 +636,26 @@
       "langEn": "English",
       "save": "Save Changes",
       "saved": "Preferences saved."
-    }
+    },
+    "exportCsv": "Export CSV",
+    "topPerformer": "Top performing property",
+    "perMonth": "/mo",
+    "manageProperty": "Manage",
+    "noPending": "No bookings awaiting approval.",
+    "reviewsTitle": "Tenant Reviews",
+    "reviewsCount": "{count} reviews across {properties} properties",
+    "perfTitle": "Property Performance",
+    "perfColProperty": "Property",
+    "perfColTenants": "Tenants",
+    "perfColOccupancy": "Occupancy",
+    "perfColRevenue": "Active rent",
+    "perfColRating": "Rating",
+    "perfColAction": "Actions",
+    "perfNoRooms": "No rooms yet",
+    "perfNoRating": "Not rated",
+    "perfViewDetail": "View detail",
+    "perfViewPublic": "Open public page",
+    "perfManageBookings": "Manage bookings"
   },
   "admin": {
     "nav": {
