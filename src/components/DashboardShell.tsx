@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   Bell,
@@ -55,7 +55,6 @@ import { Separator } from "@/components/ui/separator";
 import Logo from "@/components/Logo";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useSession } from "@/components/SessionProvider";
-import { Skeleton } from "@/components/ui/skeleton";
 import { notifications } from "@/lib/data/entities";
 import { cn } from "@/lib/utils";
 
@@ -89,16 +88,12 @@ export default function DashboardShell({
   const navT = useTranslations("nav");
   const pathname = usePathname();
   const router = useRouter();
-  const { user, ready, logout } = useSession();
+  const { user, logout } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // guard: halaman dashboard butuh sesi dengan role yang cocok (admin → /admin/login, owner → /login)
-  useEffect(() => {
-    if (!ready) return;
-    if (!user || user.role !== role) {
-      router.replace(role === "admin" ? "/admin/login" : "/login");
-    }
-  }, [ready, user, role, router]);
+  // NOTE: guard sesi/admin untuk sementara DILEPAS atas permintaan user —
+  // halaman dashboard bisa diakses langsung via URL tanpa login.
+  // (useEffect redirect role + skeleton gate dihapus; lihat git history 3cfa87d)
 
   const items = role === "owner" ? OWNER_ITEMS : ADMIN_ITEMS;
   const isActive = (href: string) =>
@@ -106,22 +101,7 @@ export default function DashboardShell({
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
-  // sebelum sesi jelas/valid: tampilkan skeleton (redirect diarahkan effect di atas)
-  if (!ready || !user || user.role !== role) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center px-6">
-        <div className="flex items-center gap-4">
-          <Skeleton className="size-10 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-44" />
-            <Skeleton className="h-3 w-28" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const userName = user.name;
+  const userName = user?.name ?? (role === "owner" ? "Ratri Wulandari" : "Bayu Pratama");
   const initial = userName.trim().charAt(0).toUpperCase();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -281,7 +261,7 @@ export default function DashboardShell({
               >
                 <Avatar size="sm">
                   <AvatarImage
-                    src={`https://picsum.photos/seed/user-${user.email.split("@")[0]}/64/64`}
+                    src={`https://picsum.photos/seed/user-${(user?.email ?? "admin").split("@")[0]}/64/64`}
                     alt=""
                   />
                   <AvatarFallback className="bg-nk-accent font-medium text-nk-text-inverse">
