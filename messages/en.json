@@ -13,7 +13,8 @@
     "adminPanel": "Admin Panel",
     "myBookings": "My Bookings",
     "notifications": "Notifications",
-    "logout": "Log out"
+    "logout": "Log out",
+    "tenantPanel": "Tenant panel"
   },
   "hero": {
     "badge": "Hundreds of verified boarding houses",
@@ -1078,5 +1079,58 @@
       "successCta": "Open Owner Dashboard",
       "successSecondary": "Learn how the partner program works"
     }
+  },
+  "tenant": {
+    "nav": {
+      "dashboard": "Home",
+      "bookings": "My Bookings",
+      "explore": "Explore Kost"
+    },
+    "welcome": "Hi, {name}",
+    "myRoom": "My room",
+    "activeLease": "Active lease",
+    "roomLabel": "Room",
+    "since": "Renting since",
+    "agreement": "Agreement",
+    "perMonth": "/mo",
+    "statRent": "Monthly rent",
+    "statRentUp": "+4.3% since Aug 2026",
+    "statRentFlat": "Unchanged from last month",
+    "statInvoice": "September invoice",
+    "statInvoiceDue": "Due {date}",
+    "paid": "Paid",
+    "unpaid": "Unpaid",
+    "statAgreement": "Lease time left",
+    "statDaysLeft": "{count, plural, one {# day} other {# days}}",
+    "statMessages": "Unread messages",
+    "statNeedsReply": "needs a reply",
+    "statAllRead": "All caught up",
+    "quickActions": "Quick actions",
+    "qaBookings": "View my bookings",
+    "qaInvoices": "Check invoices",
+    "qaMessages": "Reply to owner",
+    "invoiceTitle": "Invoice History",
+    "paidCount": "{paid} of {total} paid",
+    "colPeriod": "Period",
+    "colDue": "Due date",
+    "colAmount": "Amount",
+    "colStatus": "Status",
+    "chartTitle": "Monthly Rent History",
+    "chartSeries": "Rent",
+    "chartCompare": "compared to 6 months ago",
+    "messagesTitle": "Owner Messages",
+    "you": "You",
+    "ownerSide": "Owner",
+    "facilitiesTitle": "Property facilities",
+    "agreementsTitle": "Agreement History",
+    "months": [
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep"
+    ]
   }
 }

@@ -13,7 +13,8 @@
     "adminPanel": "Admin Panel",
     "myBookings": "Booking Saya",
     "notifications": "Notifikasi",
-    "logout": "Keluar"
+    "logout": "Keluar",
+    "tenantPanel": "Panel Penyewa"
   },
   "hero": {
     "badge": "Ratusan kost terverifikasi",
@@ -1078,5 +1079,58 @@
       "successCta": "Buka Dashboard Pemilik",
       "successSecondary": "Pelajari cara kerja mitra"
     }
+  },
+  "tenant": {
+    "nav": {
+      "dashboard": "Beranda",
+      "bookings": "Booking Saya",
+      "explore": "Jelajahi Kost"
+    },
+    "welcome": "Halo, {name}",
+    "myRoom": "Kamar saya",
+    "activeLease": "Sewa aktif",
+    "roomLabel": "Kamar",
+    "since": "Menewa sejak",
+    "agreement": "Perjanjian",
+    "perMonth": "/bulan",
+    "statRent": "Sewa per bulan",
+    "statRentUp": "+4,3% sejak Agu 2026",
+    "statRentFlat": "Tidak berubah dari bulan lalu",
+    "statInvoice": "Tagihan September",
+    "statInvoiceDue": "Jatuh tempo {date}",
+    "paid": "Lunas",
+    "unpaid": "Belum lunas",
+    "statAgreement": "Sisa masa sewa",
+    "statDaysLeft": "{count} hari",
+    "statMessages": "Pesan belum dibaca",
+    "statNeedsReply": "perlu dibalas",
+    "statAllRead": "Semua sudah terbaca",
+    "quickActions": "Aksi cepat",
+    "qaBookings": "Lihat booking saya",
+    "qaInvoices": "Cek tagihan",
+    "qaMessages": "Balas pesan pemilik",
+    "invoiceTitle": "Riwayat Tagihan",
+    "paidCount": "{paid} dari {total} lunas",
+    "colPeriod": "Periode",
+    "colDue": "Jatuh tempo",
+    "colAmount": "Nominal",
+    "colStatus": "Status",
+    "chartTitle": "Riwayat Sewa Bulanan",
+    "chartSeries": "Sewa",
+    "chartCompare": "dibanding 6 bulan lalu",
+    "messagesTitle": "Pesan Pemilik",
+    "you": "Anda",
+    "ownerSide": "Pemilik",
+    "facilitiesTitle": "Fasilitas kos",
+    "agreementsTitle": "Riwayat Perjanjian",
+    "months": [
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep"
+    ]
   }
 }

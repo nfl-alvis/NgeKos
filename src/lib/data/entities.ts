@@ -401,6 +401,9 @@ export const rentalAgreements: RentalAgreement[] = [
 /* ===== invoice (Halaman 13) ===== */
 
 export const invoices: Invoice[] = [
+  { id: "INV-2606-01", tenantName: "I made Sudiarta", period: "Juni 2026", amount: 1150000, status: "lunas", dueDate: "2026-06-05", paidAt: "2026-06-02" },
+  { id: "INV-2607-01", tenantName: "I made Sudiarta", period: "Juli 2026", amount: 1150000, status: "lunas", dueDate: "2026-07-05", paidAt: "2026-07-03" },
+  { id: "INV-2608-10", tenantName: "I made Sudiarta", period: "Agustus 2026", amount: 1200000, status: "lunas", dueDate: "2026-08-05", paidAt: "2026-08-02" },
   { id: "INV-2609-01", tenantName: "I made Sudiarta", period: "September 2026", amount: 1200000, status: "lunas", dueDate: "2026-09-05", paidAt: "2026-09-01" },
   { id: "INV-2609-02", tenantName: "Anindya Paramitha", period: "September 2026", amount: 1150000, status: "belum-lunas", dueDate: "2026-09-05" },
   { id: "INV-2609-03", tenantName: "Bagus Setiawan", period: "September 2026", amount: 1050000, status: "belum-lunas", dueDate: "2026-08-28" },
@@ -516,6 +519,17 @@ export const conversations: Conversation[] = [
     messages: [
       { id: "m-9", from: "contact", text: "Bu, wifi di lantai dua lambat sejak kemarin.", at: "2026-08-31T19:44:00", channel: "telegram" },
       { id: "m-10", from: "owner", text: "Terima kasih infonya, teknisi datang besok pagi ya.", at: "2026-08-31T20:01:00", channel: "telegram" },
+    ],
+  },
+  {
+    id: "c-5",
+    name: "I made Sudiarta",
+    channel: "telegram",
+    telegramConnected: true,
+    unread: 1,
+    messages: [
+      { id: "m-11", from: "contact", text: "Pak, jadwal buang sampah besar akhir pekan ini jam berapa?", at: "2026-09-01T16:20:00", channel: "telegram" },
+      { id: "m-12", from: "owner", text: "Sabtu pagi jam 7 ya, taruh di area belakang dekat pintu servis.", at: "2026-09-02T07:05:00", channel: "telegram" },
     ],
   },
 ];

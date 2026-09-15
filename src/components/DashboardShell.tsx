@@ -77,14 +77,20 @@ const ADMIN_ITEMS: Item[] = [
   { href: "/admin/verification/history", label: "history", icon: History },
 ];
 
+const TENANT_ITEMS: Item[] = [
+  { href: "/tenant", label: "dashboard", icon: LayoutDashboard },
+  { href: "/bookings", label: "bookings", icon: CalendarCheck },
+  { href: "/kost", label: "explore", icon: Building2 },
+];
+
 export default function DashboardShell({
   role,
   children,
 }: {
-  role: "owner" | "admin";
+  role: "owner" | "admin" | "tenant";
   children: React.ReactNode;
 }) {
-  const t = useTranslations(role === "owner" ? "owner.nav" : "admin.nav");
+  const t = useTranslations(role === "owner" ? "owner.nav" : role === "admin" ? "admin.nav" : "tenant.nav");
   const navT = useTranslations("nav");
   const pathname = usePathname();
   const router = useRouter();
@@ -95,17 +101,20 @@ export default function DashboardShell({
   // halaman dashboard bisa diakses langsung via URL tanpa login.
   // (useEffect redirect role + skeleton gate dihapus; lihat git history 3cfa87d)
 
-  const items = role === "owner" ? OWNER_ITEMS : ADMIN_ITEMS;
+  const items = role === "owner" ? OWNER_ITEMS : role === "admin" ? ADMIN_ITEMS : TENANT_ITEMS;
   const isActive = (href: string) =>
-    href === "/owner" || href === "/admin/verification"
+    href === "/owner" || href === "/admin/verification" || href === "/tenant"
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
-  const userName = user?.name ?? (role === "owner" ? "Ratri Wulandari" : "Bayu Pratama");
+  const userName =
+    user?.name ??
+    (role === "owner" ? "Ratri Wulandari" : role === "admin" ? "Bayu Pratama" : "I made Sudiarta");
   const initial = userName.trim().charAt(0).toUpperCase();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const roleLabel = role === "owner" ? navT("dashboard") : navT("adminPanel");
+  const roleLabel =
+    role === "owner" ? navT("dashboard") : role === "admin" ? navT("adminPanel") : navT("tenantPanel");
 
   // breadcrumb: halaman aktif = item nav dengan prefix paling spesifik
   const currentItem = [...items]
@@ -187,9 +196,8 @@ export default function DashboardShell({
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher />
 
-            {/* bell notifikasi — khusus owner (dataset notifikasi milik owner);
-                admin belum punya kanal notifikasi sendiri */}
-            {role === "owner" && (
+            {/* bell notifikasi — owner & tenant (dataset milik owner; tenant fallback link /tenant) */}
+            {role !== "admin" && (
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="relative flex size-9 items-center justify-center rounded-full border border-nk-border bg-nk-surface text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nk-accent"
@@ -216,7 +224,7 @@ export default function DashboardShell({
                   {notifications.slice(0, 6).map((n) => (
                     <DropdownMenuItem key={n.id} asChild className="cursor-pointer p-0 focus:bg-nk-warm">
                       <Link
-                        href={n.linkUrl ?? "/owner"}
+                        href={n.linkUrl ?? (role === "tenant" ? "/tenant" : "/owner")}
                         className="flex w-full flex-col items-start gap-0.5 border-b border-nk-border px-3 py-2.5 last:border-b-0"
                       >
                         <span className="flex w-full items-center gap-2">
