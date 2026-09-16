@@ -74,19 +74,19 @@ export default async function HomePage({
     <>
       {/* ===== HERO — giant type + search ===== */}
       <section className="relative overflow-hidden border-b border-nk-border">
-        {/* full-bleed background video (mirror of hero-bg-flipped), slightly transparent */}
+        {/* full-bleed background video (mirror of hero-bg-flipped), opaque */}
         <video
           autoPlay
           muted
           loop
           playsInline
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right opacity-70"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right"
         >
           <source src="/assets/hero-bg-flipped.mp4" type="video/mp4" />
         </video>
         {/* overlay: solid white on left (text zone), fades from 20% */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-nk-bg from-20% via-nk-bg/55 via-60% to-transparent" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-nk-bg from-20% via-nk-bg/30 via-60% to-transparent" aria-hidden="true" />
         <div className="relative mx-auto w-full max-w-7xl px-6 py-24 md:py-32 lg:px-10">
           <p className="mb-6 text-sm font-medium text-nk-text-muted">
             {t("hero.tagline")}
