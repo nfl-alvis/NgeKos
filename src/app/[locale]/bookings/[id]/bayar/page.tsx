@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import { useRouter as useI18nRouter } from "@/i18n/navigation";
 import { bookings } from "@/lib/data/entities";
+import { markPaymentPaid } from "@/lib/userOpsStore";
 import { formatIDR } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -37,6 +38,10 @@ export default function PaymentPage() {
   const amount = booking.usesDp
     ? Math.round(booking.monthlyPrice * 0.35)
     : booking.monthlyPrice;
+
+  /** transaksi simulasi: id mengikuti booking supaya muncul di /dashboard/payments */
+  const payId = `PAY-${booking.id.replace("BK-", "")}`;
+  const recordPaid = () => markPaymentPaid(payId, booking.propertyName, amount);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-6 py-10 lg:px-10">
@@ -89,7 +94,10 @@ export default function PaymentPage() {
 
       <button
         type="button"
-        onClick={() => setPaid(true)}
+        onClick={() => {
+          recordPaid();
+          setPaid(true);
+        }}
         className="mt-6 w-full rounded-lg bg-nk-accent px-6 py-4 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
       >
         {t("payNow")}

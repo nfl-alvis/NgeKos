@@ -21,7 +21,8 @@
       "money": "Transactions",
       "moderation": "Moderation",
       "platform": "Platform"
-    }
+    },
+    "userPanel": "My Dashboard"
   },
   "hero": {
     "badge": "Hundreds of verified boarding houses",
@@ -1531,8 +1532,20 @@
   "tenant": {
     "nav": {
       "dashboard": "Home",
-      "bookings": "My Bookings",
-      "explore": "Explore Kost"
+      "property": "My Kost",
+      "room": "My Room",
+      "contract": "Lease Contract",
+      "bills": "My Bills",
+      "payments": "Payment History",
+      "complaints": "Complaints",
+      "announcements": "Announcements",
+      "account": "My Account",
+      "groups": {
+        "myKost": "My kost",
+        "billing": "Finance",
+        "staying": "While staying",
+        "account": "Account"
+      }
     },
     "welcome": "Hi, {name}",
     "myRoom": "My room",
@@ -1579,6 +1592,334 @@
       "Jul",
       "Aug",
       "Sep"
-    ]
+    ],
+    "qaBill": "Pay Bill",
+    "qaComplaint": "File a Complaint",
+    "propertyDetail": "Kost Details",
+    "roomDetail": "Room Details"
+  },
+  "userDash": {
+    "title": "My Dashboard",
+    "welcome": "Hi, {name} 👋",
+    "bookingsTitle": "Booking History",
+    "favoritesTitle": "Your Favorites",
+    "paymentsTitle": "Payment Status",
+    "reviewsTitle": "My Reviews",
+    "profileTitle": "My Profile",
+    "settingsTitle": "Settings",
+    "nav": {
+      "dashboard": "Overview",
+      "bookings": "Bookings",
+      "payments": "Payments",
+      "favorites": "Favorites",
+      "reviews": "Reviews",
+      "profile": "Profile",
+      "settings": "Settings",
+      "groups": {
+        "booking": "Renting activity",
+        "account": "Account"
+      }
+    },
+    "stat": {
+      "bookings": "Total Bookings",
+      "favorites": "Favorites",
+      "pending": "Pending Payments",
+      "reviews": "My Reviews"
+    },
+    "statBookings": "Total Bookings",
+    "statBookingsSub": "{count, plural, one {# in progress} other {# in progress}}",
+    "statFavorites": "Favorites",
+    "statFavoritesSub": "saved to your account",
+    "statPending": "Pending Payments",
+    "statPendingSubOpen": "complete soon",
+    "statPendingSubClear": "all settled",
+    "statReviews": "My Reviews",
+    "statReviewsSub": "reviews you have written",
+    "booking": {
+      "title": "Latest Booking",
+      "seeAll": "See All",
+      "empty": "No booking in progress.",
+      "explore": "Find a boarding house",
+      "room": "Room {room}",
+      "bookingStatus": "Booking Status",
+      "paymentStatus": "Payment Status",
+      "statusPendingBooking": "Awaiting owner confirmation",
+      "statusAwaitOwner": "Awaiting owner confirmation",
+      "statusPaid": "Successful",
+      "statusUnpaid": "Not Paid",
+      "statusRefunding": "Refund in progress",
+      "payBefore": "Pay before",
+      "payNow": "Pay Now",
+      "detail": "Booking Details"
+    },
+    "payments": {
+      "title": "Payment Status",
+      "seeAll": "See All",
+      "payNow": "Pay",
+      "status": {
+        "pending": "Not Paid",
+        "paid": "Successful",
+        "failed": "Failed",
+        "refunding": "Processing Refund",
+        "refunded": "Refunded"
+      },
+      "refundingNote": "Booking rejected — funds returned automatically.",
+      "awaitOwnerNote": "Booking awaiting owner confirmation.",
+      "empty": "No payment transactions yet.",
+      "allSet": "Nothing waiting for payment."
+    },
+    "favorites": {
+      "title": "Your Favorites",
+      "seeAll": "See All",
+      "perMonth": "/ month",
+      "remove": "Remove",
+      "empty": "You have not saved any favorite boarding house.",
+      "explore": "Explore boarding houses"
+    },
+    "activeKost": {
+      "title": "Active Kost",
+      "status": "Active Tenant",
+      "room": "Room {room}",
+      "cta": "Open Tenant Dashboard"
+    },
+    "reviews": {
+      "title": "My Reviews",
+      "seeAll": "See All",
+      "empty": "You have not written any review yet.",
+      "edit": "Edit",
+      "closed": "Published",
+      "write": "Write Review",
+      "writePrompt": "You used to live here",
+      "dialogTitle": "Write a Review",
+      "ratingLabel": "Rating",
+      "bodyLabel": "Review",
+      "bodyPlaceholder": "Tell us about your stay…",
+      "submit": "Submit Review",
+      "saved": "Review saved."
+    },
+    "recommend": {
+      "title": "Recommended Kosts",
+      "forCity": "For the {city} area",
+      "perMonth": "/ month",
+      "save": "Save to favorites",
+      "empty": "Every nearby kost is already saved."
+    },
+    "activity": {
+      "title": "Recent Activity",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
+      "weeksAgo": "{count, plural, one {# week ago} other {# weeks ago}}",
+      "monthsAgo": "{count, plural, one {# month ago} other {# months ago}}"
+    },
+    "explore": {
+      "title": "Looking for Another Kost?",
+      "body": "You can keep searching for next year — favorites and active bookings are unaffected.",
+      "cta": "Explore Kosts"
+    },
+    "profile": {
+      "identity": "Personal Details",
+      "verified": "Verified",
+      "memberSince": "Member since",
+      "name": "Full name",
+      "phone": "WhatsApp number",
+      "birth": "Birthplace, date of birth",
+      "occupation": "Occupation",
+      "save": "Save Changes",
+      "saved": "Changes saved.",
+      "activityTitle": "Full Activity Log",
+      "backToDashboard": "Back to Overview",
+      "summary": "Account Summary",
+      "sumBookings": "Total bookings",
+      "sumFavorites": "Saved favorites",
+      "sumReviews": "Reviews written",
+      "sumSpent": "Total paid (bookings)",
+      "tenancy": "Tenancy Status",
+      "tenancyActive": "Active Tenant",
+      "tenancyNote": "Staying since {date} — living activities are in the tenant dashboard.",
+      "tenancyCta": "Open Tenant Dashboard"
+    },
+    "settings": {
+      "notifications": "Notification Preferences",
+      "prefs": {
+        "bookingStatus": "Booking status updates",
+        "paymentReminder": "Payment due reminders",
+        "newAnnouncements": "New owner announcements",
+        "priceDrops": "Price drops on saved kosts",
+        "tips": "Kost tips & articles"
+      },
+      "channels": {
+        "emailTelegram": "Email & Telegram",
+        "telegram": "Telegram only",
+        "email": "Email only"
+      },
+      "security": "Account Security",
+      "newPassword": "New password",
+      "confirmPassword": "Repeat password",
+      "save": "Save",
+      "saved": "Settings saved.",
+      "danger": "Danger Zone",
+      "dangerBody": "Deleting your account removes favorites, booking history and reviews.",
+      "deleteAccount": "Delete Account"
+    }
+  },
+  "tenantPages": {
+    "property": {
+      "title": "My Kost",
+      "living": "Currently staying",
+      "fAddress": "Address",
+      "fOwner": "Owner",
+      "fRoom": "Room",
+      "roomValue": "Room {room}",
+      "typeValue": "Standard",
+      "fRent": "Monthly rent",
+      "perMonth": "/month",
+      "publicPage": "View Public Page",
+      "myRoom": "Room Details",
+      "facts": "Property Information",
+      "facilitiesTitle": "Facilities",
+      "ownerTitle": "Owner Contact",
+      "ownerPhone": "Phone",
+      "ownerEmail": "Email",
+      "waCta": "Chat via WhatsApp",
+      "ownerNote": "Messages outside 07:00–21:00 are answered the next day.",
+      "areaTitle": "Neighbourhood",
+      "area": {
+        "campus": "Nearest campus",
+        "store": "Minimarket",
+        "mosque": "Mosque",
+        "hospital": "Hospital"
+      }
+    },
+    "room": {
+      "title": "My Room",
+      "header": "Room {room}",
+      "occupied": "Occupied — you",
+      "fProperty": "Kost",
+      "fFloor": "Floor",
+      "floorValue": "Floor {floor}",
+      "fType": "Type",
+      "fSize": "Size",
+      "fOrientation": "Orientation",
+      "facilitiesTitle": "Room Facilities",
+      "commonTitle": "Shared Areas",
+      "common": {
+        "kitchen": "Shared kitchen",
+        "laundry": "Laundry service",
+        "parking": "Parking area",
+        "cctv": "CCTV & security"
+      },
+      "reportTitle": "Room Problem?",
+      "reportBody": "Report damages or complaints, the owner will follow up.",
+      "reportCta": "File a Complaint",
+      "contractTitle": "Lease Contract",
+      "contractBody": "See the lease period, terms and house rules.",
+      "contractCta": "View Contract"
+    },
+    "contract": {
+      "title": "Lease Contract",
+      "activeTitle": "Active Contract",
+      "statusActive": "Active",
+      "statusEnded": "Ended",
+      "fProperty": "Kost",
+      "fRoom": "Room",
+      "fStart": "Start date",
+      "fEnd": "End date",
+      "fDuration": "Duration",
+      "monthsValue": "{count, plural, one {# month} other {# months}}",
+      "fRent": "Monthly rent",
+      "perMonth": "/month",
+      "fDeposit": "Deposit",
+      "fNotice": "Move-out notice",
+      "download": "Download Summary",
+      "fileName": "ngekost-lease-summary",
+      "seeBills": "View Bills",
+      "renewalTitle": "Renewal",
+      "renewalNote": "Current agreement: {period}.",
+      "historyTitle": "Agreement History",
+      "roomLabel": "Room",
+      "rulesTitle": "House Rules",
+      "paidTitle": "Paid History"
+    },
+    "bills": {
+      "title": "My Bills",
+      "nextTitle": "Next Bill",
+      "dueDate": "Due date",
+      "outstanding": "Total outstanding",
+      "payCta": "Pay Bill",
+      "allPaid": "All Paid",
+      "allPaidNote": "No bills until the contract ends ({date}).",
+      "historyTitle": "Billing History",
+      "paidCount": "{paid} of {total} paid",
+      "paid": "Paid",
+      "unpaid": "Unpaid",
+      "paidOn": "Paid on"
+    },
+    "payments": {
+      "title": "Payment History",
+      "sumTotal": "Total paid",
+      "sumMonths": "Months paid",
+      "sumMethod": "Main method",
+      "methodQris": "QRIS",
+      "sumAverage": "Average / month",
+      "exportCsv": "Export CSV",
+      "historyTitle": "All Rent Payments",
+      "colPeriod": "Period",
+      "colAmount": "Amount",
+      "colPaid": "Paid date",
+      "colMethod": "Method",
+      "colStatus": "Status",
+      "paid": "Paid",
+      "unpaid": "Unpaid"
+    },
+    "complaints": {
+      "title": "Complaints",
+      "create": "New Complaint",
+      "listTitle": "Complaint List",
+      "count": "{count, plural, one {# still open} other {# still open}}",
+      "room": "Room {room}",
+      "created": "Complaint sent to the owner.",
+      "dialogTitle": "New Complaint",
+      "dialogSub": "Sent to the owner of {property}",
+      "fTitle": "Issue title",
+      "fTitlePlaceholder": "Example: AC not cooling",
+      "fCategory": "Category",
+      "fDesc": "Description",
+      "fDescPlaceholder": "Describe what happened and when…",
+      "submit": "Submit Complaint",
+      "cat": {
+        "fasilitas": "Facilities",
+        "air": "Water",
+        "listrik": "Electricity",
+        "internet": "Internet",
+        "kebersihan": "Cleanliness",
+        "keamanan": "Security",
+        "pembayaran": "Payment",
+        "lainnya": "Other"
+      },
+      "status": {
+        "open": "Open",
+        "acknowledged": "Acknowledged",
+        "in_progress": "In Progress",
+        "resolved": "Resolved",
+        "closed": "Closed"
+      },
+      "dProperty": "Kost",
+      "dRoom": "Room",
+      "dCategory": "Category",
+      "dCreated": "Created",
+      "dUpdated": "Last update",
+      "dFlow": "Status Flow",
+      "dCurrent": "Current",
+      "dOwnerNote": "Owner response"
+    },
+    "announcements": {
+      "title": "Kost Announcements",
+      "listTitle": "From the Owner",
+      "new": "New",
+      "justNow": "Just now",
+      "hoursAgo": "{count, plural, one {# hour ago} other {# hours ago}}",
+      "daysAgo": "{count, plural, one {# day ago} other {# days ago}}"
+    }
   }
 }

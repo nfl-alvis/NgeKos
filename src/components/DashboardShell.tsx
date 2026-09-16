@@ -6,10 +6,15 @@ import {
   Bell,
   Building2,
   CalendarCheck,
+  ClipboardList,
   CreditCard,
+  DoorClosed,
   DoorOpen,
+  FileText,
   Flag,
+  Heart,
   History,
+  Home,
   Images,
   LayoutDashboard,
   Megaphone,
@@ -21,6 +26,7 @@ import {
   Star,
   TrendingUp,
   Undo2,
+  User,
   UserCog,
   Users,
 } from "lucide-react";
@@ -115,20 +121,69 @@ const ADMIN_GROUPS: { groupKey?: string; items: Item[] }[] = [
 
 const ADMIN_ITEMS: Item[] = ADMIN_GROUPS.flatMap((g) => g.items);
 
-const TENANT_ITEMS: Item[] = [
-  { href: "/tenant", label: "dashboard", icon: LayoutDashboard },
-  { href: "/bookings", label: "bookings", icon: CalendarCheck },
-  { href: "/kost", label: "explore", icon: Building2 },
+/* ===== user biasa (pencari/penyewa kos) — aktivitas mencari & booking ===== */
+
+const USER_GROUPS: { groupKey?: string; items: Item[] }[] = [
+  { items: [
+    { href: "/dashboard", label: "dashboard", icon: LayoutDashboard },
+  ]},
+  { groupKey: "booking", items: [
+    { href: "/dashboard/bookings", label: "bookings", icon: CalendarCheck },
+    { href: "/dashboard/payments", label: "payments", icon: CreditCard },
+    { href: "/dashboard/favorites", label: "favorites", icon: Heart },
+    { href: "/dashboard/reviews", label: "reviews", icon: Star },
+  ]},
+  { groupKey: "account", items: [
+    { href: "/dashboard/profile", label: "profile", icon: User },
+    { href: "/dashboard/settings", label: "settings", icon: Settings },
+  ]},
 ];
+
+const USER_ITEMS: Item[] = USER_GROUPS.flatMap((g) => g.items);
+
+/* ===== tenant — aktivitas selama tinggal di kos ===== */
+
+const TENANT_GROUPS: { groupKey?: string; items: Item[] }[] = [
+  { items: [
+    { href: "/tenant/dashboard", label: "dashboard", icon: LayoutDashboard },
+  ]},
+  { groupKey: "myKost", items: [
+    { href: "/tenant/property", label: "property", icon: Building2 },
+    { href: "/tenant/room", label: "room", icon: DoorClosed },
+    { href: "/tenant/contract", label: "contract", icon: FileText },
+  ]},
+  { groupKey: "billing", items: [
+    { href: "/tenant/bills", label: "bills", icon: Receipt },
+    { href: "/tenant/payments", label: "payments", icon: CreditCard },
+  ]},
+  { groupKey: "staying", items: [
+    { href: "/tenant/complaints", label: "complaints", icon: ClipboardList },
+    { href: "/tenant/announcements", label: "announcements", icon: Megaphone },
+  ]},
+  { groupKey: "account", items: [
+    // akun tetap punya dashboard user biasa (booking, favorit, dsb.)
+    { href: "/dashboard", label: "account", icon: Home },
+  ]},
+];
+
+const TENANT_ITEMS: Item[] = TENANT_GROUPS.flatMap((g) => g.items);
 
 export default function DashboardShell({
   role,
   children,
 }: {
-  role: "owner" | "admin" | "tenant";
+  role: "owner" | "admin" | "tenant" | "user";
   children: React.ReactNode;
 }) {
-  const t = useTranslations(role === "owner" ? "owner.nav" : role === "admin" ? "admin.nav" : "tenant.nav");
+  const t = useTranslations(
+    role === "owner"
+      ? "owner.nav"
+      : role === "admin"
+        ? "admin.nav"
+        : role === "user"
+          ? "userDash.nav"
+          : "tenant.nav"
+  );
   const navT = useTranslations("nav");
   const pathname = usePathname();
   const router = useRouter();
@@ -139,20 +194,37 @@ export default function DashboardShell({
   // halaman dashboard bisa diakses langsung via URL tanpa login.
   // (useEffect redirect role + skeleton gate dihapus; lihat git history 3cfa87d)
 
-  const items = role === "owner" ? OWNER_ITEMS : role === "admin" ? ADMIN_ITEMS : TENANT_ITEMS;
+  const items =
+    role === "owner"
+      ? OWNER_ITEMS
+      : role === "admin"
+        ? ADMIN_ITEMS
+        : role === "user"
+          ? USER_ITEMS
+          : TENANT_ITEMS;
   const isActive = (href: string) =>
-    href === "/owner" || href === "/admin" || href === "/admin/verification" || href === "/tenant"
+    href === "/owner" || href === "/admin" || href === "/tenant/dashboard" || href === "/dashboard"
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
   const userName =
     user?.name ??
-    (role === "owner" ? "Ratri Wulandari" : role === "admin" ? "Bayu Pratama" : "I made Sudiarta");
+    (role === "owner"
+      ? "Ratri Wulandari"
+      : role === "admin"
+        ? "Bayu Pratama"
+        : "I made Sudiarta");
   const initial = userName.trim().charAt(0).toUpperCase();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const roleLabel =
-    role === "owner" ? navT("dashboard") : role === "admin" ? navT("adminPanel") : navT("tenantPanel");
+    role === "owner"
+      ? navT("dashboard")
+      : role === "admin"
+        ? navT("adminPanel")
+        : role === "user"
+          ? navT("userPanel")
+          : navT("tenantPanel");
 
   // breadcrumb: halaman aktif = item nav dengan prefix paling spesifik
   const currentItem = [...items]
@@ -181,33 +253,39 @@ export default function DashboardShell({
         </SidebarHeader>
 
         <SidebarContent>
-          {role === "admin" ? (
-            ADMIN_GROUPS.map((g, gi) => (
-              <SidebarGroup key={g.groupKey ?? `g-${gi}`}>
-                {g.groupKey && (
-                  <SidebarGroupLabel>{navT(`adminGroups.${g.groupKey}`)}</SidebarGroupLabel>
-                )}
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {g.items.map((item) => (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive(item.href)}
-                          tooltip={t(item.label)}
-                          className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
-                        >
-                          <Link href={item.href}>
-                            <item.icon />
-                            <span>{t(item.label)}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            ))
+          {role !== "owner" ? (
+            (role === "admin" ? ADMIN_GROUPS : role === "user" ? USER_GROUPS : TENANT_GROUPS).map(
+              (g, gi) => (
+                <SidebarGroup key={g.groupKey ?? `g-${gi}`}>
+                  {g.groupKey && (
+                    <SidebarGroupLabel>
+                      {role === "admin"
+                        ? navT(`adminGroups.${g.groupKey}`)
+                        : t(`groups.${g.groupKey}`)}
+                    </SidebarGroupLabel>
+                  )}
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {g.items.map((item) => (
+                        <SidebarMenuItem key={item.href}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActive(item.href)}
+                            tooltip={t(item.label)}
+                            className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
+                          >
+                            <Link href={item.href}>
+                              <item.icon />
+                              <span>{t(item.label)}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              )
+            )
           ) : (
           <SidebarGroup>
             <SidebarGroupLabel>{roleLabel}</SidebarGroupLabel>
@@ -263,7 +341,7 @@ export default function DashboardShell({
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher />
 
-            {/* bell notifikasi — owner & tenant (dataset milik owner; tenant fallback link /tenant) */}
+            {/* bell notifikasi — owner, tenant & user (dataset milik owner; fallback link per role) */}
             {role !== "admin" && (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -291,7 +369,14 @@ export default function DashboardShell({
                   {notifications.slice(0, 6).map((n) => (
                     <DropdownMenuItem key={n.id} asChild className="cursor-pointer p-0 focus:bg-nk-warm">
                       <Link
-                        href={n.linkUrl ?? (role === "tenant" ? "/tenant" : "/owner")}
+                        href={
+                          n.linkUrl ??
+                          (role === "tenant"
+                            ? "/tenant/dashboard"
+                            : role === "user"
+                              ? "/dashboard"
+                              : "/owner")
+                        }
                         className="flex w-full flex-col items-start gap-0.5 border-b border-nk-border px-3 py-2.5 last:border-b-0"
                       >
                         <span className="flex w-full items-center gap-2">
@@ -317,7 +402,16 @@ export default function DashboardShell({
                 </div>
                 <DropdownMenuSeparator className="m-0" />
                 <DropdownMenuItem asChild className="cursor-pointer focus:bg-nk-warm">
-                  <Link href="/owner/notifications" className="w-full py-2.5 text-center text-sm text-nk-accent">
+                  <Link
+                    href={
+                      role === "owner"
+                        ? "/owner/notifications"
+                        : role === "tenant"
+                          ? "/tenant/dashboard"
+                          : "/dashboard"
+                    }
+                    className="w-full py-2.5 text-center text-sm text-nk-accent"
+                  >
                     {navT("notifications")}
                   </Link>
                 </DropdownMenuItem>

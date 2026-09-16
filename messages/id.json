@@ -21,7 +21,8 @@
       "money": "Transaksi",
       "moderation": "Moderasi",
       "platform": "Platform"
-    }
+    },
+    "userPanel": "Dashboard Saya"
   },
   "hero": {
     "badge": "Ratusan kost terverifikasi",
@@ -1531,8 +1532,20 @@
   "tenant": {
     "nav": {
       "dashboard": "Beranda",
-      "bookings": "Booking Saya",
-      "explore": "Jelajahi Kost"
+      "property": "Kos Saya",
+      "room": "Kamar Saya",
+      "contract": "Kontrak Sewa",
+      "bills": "Tagihan Saya",
+      "payments": "Riwayat Pembayaran",
+      "complaints": "Pengaduan",
+      "announcements": "Pengumuman",
+      "account": "Akun Saya",
+      "groups": {
+        "myKost": "Kos saya",
+        "billing": "Keuangan",
+        "staying": "Selama tinggal",
+        "account": "Akun"
+      }
     },
     "welcome": "Halo, {name}",
     "myRoom": "Kamar saya",
@@ -1579,6 +1592,334 @@
       "Jul",
       "Agu",
       "Sep"
-    ]
+    ],
+    "qaBill": "Bayar Tagihan",
+    "qaComplaint": "Lapor Masalah",
+    "propertyDetail": "Detail Kos",
+    "roomDetail": "Detail Kamar"
+  },
+  "userDash": {
+    "title": "Dasbor Saya",
+    "welcome": "Halo, {name} 👋",
+    "bookingsTitle": "Riwayat Booking",
+    "favoritesTitle": "Favorit Kamu",
+    "paymentsTitle": "Status Pembayaran",
+    "reviewsTitle": "Review Saya",
+    "profileTitle": "Profil Saya",
+    "settingsTitle": "Pengaturan",
+    "nav": {
+      "dashboard": "Ringkasan",
+      "bookings": "Booking",
+      "payments": "Pembayaran",
+      "favorites": "Favorit",
+      "reviews": "Review",
+      "profile": "Profil",
+      "settings": "Pengaturan",
+      "groups": {
+        "booking": "Aktivitas sewa",
+        "account": "Akun"
+      }
+    },
+    "stat": {
+      "bookings": "Total Booking",
+      "favorites": "Favorit",
+      "pending": "Pembayaran Pending",
+      "reviews": "Review Saya"
+    },
+    "statBookings": "Total Booking",
+    "statBookingsSub": "{count, plural, other {# masih berjalan}}",
+    "statFavorites": "Favorit",
+    "statFavoritesSub": "tersimpan di akun kamu",
+    "statPending": "Pembayaran Pending",
+    "statPendingSubOpen": "segera diselesaikan",
+    "statPendingSubClear": "semua sudah lunas",
+    "statReviews": "Review Saya",
+    "statReviewsSub": "ulasan yang pernah dibuat",
+    "booking": {
+      "title": "Booking Terbaru",
+      "seeAll": "Lihat Semua",
+      "empty": "Belum ada proses booking.",
+      "explore": "Cari kos sekarang",
+      "room": "Kamar {room}",
+      "bookingStatus": "Status Booking",
+      "paymentStatus": "Status Pembayaran",
+      "statusPendingBooking": "Menunggu konfirmasi pemilik",
+      "statusAwaitOwner": "Menunggu konfirmasi pemilik",
+      "statusPaid": "Berhasil",
+      "statusUnpaid": "Belum Dibayar",
+      "statusRefunding": "Refund diproses",
+      "payBefore": "Bayar sebelum",
+      "payNow": "Bayar Sekarang",
+      "detail": "Detail Booking"
+    },
+    "payments": {
+      "title": "Status Pembayaran",
+      "seeAll": "Lihat Semua",
+      "payNow": "Bayar",
+      "status": {
+        "pending": "Belum Dibayar",
+        "paid": "Berhasil",
+        "failed": "Gagal",
+        "refunding": "Sedang Diproses",
+        "refunded": "Dana Dikembalikan"
+      },
+      "refundingNote": "Booking ditolak — dana dikembalikan otomatis.",
+      "awaitOwnerNote": "Booking menunggu konfirmasi pemilik.",
+      "empty": "Belum ada transaksi pembayaran.",
+      "allSet": "Tidak ada tagihan yang menunggu pembayaran."
+    },
+    "favorites": {
+      "title": "Favorit Kamu",
+      "seeAll": "Lihat Semua",
+      "perMonth": "/ bulan",
+      "remove": "Hapus",
+      "empty": "Kamu belum menyimpan kos favorit.",
+      "explore": "Jelajahi kos"
+    },
+    "activeKost": {
+      "title": "Kos Aktif",
+      "status": "Penyewa Aktif",
+      "room": "Kamar {room}",
+      "cta": "Masuk Dashboard Tenant"
+    },
+    "reviews": {
+      "title": "Review Saya",
+      "seeAll": "Lihat Semua",
+      "empty": "Kamu belum pernah membuat review.",
+      "edit": "Sunting",
+      "closed": "Ditampilkan",
+      "write": "Tulis Review",
+      "writePrompt": "Kamu pernah tinggal di sini",
+      "dialogTitle": "Tulis Review",
+      "ratingLabel": "Rating",
+      "bodyLabel": "Ulasan",
+      "bodyPlaceholder": "Ceritakan pengalaman tinggalmu…",
+      "submit": "Kirim Review",
+      "saved": "Review tersimpan."
+    },
+    "recommend": {
+      "title": "Rekomendasi Kos",
+      "forCity": "Untuk area {city}",
+      "perMonth": "/ bulan",
+      "save": "Simpan ke favorit",
+      "empty": "Semua kos di sekitar kamu sudah tersimpan."
+    },
+    "activity": {
+      "title": "Aktivitas Terbaru",
+      "today": "Hari ini",
+      "yesterday": "Kemarin",
+      "daysAgo": "{count, plural, other {# hari lalu}}",
+      "weeksAgo": "{count, plural, other {# minggu lalu}}",
+      "monthsAgo": "{count, plural, other {# bulan lalu}}"
+    },
+    "explore": {
+      "title": "Cari Kos Lain?",
+      "body": "Kamu tetap bisa mencari kos untuk masa depan — favorit dan booking aktif tidak terpengaruh.",
+      "cta": "Jelajahi Kos"
+    },
+    "profile": {
+      "identity": "Data Diri",
+      "verified": "Terverifikasi",
+      "memberSince": "Bergabung sejak",
+      "name": "Nama lengkap",
+      "phone": "Nomor WhatsApp",
+      "birth": "Tempat, tanggal lahir",
+      "occupation": "Pekerjaan",
+      "save": "Simpan Perubahan",
+      "saved": "Perubahan tersimpan.",
+      "activityTitle": "Aktivitas Lengkap",
+      "backToDashboard": "Kembali ke Ringkasan",
+      "summary": "Ringkasan Akun",
+      "sumBookings": "Total booking",
+      "sumFavorites": "Kos difavoritkan",
+      "sumReviews": "Review ditulis",
+      "sumSpent": "Total dibayar (booking)",
+      "tenancy": "Status Tenancy",
+      "tenancyActive": "Penyewa Aktif",
+      "tenancyNote": "Menginap sejak {date} — semua aktivitas tinggal ada di dashboard tenant.",
+      "tenancyCta": "Buka Dashboard Tenant"
+    },
+    "settings": {
+      "notifications": "Preferensi Notifikasi",
+      "prefs": {
+        "bookingStatus": "Update status booking",
+        "paymentReminder": "Pengingat jatuh tempo bayar",
+        "newAnnouncements": "Pengumuman baru dari pemilik",
+        "priceDrops": "Kos favorit turun harga",
+        "tips": "Tips & artikel seputar kos"
+      },
+      "channels": {
+        "emailTelegram": "Email & Telegram",
+        "telegram": "Telegram saja",
+        "email": "Email saja"
+      },
+      "security": "Keamanan Akun",
+      "newPassword": "Kata sandi baru",
+      "confirmPassword": "Ulangi kata sandi",
+      "save": "Simpan",
+      "saved": "Pengaturan tersimpan.",
+      "danger": "Zona Berbahaya",
+      "dangerBody": "Menghapus akun akan menghilangkan favorit, riwayat booking, dan review kamu.",
+      "deleteAccount": "Hapus Akun"
+    }
+  },
+  "tenantPages": {
+    "property": {
+      "title": "Kos Saya",
+      "living": "Sedang dihuni",
+      "fAddress": "Alamat",
+      "fOwner": "Pemilik",
+      "fRoom": "Kamar",
+      "roomValue": "Kamar {room}",
+      "typeValue": "Standard",
+      "fRent": "Sewa per bulan",
+      "perMonth": "/bulan",
+      "publicPage": "Lihat Halaman Publik",
+      "myRoom": "Detail Kamar",
+      "facts": "Informasi Kos",
+      "facilitiesTitle": "Fasilitas Kos",
+      "ownerTitle": "Kontak Owner",
+      "ownerPhone": "Telepon",
+      "ownerEmail": "Email",
+      "waCta": "Chat via WhatsApp",
+      "ownerNote": "Pesan di luar jam 07.00–21.00 dibalaskesokan harinya.",
+      "areaTitle": "Sekitar Kos",
+      "area": {
+        "campus": "Kampus terdekat",
+        "store": "Minimarket",
+        "mosque": "Masjid",
+        "hospital": "Rumah sakit"
+      }
+    },
+    "room": {
+      "title": "Kamar Saya",
+      "header": "Kamar {room}",
+      "occupied": "Terisi — kamu",
+      "fProperty": "Kos",
+      "fFloor": "Lantai",
+      "floorValue": "Lantai {floor}",
+      "fType": "Tipe",
+      "fSize": "Ukuran",
+      "fOrientation": "Orientasi",
+      "facilitiesTitle": "Fasilitas Kamar",
+      "commonTitle": "Area Bersama",
+      "common": {
+        "kitchen": "Dapur bersama",
+        "laundry": "Jasa laundry",
+        "parking": "Area parkir",
+        "cctv": "CCTV & keamanan"
+      },
+      "reportTitle": "Ada Masalah di Kamar?",
+      "reportBody": "Lapor kerusakan atau keluhan, pemilik akan menindakinya.",
+      "reportCta": "Buat Pengaduan",
+      "contractTitle": "Kontrak Sewa",
+      "contractBody": "Lihat periode sewa, syarat, dan peraturan kos.",
+      "contractCta": "Lihat Kontrak"
+    },
+    "contract": {
+      "title": "Kontrak Sewa",
+      "activeTitle": "Kontrak Aktif",
+      "statusActive": "Aktif",
+      "statusEnded": "Berakhir",
+      "fProperty": "Kos",
+      "fRoom": "Kamar",
+      "fStart": "Tanggal mulai",
+      "fEnd": "Tanggal berakhir",
+      "fDuration": "Durasi",
+      "monthsValue": "{count, plural, other {# bulan}}",
+      "fRent": "Sewa per bulan",
+      "perMonth": "/bulan",
+      "fDeposit": "Uang jaminan",
+      "fNotice": "Pemberitahuan pindah",
+      "download": "Unduh Ringkasan",
+      "fileName": "kontrak-sewa-ngekost",
+      "seeBills": "Lihat Tagihan",
+      "renewalTitle": "Perpanjangan",
+      "renewalNote": "Perjanjian berjalan: {period}.",
+      "historyTitle": "Riwayat Perjanjian",
+      "roomLabel": "Kamar",
+      "rulesTitle": "Peraturan Kos",
+      "paidTitle": "Riwayat Pembayaran Lunas"
+    },
+    "bills": {
+      "title": "Tagihan Saya",
+      "nextTitle": "Tagihan Berikutnya",
+      "dueDate": "Jatuh tempo",
+      "outstanding": "Total tagihan aktif",
+      "payCta": "Bayar Tagihan",
+      "allPaid": "Semua Lunas",
+      "allPaidNote": "Tidak ada tagihan hingga akhir kontrak ({date}).",
+      "historyTitle": "Riwayat Tagihan",
+      "paidCount": "{paid} dari {total} lunas",
+      "paid": "Lunas",
+      "unpaid": "Belum Bayar",
+      "paidOn": "Dibayar"
+    },
+    "payments": {
+      "title": "Riwayat Pembayaran",
+      "sumTotal": "Total dibayar",
+      "sumMonths": "Bulan lunas",
+      "sumMethod": "Metode utama",
+      "methodQris": "QRIS",
+      "sumAverage": "Rata-rata / bulan",
+      "exportCsv": "Ekspor CSV",
+      "historyTitle": "Semua Pembayaran Sewa",
+      "colPeriod": "Periode",
+      "colAmount": "Nominal",
+      "colPaid": "Tanggal bayar",
+      "colMethod": "Metode",
+      "colStatus": "Status",
+      "paid": "Lunas",
+      "unpaid": "Belum Bayar"
+    },
+    "complaints": {
+      "title": "Pengaduan",
+      "create": "Buat Pengaduan",
+      "listTitle": "Daftar Pengaduan",
+      "count": "{count, plural, other {# masih dibuka}}",
+      "room": "Kamar {room}",
+      "created": "Pengaduan terkirim ke pemilik.",
+      "dialogTitle": "Buat Pengaduan",
+      "dialogSub": "Dikirim ke pemilik {property}",
+      "fTitle": "Judul masalah",
+      "fTitlePlaceholder": "Contoh: AC kurang dingin",
+      "fCategory": "Kategori",
+      "fDesc": "Deskripsi",
+      "fDescPlaceholder": "Jelaskan kronologi dan kapan masalah muncul…",
+      "submit": "Kirim Pengaduan",
+      "cat": {
+        "fasilitas": "Fasilitas",
+        "air": "Air",
+        "listrik": "Listrik",
+        "internet": "Internet",
+        "kebersihan": "Kebersihan",
+        "keamanan": "Keamanan",
+        "pembayaran": "Pembayaran",
+        "lainnya": "Lainnya"
+      },
+      "status": {
+        "open": "Terbuka",
+        "acknowledged": "Diterima",
+        "in_progress": "Ditangani",
+        "resolved": "Selesai",
+        "closed": "Ditutup"
+      },
+      "dProperty": "Kos",
+      "dRoom": "Kamar",
+      "dCategory": "Kategori",
+      "dCreated": "Dibuat",
+      "dUpdated": "Terakhir diperbarui",
+      "dFlow": "Alur Status",
+      "dCurrent": "Saat ini",
+      "dOwnerNote": "Respons pemilik"
+    },
+    "announcements": {
+      "title": "Pengumuman Kos",
+      "listTitle": "Dari Pemilik Kos",
+      "new": "Baru",
+      "justNow": "Baru saja",
+      "hoursAgo": "{count, plural, other {# jam lalu}}",
+      "daysAgo": "{count, plural, other {# hari lalu}}"
+    }
   }
 }

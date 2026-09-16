@@ -89,7 +89,13 @@ export default function Navbar() {
                       <p className="truncate text-xs text-nk-text-muted">{user.email}</p>
                     </div>
                     <Link
-                      href={user.role === "owner" ? "/owner" : user.role === "admin" ? "/admin" : "/bookings"}
+                      href={
+                        user.role === "owner"
+                          ? "/owner"
+                          : user.role === "admin"
+                            ? "/admin"
+                            : "/dashboard"
+                      }
                       onClick={() => setAvatarOpen(false)}
                       className="block px-4 py-2.5 text-sm text-nk-text transition-colors hover:bg-nk-warm"
                     >
@@ -97,7 +103,7 @@ export default function Navbar() {
                         ? t("dashboard")
                         : user.role === "admin"
                           ? t("adminPanel")
-                          : t("myBookings")}
+                          : t("userPanel")}
                     </Link>
                     <button
                       type="button"
@@ -173,7 +179,7 @@ export default function Navbar() {
                   role={authRole}
                   onClose={closeRole}
                   onSuccess={() => {
-                    const dest = authRole === "owner" ? "/owner" : "/bookings";
+                    const dest = authRole === "owner" ? "/owner" : "/dashboard";
                     closeRole();
                     router.push(dest);
                   }}

@@ -15,11 +15,14 @@ export function useAdminToast() {
 }
 
 export default function AdminPageShell({
+  role = "admin",
   title,
   badge,
   actions,
   children,
 }: {
+  /** role shell sidebar — panel admin (default), juga dipakai halaman /dashboard & /tenant */
+  role?: "owner" | "admin" | "tenant" | "user";
   title: string;
   /** chip kecil di samping judul (mis. jumlah pending) */
   badge?: React.ReactNode;
@@ -34,7 +37,7 @@ export default function AdminPageShell({
   }, []);
 
   return (
-    <DashboardShell role="admin">
+    <DashboardShell role={role}>
       <ToastCtx.Provider value={{ show }}>
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-medium tracking-tight text-nk-text">{title}</h1>

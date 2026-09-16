@@ -41,7 +41,7 @@ export default function LoginForm({
       email: mail,
     });
     onDone?.();
-    if (redirectAfter) i18nRouter.push(role === "owner" ? "/owner" : "/bookings");
+    if (redirectAfter) i18nRouter.push(role === "owner" ? "/owner" : "/dashboard");
   };
 
   return (
