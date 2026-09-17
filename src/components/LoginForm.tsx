@@ -27,21 +27,23 @@ export default function LoginForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { login } = useSession();
   const i18nRouter = useI18nRouter();
 
-  const attemptLogin = (mail: string) => {
-    const name =
-      mail === SEEKER_DEMO_ACCOUNT.email
-        ? SEEKER_DEMO_ACCOUNT.name
-        : mail.split("@")[0].replace(/[._-]+/g, " ").trim() || "Tamu";
-    login({
-      role: role === "owner" ? "owner" : "seeker",
-      name: name.replace(/\b\w/g, (c) => c.toUpperCase()),
-      email: mail,
-    });
-    onDone?.();
-    if (redirectAfter) i18nRouter.push(role === "owner" ? "/owner" : "/dashboard");
+  const attemptLogin = async () => {
+    setPending(true);
+    setError(null);
+    try {
+      const signedIn = await login(email, password);
+      onDone?.();
+      if (redirectAfter) i18nRouter.push(signedIn.role === "owner" ? "/owner" : signedIn.role === "admin" ? "/admin" : "/dashboard");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Login gagal");
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
@@ -72,7 +74,7 @@ export default function LoginForm({
         className="mt-6 flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
-          if (email && password) attemptLogin(email);
+          if (email && password && !pending) void attemptLogin();
         }}
       >
         <label className="flex flex-col gap-1.5">
@@ -127,11 +129,14 @@ export default function LoginForm({
           </Link>
         </div>
 
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+
         <button
           type="submit"
-          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+          disabled={pending}
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {t("submit")}
+          {pending ? "Memproses…" : t("submit")}
         </button>
 
         <button

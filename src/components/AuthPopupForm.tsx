@@ -26,23 +26,23 @@ export default function AuthPopupForm({
   const t = useTranslations("booking");
   const lt = useTranslations("login");
   const dt = useTranslations("daftar");
-  const { login } = useSession();
+  const { login, loginWithGoogle } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const signIn = (mail: string) => {
+  const signIn = async () => {
     setPending(true);
-    // mode demo: tanpa backend — sesi langsung dibuat (persist di sessionStorage)
-    window.setTimeout(() => {
-      const name =
-        mail === SEEKER_DEMO_ACCOUNT.email
-          ? SEEKER_DEMO_ACCOUNT.name
-          : mail.split("@")[0].replace(/[._-]+/g, " ").trim() || "Tamu";
-      login({ role, name: name.replace(/\b\w/g, (c) => c.toUpperCase()), email: mail });
-      setPending(false);
+    setError(null);
+    try {
+      await login(email, password);
       onSuccess();
-    }, 500);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Login gagal");
+    } finally {
+      setPending(false);
+    }
   };
 
   const inputCls =
@@ -53,7 +53,8 @@ export default function AuthPopupForm({
       <div>
         <GoogleButton
           label={t("gateGoogle")}
-          onClick={() => signIn(SEEKER_DEMO_ACCOUNT.email)}
+          onClick={() => void loginWithGoogle(role).catch((reason) => setError(reason instanceof Error ? reason.message : "Login Google gagal"))}
+          disabled={pending}
         />
       </div>
 
@@ -67,7 +68,7 @@ export default function AuthPopupForm({
         className="flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault();
-          if (email && password) signIn(email);
+          if (email && password && !pending) void signIn();
         }}
       >
         <label className="flex flex-col gap-1.5">
@@ -94,6 +95,7 @@ export default function AuthPopupForm({
             className={inputCls}
           />
         </label>
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         <button
           type="submit"
           disabled={pending || !email || !password}
@@ -109,7 +111,6 @@ export default function AuthPopupForm({
           onClick={() => {
             setEmail(SEEKER_DEMO_ACCOUNT.email);
             setPassword(SEEKER_DEMO_ACCOUNT.password);
-            signIn(SEEKER_DEMO_ACCOUNT.email);
           }}
           disabled={pending}
           className="w-full text-center text-sm font-medium text-nk-accent transition-opacity hover:opacity-80 disabled:opacity-50"

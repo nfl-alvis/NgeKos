@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import Logo from "@/components/Logo";
 import GoogleButton from "@/components/GoogleButton";
+import { useSession } from "@/components/SessionProvider";
 
 /* ============================================================
    Alur pendaftaran owner terinspirasi Mamikos: phone-first.
@@ -538,7 +539,10 @@ function SuccessStep({ ownerName }: { ownerName: string }) {
 
 function SeekerForm() {
   const t = useTranslations("daftar");
+  const { loginWithGoogle } = useSession();
   const [form, setForm] = useState({ name: "", email: "", wa: "", password: "", agree: false });
+  const [pending, setPending] = useState(false);
+  const [feedback, setFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const set =
     (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
       setForm((f) => ({ ...f, [k]: k === "agree" ? e.target.checked : e.target.value }));
@@ -549,6 +553,26 @@ function SeekerForm() {
     /^(\+62|0)8\d{7,12}$/.test(form.wa.replace(/[\s-]/g, "")) &&
     form.password.length >= 8 &&
     form.agree;
+
+  const submit = async () => {
+    setPending(true);
+    setFeedback(null);
+    try {
+      const locale = location.pathname.split("/")[1] === "en" ? "en" : "id";
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email, password: form.password, fullName: form.name, phone: form.wa.replace(/[\s-]/g, ""), role: "seeker", locale }),
+      });
+      const body = await response.json();
+      if (!response.ok || !body.success) throw new Error(body?.error?.message ?? "Pendaftaran gagal");
+      setFeedback({ kind: "success", message: body.data.requiresEmailConfirmation ? "Pendaftaran berhasil. Periksa email untuk konfirmasi akun." : "Pendaftaran berhasil." });
+    } catch (reason) {
+      setFeedback({ kind: "error", message: reason instanceof Error ? reason.message : "Pendaftaran gagal" });
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-md">
@@ -577,7 +601,7 @@ function SeekerForm() {
         </div>
 
         <div className="mt-6">
-          <GoogleButton label={t("google")} />
+          <GoogleButton label={t("google")} onClick={() => void loginWithGoogle("seeker").catch((reason) => setFeedback({ kind: "error", message: reason instanceof Error ? reason.message : "Login Google gagal" }))} disabled={pending} />
         </div>
 
         <div className="my-6 flex items-center gap-3" aria-hidden="true">
@@ -590,7 +614,7 @@ function SeekerForm() {
           className="flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault();
-            window.alert("Auth stub — form submitted");
+            if (canSubmit && !pending) void submit();
           }}
         >
           <label className="flex flex-col gap-1.5">
@@ -669,9 +693,15 @@ function SeekerForm() {
             </span>
           </label>
 
+          {feedback && (
+            <p role="status" className={feedback.kind === "error" ? "text-sm text-red-700" : "text-sm text-green-700"}>
+              {feedback.message}
+            </p>
+          )}
+
           <button
             type="submit"
-            disabled={!canSubmit}
+            disabled={!canSubmit || pending}
             className="mt-1 inline-flex h-11 w-full items-center justify-center rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-all hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t("submit")}
