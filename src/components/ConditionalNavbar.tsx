@@ -4,11 +4,15 @@ import { usePathname } from "@/i18n/navigation";
 import Navbar from "@/components/Navbar";
 
 /**
- * Navbar disembunyikan di dashboard owner & admin —
- * area tersebut hanya memakai sidebar (DashboardShell).
+ * Navbar hanya untuk halaman publik. Semua area yang memakai DashboardShell
+ * sudah memiliki header sendiri dan tidak boleh ditumpuk dengan navbar global.
  */
 export default function ConditionalNavbar() {
   const pathname = usePathname();
-  if (pathname.startsWith("/owner") || pathname.startsWith("/admin")) return null;
+  const isDashboardRoute = ["/owner", "/admin", "/dashboard", "/tenant"].some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+
+  if (isDashboardRoute) return null;
   return <Navbar />;
 }

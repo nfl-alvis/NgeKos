@@ -4,11 +4,15 @@ import { usePathname } from "@/i18n/navigation";
 import Footer from "@/components/Footer";
 
 /**
- * Footer disembunyikan di dashboard owner & admin.
- * Client component karena pathname hanya tersedia di sisi klien.
+ * Footer hanya untuk halaman publik. Semua area yang memakai DashboardShell
+ * mengisi tinggi viewport sendiri dan tidak boleh bertumpuk dengan footer global.
  */
 export default function ConditionalFooter() {
   const pathname = usePathname();
-  if (pathname.startsWith("/owner") || pathname.startsWith("/admin")) return null;
+  const isDashboardRoute = ["/owner", "/admin", "/dashboard", "/tenant"].some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+
+  if (isDashboardRoute) return null;
   return <Footer />;
 }
