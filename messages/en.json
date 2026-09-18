@@ -177,7 +177,14 @@
     "cancel": "Cancel",
     "titleSeeker": "Log in as a Tenant",
     "titleOwner": "Log in as an Owner",
-    "useDemo": "Use demo account (tempmail)"
+    "google": "Continue with Google",
+    "or": "or log in with email",
+    "processing": "Processing…",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "genericError": "Login failed. Please try again.",
+    "oauthError": "Google login failed. Please try again.",
+    "roleMismatch": "This Google account is registered for a different role."
   },
   "common": {
     "loading": "Loading...",

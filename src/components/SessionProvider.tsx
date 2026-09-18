@@ -22,8 +22,8 @@ type ApiProfile = {
 interface SessionContextValue {
   user: SessionUser | null;
   ready: boolean;
-  login: (email: string, password: string) => Promise<SessionUser>;
-  loginWithGoogle: (role: "seeker" | "owner") => Promise<void>;
+  login: (email: string, password: string, role: "seeker" | "owner") => Promise<SessionUser>;
+  loginWithGoogle: (role: "seeker" | "owner", intent?: "login" | "register") => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<SessionUser | null>;
 }
@@ -109,11 +109,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return fetchCurrentProfile();
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, role: "seeker" | "owner") => {
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, role }),
     });
     await readJson(response);
     const profile = await fetchCurrentProfile();
@@ -121,11 +121,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return profile;
   }, []);
 
-  const loginWithGoogle = useCallback(async (role: "seeker" | "owner") => {
+  const loginWithGoogle = useCallback(async (role: "seeker" | "owner", intent: "login" | "register" = "login") => {
     const supabase = createClient();
     const locale = location.pathname.split("/")[1] === "en" ? "en" : "id";
-    const redirectTo = `${location.origin}/auth/callback?role=${role}&next=/${locale}/${role === "owner" ? "owner" : "dashboard"}`;
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
+    const callbackUrl = new URL("/auth/callback", location.origin);
+    callbackUrl.searchParams.set("role", role);
+    callbackUrl.searchParams.set("intent", intent);
+    callbackUrl.searchParams.set("locale", locale);
+    callbackUrl.searchParams.set("next", `/${locale}/${role === "owner" ? "owner" : "dashboard"}`);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: callbackUrl.toString(), queryParams: { prompt: "select_account" } },
+    });
     if (error) throw error;
   }, []);
 

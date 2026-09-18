@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
  */
 export default function ConditionalFooter() {
   const pathname = usePathname();
-  const isDashboardRoute = ["/owner", "/admin", "/dashboard", "/tenant"].some(
+  const isDashboardRoute = ["/owner", "/admin", "/dashboard", "/tenant", "/login", "/register"].some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
 

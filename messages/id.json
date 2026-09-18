@@ -177,7 +177,14 @@
     "cancel": "Batal",
     "titleSeeker": "Masuk sebagai Pencari Kos",
     "titleOwner": "Masuk sebagai Pemilik Kos",
-    "useDemo": "Gunakan akun demo (tempmail)"
+    "google": "Lanjutkan dengan Google",
+    "or": "atau masuk dengan email",
+    "processing": "Memproses…",
+    "showPassword": "Tampilkan password",
+    "hidePassword": "Sembunyikan password",
+    "genericError": "Login gagal. Silakan coba lagi.",
+    "oauthError": "Login dengan Google gagal. Silakan coba lagi.",
+    "roleMismatch": "Akun Google ini terdaftar untuk peran yang berbeda."
   },
   "common": {
     "loading": "Memuat...",

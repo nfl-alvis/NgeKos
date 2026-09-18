@@ -59,7 +59,7 @@ Login demo pencari atau owner.
 - Owner diarahkan ke `/owner`.
 - Pencari diarahkan ke `/dashboard`.
 
-### 8. `/{locale}/daftar`
+### 8. `/{locale}/register`
 
 Pendaftaran pengguna.
 

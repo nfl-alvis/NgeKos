@@ -22,7 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/legal/syarat-ketentuan",
     "/legal/privasi",
     "/login",
-    "/daftar",
+    "/register",
   ];
 
   const entries: MetadataRoute.Sitemap = [];

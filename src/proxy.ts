@@ -8,9 +8,17 @@ const protectedArea = /^\/(id|en)\/(dashboard|tenant|owner|admin)(?:\/|$)/;
 const publicAdminLogin = /^\/(id|en)\/admin\/login(?:\/|$)/;
 
 export default async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  if (/^\/(id|en)\/daftar(?:\/|$)/.test(pathname)) {
+    const newPath = pathname.replace(/^\/(id|en)\/daftar/, (_m, loc) => `/${loc}/register`);
+    const redirectUrl = new URL(newPath, request.url);
+    redirectUrl.search = request.nextUrl.search;
+    return NextResponse.redirect(redirectUrl, 308);
+  }
+
   const intlResponse = handleI18n(request);
   const { response, user } = await refreshSupabaseSession(request, intlResponse);
-  const pathname = request.nextUrl.pathname;
 
   if (protectedArea.test(pathname) && !publicAdminLogin.test(pathname) && !user) {
     const locale = pathname.split("/")[1] === "en" ? "en" : "id";

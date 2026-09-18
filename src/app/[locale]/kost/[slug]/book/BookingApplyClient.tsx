@@ -95,7 +95,7 @@ export default function BookingApplyPage() {
             {t("gateSignIn")}
           </button>
           <Link
-            href="/daftar?role=seeker"
+            href="/register?role=seeker"
             className="text-sm font-medium text-nk-accent transition-opacity hover:opacity-80"
           >
             {lt("register")}

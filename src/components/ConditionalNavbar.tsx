@@ -9,7 +9,7 @@ import Navbar from "@/components/Navbar";
  */
 export default function ConditionalNavbar() {
   const pathname = usePathname();
-  const isDashboardRoute = ["/owner", "/admin", "/dashboard", "/tenant"].some(
+  const isDashboardRoute = ["/owner", "/admin", "/dashboard", "/tenant", "/login", "/register"].some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
 

@@ -61,7 +61,7 @@ function RegisterInner() {
 
         <p className="mt-6 text-center text-sm text-nk-text-muted">
           {t("haveAccount")}{" "}
-          <Link href="/login" className="font-medium text-nk-accent transition-colors hover:opacity-80">
+          <Link href={`/login?role=${role}`} className="font-medium text-nk-accent transition-colors hover:opacity-80">
             {t("login")}
           </Link>
         </p>
@@ -587,13 +587,13 @@ function SeekerForm() {
 
         <div className="mt-6 grid grid-cols-2 gap-1 rounded-lg border border-nk-border bg-nk-warm p-1">
           <Link
-            href="/daftar?role=seeker"
+            href="/register?role=seeker"
             className="rounded-md bg-nk-surface px-3 py-2 text-center text-sm font-medium text-nk-text shadow-sm"
           >
             {t("roleSeeker")}
           </Link>
           <Link
-            href="/daftar?role=owner"
+            href="/register?role=owner"
             className="rounded-md px-3 py-2 text-center text-sm text-nk-text-muted transition-colors hover:text-nk-text"
           >
             {t("roleOwner")}
@@ -601,7 +601,7 @@ function SeekerForm() {
         </div>
 
         <div className="mt-6">
-          <GoogleButton label={t("google")} onClick={() => void loginWithGoogle("seeker").catch((reason) => setFeedback({ kind: "error", message: reason instanceof Error ? reason.message : "Login Google gagal" }))} disabled={pending} />
+          <GoogleButton label={t("google")} onClick={() => void loginWithGoogle("seeker", "register").catch((reason) => setFeedback({ kind: "error", message: reason instanceof Error ? reason.message : "Login Google gagal" }))} disabled={pending} />
         </div>
 
         <div className="my-6 flex items-center gap-3" aria-hidden="true">

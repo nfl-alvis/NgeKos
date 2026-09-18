@@ -6,7 +6,6 @@ import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Logo from "@/components/Logo";
 import { useSession } from "@/components/SessionProvider";
-import AuthPopupForm from "@/components/AuthPopupForm";
 
 export default function Navbar() {
   const t = useTranslations("nav");
@@ -15,7 +14,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [roleOpen, setRoleOpen] = useState(false);
-  const [authRole, setAuthRole] = useState<"seeker" | "owner" | null>(null);
   const [avatarOpen, setAvatarOpen] = useState(false);
 
   const initial = user ? user.name.trim().charAt(0).toUpperCase() : "";
@@ -34,12 +32,12 @@ export default function Navbar() {
     { href: "/about", label: t("about") },
   ];
 
-  const goRole = (role: "seeker" | "owner") => setAuthRole(role);
-
-  const closeRole = () => {
+  const goRole = (role: "seeker" | "owner") => {
     setRoleOpen(false);
-    setAuthRole(null);
+    router.push(`/login?role=${role}`);
   };
+
+  const closeRole = () => setRoleOpen(false);
 
   return (
     <>
@@ -119,10 +117,7 @@ export default function Navbar() {
           ) : (
           <button
             type="button"
-            onClick={() => {
-              setAuthRole(null);
-              setRoleOpen(true);
-            }}
+            onClick={() => setRoleOpen(true)}
             className="inline-flex items-center bg-nk-accent px-5 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
           >
             {t("login")}
@@ -159,7 +154,7 @@ export default function Navbar() {
           >
             <div className="flex items-start justify-between">
               <h2 className="text-lg font-medium tracking-tight text-nk-text">
-                {authRole ? loginT("title") : loginT("roleTitle")}
+                {loginT("roleTitle")}
               </h2>
               <button
                 type="button"
@@ -173,20 +168,6 @@ export default function Navbar() {
               </button>
             </div>
 
-            {authRole ? (
-              <div className="mt-4">
-                <AuthPopupForm
-                  role={authRole}
-                  onClose={closeRole}
-                  onSuccess={() => {
-                    const dest = authRole === "owner" ? "/owner" : "/dashboard";
-                    closeRole();
-                    router.push(dest);
-                  }}
-                />
-              </div>
-            ) : (
-            <>
             <div className="mt-5 flex flex-col gap-3">
               <button
                 type="button"
@@ -244,8 +225,6 @@ export default function Navbar() {
             >
               {loginT("cancel")}
             </button>
-            </>
-            )}
           </div>
         </div>
       )}

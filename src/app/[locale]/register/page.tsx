@@ -3,7 +3,7 @@ import { setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 import RegisterClient from "./RegisterClient";
 
-export const metadata: Metadata = { title: "Daftar" };
+export const metadata: Metadata = { title: "Register" };
 
 export default async function RegisterPage({
   params,

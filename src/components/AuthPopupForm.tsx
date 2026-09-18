@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useSession } from "@/components/SessionProvider";
 import GoogleButton from "@/components/GoogleButton";
-import { SEEKER_DEMO_ACCOUNT } from "@/lib/data/entities";
 
 /**
  * Isi popup login ala Mamikos (tombol Google + email/password + kotak akun
@@ -36,7 +35,7 @@ export default function AuthPopupForm({
     setPending(true);
     setError(null);
     try {
-      await login(email, password);
+      await login(email, password, role);
       onSuccess();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Login gagal");
@@ -105,27 +104,10 @@ export default function AuthPopupForm({
         </button>
       </form>
 
-      <div className="rounded-lg border border-dashed border-nk-border bg-nk-warm p-3">
-        <button
-          type="button"
-          onClick={() => {
-            setEmail(SEEKER_DEMO_ACCOUNT.email);
-            setPassword(SEEKER_DEMO_ACCOUNT.password);
-          }}
-          disabled={pending}
-          className="w-full text-center text-sm font-medium text-nk-accent transition-opacity hover:opacity-80 disabled:opacity-50"
-        >
-          {t("gateDemo")}
-        </button>
-        <p className="mt-1 text-center text-xs leading-relaxed text-nk-text-muted">
-          {SEEKER_DEMO_ACCOUNT.email} · {t("gateDemoHint")}
-        </p>
-      </div>
-
       <p className="text-center text-sm text-nk-text-muted">
         {lt("noAccount")}{" "}
         <Link
-          href={`/daftar?role=${role}`}
+          href={`/register?role=${role}`}
           onClick={onClose ?? onSuccess}
           className="font-medium text-nk-accent transition-colors hover:opacity-80"
         >
