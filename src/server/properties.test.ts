@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { propertyListQuerySchema, slugifyPropertyName } from "./properties";
+import { propertyIdentifierWhere, propertyListQuerySchema, slugifyPropertyName } from "./properties";
 
 describe("property query parsing", () => {
   it("parses repeated facilities and listing filters", () => {
@@ -23,6 +23,17 @@ describe("property query parsing", () => {
   it("rejects invalid prices and unknown sort values", () => {
     expect(propertyListQuerySchema.safeParse({ maxPrice: "-1" }).success).toBe(false);
     expect(propertyListQuerySchema.safeParse({ sort: "newest-first" }).success).toBe(false);
+  });
+});
+
+describe("property identifiers", () => {
+  it("queries slugs without passing them to a UUID column", () => {
+    expect(propertyIdentifierWhere("kost-griya-cemara-dago")).toEqual({ slug: "kost-griya-cemara-dago" });
+  });
+
+  it("accepts UUID identifiers", () => {
+    const id = "2a6e4a04-2207-4693-a862-769709945b87";
+    expect(propertyIdentifierWhere(id)).toEqual({ id });
   });
 });
 

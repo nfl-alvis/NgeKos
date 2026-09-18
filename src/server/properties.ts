@@ -18,6 +18,10 @@ export const propertyListQuerySchema = z
   })
   .strict();
 
+export function propertyIdentifierWhere(identifier: string): { id: string } | { slug: string } {
+  return z.uuid().safeParse(identifier).success ? { id: identifier } : { slug: identifier };
+}
+
 export function slugifyPropertyName(value: string) {
   return value
     .normalize("NFKD")

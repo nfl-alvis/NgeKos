@@ -4,7 +4,7 @@ import { Prisma, type Profile } from "@prisma/client";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/server/http";
-import { slugifyPropertyName, type propertyListQuerySchema } from "@/server/properties";
+import { propertyIdentifierWhere, slugifyPropertyName, type propertyListQuerySchema } from "@/server/properties";
 import type { PropertyCreateInput } from "@/server/validation";
 import type { z } from "zod";
 
@@ -127,7 +127,7 @@ export async function getProperty(identifier: string, viewer?: Profile | null) {
     where: {
       deletedAt: null,
       AND: [
-        { OR: [{ id: identifier }, { slug: identifier }] },
+        propertyIdentifierWhere(identifier),
         viewer?.role === "ADMIN"
           ? {}
           : viewer?.role === "OWNER"
