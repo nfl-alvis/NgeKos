@@ -22,7 +22,7 @@ const GENDER_KEYS = {
 } as const;
 
 /**
- * Modal detail verifikasi — dipakai halaman antrian (mode "review", lengkap
+ * Modal detail verifikasi - dipakai halaman antrian (mode "review", lengkap
  * dengan aksi approve/reject + alasan wajib) dan riwayat (mode "detail",
  * baca-saja + hasil keputusan). Sumber data: entri antrian/riwayat +
  * snapshot properti asli (properties.ts) agar admin menilai dari data penuh.
@@ -186,7 +186,7 @@ export default function VerificationDetailDialog({
                     {formatReviewDate(entry.decidedAt, locale)}
                   </dd>
                   <dt className="text-nk-text-muted">{th("colBy")}</dt>
-                  <dd className="text-right text-nk-text">{entry.decidedBy ?? "—"}</dd>
+                  <dd className="text-right text-nk-text">{entry.decidedBy ?? "-"}</dd>
                   {entry.decision === "rejected" && entry.rejectionReason && (
                     <div className="col-span-2 mt-1 rounded-md border border-[#EBC4C0] bg-[#FAEAE8] p-3">
                       <p className="text-xs font-medium text-[#9C3B32]">

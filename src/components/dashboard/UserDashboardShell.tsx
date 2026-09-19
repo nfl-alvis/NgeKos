@@ -5,7 +5,7 @@ import AdminPageShell from "@/components/admin/AdminPageShell";
 import { DEMO_TODAY } from "@/lib/data/userData";
 
 /**
- * Kerangka seragam halaman /dashboard* (user) dan /tenant/* (penyewa) —
+ * Kerangka seragam halaman /dashboard* (user) dan /tenant/* (penyewa) -
  * reuse AdminPageShell (sidebar per role + judul + toast in-place), lalu
  * menambah baris sapaan + tanggal demo.
  */

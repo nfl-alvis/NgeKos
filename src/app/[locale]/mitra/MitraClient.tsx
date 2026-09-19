@@ -17,7 +17,7 @@ export default function MitraClient({ steps, why }: { steps: Step[]; why: Step[]
 
   return (
     <div>
-      {/* hero split — konten kiri, mock dashboard kanan */}
+      {/* hero split - konten kiri, mock dashboard kanan */}
       <section className="border-b border-nk-border bg-nk-warm">
         <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 py-16 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-24">
           <div>

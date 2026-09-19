@@ -1,6 +1,6 @@
 "use client";
 
-/* ===== antrian verifikasi admin — satu-satunya sumber kebenaran keputusan =====
+/* ===== antrian verifikasi admin - satu-satunya sumber kebenaran keputusan =====
    Halaman /admin/verification menulis keputusan ke sini (sessionStorage, pola
    sama dengan SessionProvider); /admin/verification/history membacanya sehingga
    approve/reject hari ini langsung muncul di riwayat dengan alasan tersimpan.
@@ -24,7 +24,7 @@ export interface DecisionRecord {
 interface PersistedState {
   /** id antrian yang sudah diputuskan sesi ini */
   decisions: Record<string, DecisionRecord>;
-  /** snapshot field properti saat diajukan — modal review riwayat membacanya
+  /** snapshot field properti saat diajukan - modal review riwayat membacanya
       supaya data tetap lengkap walau entri hilang dari seed */
   snapshots: Record<string, AdminReviewEntry>;
 }

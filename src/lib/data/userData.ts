@@ -1,7 +1,7 @@
 /**
  * Dataset domain "user biasa" (pencari/penyewa) + detail tenancy tenant demo.
  * Dipakai bersama oleh /dashboard (aktivitas mencari kos) dan
- * /tenant/* (aktivitas tinggal di kos) — lihat rencana pemisahan dashboard.
+ * /tenant/* (aktivitas tinggal di kos) - lihat rencana pemisahan dashboard.
  */
 
 import type { Facility } from "./types";
@@ -12,7 +12,7 @@ import type { Facility } from "./types";
 export const DEMO_USER_EMAIL = "imade.sudiarta@gmail.com";
 export const DEMO_USER_NAME = "I made Sudiarta";
 
-/** tanggal "sekarang" versi demo — konstan supaya copy relatif tidak bergeser */
+/** tanggal "sekarang" versi demo - konstan supaya copy relatif tidak bergeser */
 export const DEMO_TODAY = new Date("2026-09-03T12:00:00");
 
 /* ===== ulasan milik user ===== */
@@ -133,7 +133,7 @@ export type ComplaintCategory =
 
 export type ComplaintStatus = "open" | "acknowledged" | "in_progress" | "resolved" | "closed";
 
-/** alur status pengaduan — dipakai untuk stepper detail */
+/** alur status pengaduan - dipakai untuk stepper detail */
 export const COMPLAINT_FLOW: ComplaintStatus[] = [
   "open",
   "acknowledged",
@@ -300,7 +300,7 @@ export const contractInfo = {
   renewalEn: "Auto-renews unless cancelled in writing.",
 };
 
-/** fasilitas bersama (bukan milik kamar) — waktu operasional netral locale */
+/** fasilitas bersama (bukan milik kamar) - waktu operasional netral locale */
 export const commonRooms = [
   { key: "kitchen", icon: "UtensilsCrossed", hoursId: "06.00 – 22.00", hoursEn: "06:00 – 22:00" },
   { key: "laundry", icon: "WashingMachine", hoursId: "Senin – Sabtu, 08.00 – 17.00", hoursEn: "Mon – Sat, 08:00 – 17:00" },

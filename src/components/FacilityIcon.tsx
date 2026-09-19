@@ -2,7 +2,7 @@ import Image from "next/image";
 import type { Facility } from "@/lib/data/types";
 
 /**
- * Ikon fasilitas dari Icons8 (style: iOS7 Outline, monochrome) — diambil
+ * Ikon fasilitas dari Icons8 (style: iOS7 Outline, monochrome) - diambil
  * via Icons8 MCP server (https://mcp.icons8.com/mcp/), disimpan lokal di
  * public/icons/facilities/ biar tidak tergantung CDN & gratis tanpa API key.
  * Satu style untuk semua ikon; SVG berbayar, jadi format = PNG 28px.

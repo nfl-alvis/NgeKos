@@ -166,7 +166,7 @@ export default function OwnerTenantsPage() {
                   </li>
                 ))}
               {rentalAgreements.filter((ra) => ra.tenantId === detail.id).length === 0 && (
-                <li className="text-sm text-nk-text-muted">—</li>
+                <li className="text-sm text-nk-text-muted">-</li>
               )}
             </ul>
 
@@ -184,7 +184,7 @@ export default function OwnerTenantsPage() {
                 </li>
               ))}
               {tenantInvoices(detail).length === 0 && (
-                <li className="text-sm text-nk-text-muted">—</li>
+                <li className="text-sm text-nk-text-muted">-</li>
               )}
             </ul>
 

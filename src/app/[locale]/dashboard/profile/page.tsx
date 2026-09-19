@@ -18,7 +18,7 @@ import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
 import ActivityList from "@/components/dashboard/ActivityList";
 
-/** Profil akun user biasa — data diri, ringkasan akun, aktivitas penuh. */
+/** Profil akun user biasa - data diri, ringkasan akun, aktivitas penuh. */
 export default function DashboardProfilePage() {
   const t = useTranslations("userDash.profile");
   const shellT = useTranslations("userDash");

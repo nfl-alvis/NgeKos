@@ -1,4 +1,4 @@
-/* ===== dataset panel admin — akun, transaksi Midtrans, refund, laporan, moderasi, konten, audit ===== */
+/* ===== dataset panel admin - akun, transaksi Midtrans, refund, laporan, moderasi, konten, audit ===== */
 
 export interface OwnerAccount {
   id: string;
@@ -246,7 +246,7 @@ export const adminReviewItems: AdminReviewItem[] = [
   { id: "rv-1", authorName: "Anindya P.", propertyName: "Kost Griya Cemara", rating: 5, bodyId: "Kamar bersih, air panas lancar, pemilik responsif. recommended untuk mahasiswa.", bodyEn: "Clean room, hot water works well, responsive owner. Recommended for students.", at: "2026-09-01", flagged: false },
   { id: "rv-2", authorName: "Kevin H.", propertyName: "Kost Kenanga", rating: 4, bodyId: "Lokasi strategis dan parkir luas. Dinding kamar agak tipis saat malam.", bodyEn: "Strategic location and wide parking. Room walls are a bit thin at night.", at: "2026-08-24", flagged: false },
   { id: "rv-3", authorName: "Sarah A.", propertyName: "Kost Al-Amin", rating: 5, bodyId: "WiFi stabil untuk kerja remote, dapur bersama selalu bersih. Betah tinggal di sini.", bodyEn: "Stable WiFi for remote work, shared kitchen always clean. Feels great living here.", at: "2026-08-17", flagged: false },
-  { id: "rv-7", authorName: "akun_baru_912", propertyName: "Kost Zinnia", rating: 1, bodyId: "BUANG BUANG PROMO RODI GAP — cek profil saya buat linknya!!!", bodyEn: "SPAM SPAM PROMO — check my profile for the link!!!", at: "2026-09-02", flagged: true },
+  { id: "rv-7", authorName: "akun_baru_912", propertyName: "Kost Zinnia", rating: 1, bodyId: "BUANG BUANG PROMO RODI GAP - cek profil saya buat linknya!!!", bodyEn: "SPAM SPAM PROMO - check my profile for the link!!!", at: "2026-09-02", flagged: true },
   { id: "rv-8", authorName: "Hendra W.", propertyName: "Kost Melati Baru", rating: 5, bodyId: "Review dari pemilik sendiri, 5 bintang semua dalam 1 malam.", bodyEn: "Self-review from the owner, all 5 stars within one night.", at: "2026-08-31", flagged: true },
   { id: "rv-9", authorName: "Citra L.", propertyName: "Kost Kenanga", rating: 4, bodyId: "Pengelola ramah, tapi harga naik mendadak di tengah kontrak.", bodyEn: "Friendly manager, but price spiked mid-contract.", at: "2026-08-29", flagged: false },
 ];

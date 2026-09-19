@@ -9,7 +9,7 @@ import { notificationPrefs } from "@/lib/data/userData";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
 
-/** Pengaturan akun user — preferensi notifikasi & keamanan (demo in-place). */
+/** Pengaturan akun user - preferensi notifikasi & keamanan (demo in-place). */
 export default function DashboardSettingsPage() {
   const t = useTranslations("userDash.settings");
   const shellT = useTranslations("userDash");

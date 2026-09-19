@@ -96,7 +96,7 @@ function PhoneMock({ className }: { className?: string }) {
   );
 }
 
-/* feature glyphs — stroke 1.6, currentColor (konvensi ikon proyek) */
+/* feature glyphs - stroke 1.6, currentColor (konvensi ikon proyek) */
 function IconList() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -139,7 +139,7 @@ export default async function AboutPage({
 
   return (
     <>
-      {/* ===== HERO — full-bleed ink, curve fold, phone overlapping into next section ===== */}
+      {/* ===== HERO - full-bleed ink, curve fold, phone overlapping into next section ===== */}
       <CurveHero>
         <div className="mx-auto flex min-h-[560px] w-full max-w-6xl flex-col items-center gap-10 px-6 pt-32 pb-36 md:min-h-[85vh] md:flex-row md:justify-between md:pt-40 md:pb-32 lg:gap-16">
           <div className="max-w-xl text-center md:text-left">
@@ -172,7 +172,7 @@ export default async function AboutPage({
         </div>
       </CurveHero>
 
-      {/* ===== FEATURES — Mamikos pull: overlap -10rem, glyph + title + body, centered stack ===== */}
+      {/* ===== FEATURES - Mamikos pull: overlap -10rem, glyph + title + body, centered stack ===== */}
       <section className="bg-nk-bg">
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid gap-x-14 gap-y-16 pt-40 pb-24 md:grid-cols-3 md:gap-y-10 md:pt-32">
@@ -195,7 +195,7 @@ export default async function AboutPage({
         </div>
       </section>
 
-      {/* ===== ZIGZAG — image + copy pairs, reverse order per row (Mamikos about-us-info) ===== */}
+      {/* ===== ZIGZAG - image + copy pairs, reverse order per row (Mamikos about-us-info) ===== */}
       <section className="border-t border-nk-border bg-nk-surface">
         <div className="mx-auto flex max-w-6xl flex-col gap-20 px-6 py-24 md:gap-28">
           <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">

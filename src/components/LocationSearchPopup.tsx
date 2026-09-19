@@ -230,7 +230,7 @@ export default function LocationSearchPopup({
   open: boolean;
   onClose: () => void;
   onPick: (pick: LocationPick) => void;
-  /** teks yang sudah diketik di input hero — dibawa ke popup agar autocomplete jalan */
+  /** teks yang sudah diketik di input hero - dibawa ke popup agar autocomplete jalan */
   initialQuery?: string;
   /** sinkron balik ketikan popup ke input hero (tombol Enter di hero memakai nilai ini) */
   onQueryChange?: (v: string) => void;
@@ -320,14 +320,14 @@ export default function LocationSearchPopup({
 
   return createPortal(
     <>
-      {/* backdrop — full cover */}
+      {/* backdrop - full cover */}
       <div
         className="fixed inset-0 z-[60] bg-nk-text/30 backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* popup panel — centered top overlay, not full-width */}
+      {/* popup panel - centered top overlay, not full-width */}
       <div
         className="fixed inset-x-0 top-0 z-[70] flex justify-center pt-16 md:pt-20"
         role="dialog"
@@ -457,7 +457,7 @@ export default function LocationSearchPopup({
           </div>
         </div>
 
-        {/* accordion directory — organised by city */}
+        {/* accordion directory - organised by city */}
         <div className="px-4 pb-2 pt-3">
           <p className="mb-2 text-xs font-medium text-nk-text-muted">
             {t("popup.directoryTitle", { tab: t(`popup.tab.${activeTab}`) })}

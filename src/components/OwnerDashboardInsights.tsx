@@ -31,7 +31,7 @@ const STATUS_LABEL_KEYS: Record<RoomStatus, "occupied" | "available" | "reserved
   maintenance: "repair",
 };
 
-// legend berada di luar scope ChartContainer — pakai token --chart-N langsung (ala referensi hotel)
+// legend berada di luar scope ChartContainer - pakai token --chart-N langsung (ala referensi hotel)
 const STATUS_CHART_TOKENS: Record<"occupied" | "available" | "reserved" | "repair", string> = {
   occupied: "--chart-1",
   available: "--chart-3",
@@ -105,7 +105,7 @@ export default function OwnerDashboardInsights() {
                   className="flex items-center gap-1.5 rounded-md bg-nk-surface px-3 py-1.5 text-sm text-nk-text ring-1 ring-foreground/10 transition-colors hover:bg-nk-accent-subtle focus:outline-none"
                   aria-label={t("properties")}
                 >
-                  {selected?.name ?? "—"}
+                  {selected?.name ?? "-"}
                   <ChevronDown className="size-3.5 text-nk-text-muted" aria-hidden="true" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

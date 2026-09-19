@@ -1,6 +1,6 @@
 "use client";
 
-/* ===== aktivitas user (pencari kos) — seed statis + entri sesi =====
+/* ===== aktivitas user (pencari kos) - seed statis + entri sesi =====
    Pola external-store sessionStorage sama seperti adminReviewStore:
    tulis dari dialog (bayar, ulasan, favorit), baca di dashboard & halaman
    aktivitas supaya riwayat bertambah tanpa backend. */
@@ -21,7 +21,7 @@ export type ActivityType =
 export interface ActivityItem {
   id: string;
   type: ActivityType;
-  /** copy terjemahan Indonesia — dipakai langsung sebagai label */
+  /** copy terjemahan Indonesia - dipakai langsung sebagai label */
   titleId: string;
   titleEn: string;
   /** nama objek terkait (kos / booking) */

@@ -5,7 +5,7 @@ import DashboardShell from "@/components/DashboardShell";
 
 /* ===== kerangka seragam halaman admin =====
    Semua menu admin memakai shell ini: sidebar admin + judul + badge + toast
-   in-place (pola toast VerificationDetailDialog — tanpa library tambahan).
+   in-place (pola toast VerificationDetailDialog - tanpa library tambahan).
    Aksi halaman memanggil useAdminToast().show("pesan"). */
 
 const ToastCtx = createContext<{ show: (msg: string) => void }>({ show: () => {} });
@@ -21,7 +21,7 @@ export default function AdminPageShell({
   actions,
   children,
 }: {
-  /** role shell sidebar — panel admin (default), juga dipakai halaman /dashboard & /tenant */
+  /** role shell sidebar - panel admin (default), juga dipakai halaman /dashboard & /tenant */
   role?: "owner" | "admin" | "tenant" | "user";
   title: string;
   /** chip kecil di samping judul (mis. jumlah pending) */
@@ -59,7 +59,7 @@ export default function AdminPageShell({
   );
 }
 
-/** Stat ringkasan — pola band-card (band judul berwarna + kartu dalam putih ber-ring). */
+/** Stat ringkasan - pola band-card (band judul berwarna + kartu dalam putih ber-ring). */
 export function AdminStat({
   label,
   value,
@@ -124,7 +124,7 @@ export function AdminSection({
   );
 }
 
-/** Menu aksi per baris (Ellipsis) — trigger sama dgn tabel performa owner. */
+/** Menu aksi per baris (Ellipsis) - trigger sama dgn tabel performa owner. */
 import { Ellipsis } from "lucide-react";
 import {
   DropdownMenu,

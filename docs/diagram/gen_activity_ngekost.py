@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Generator activity diagram Ngekost — gaya Siedu.
+"""Generator activity diagram Ngekost - gaya Siedu.
 
 Referensi visual: Activity Diagram Siedu.drawio
   - swimlane asli (node parent-nya lane)
@@ -11,7 +11,7 @@ Referensi visual: Activity Diagram Siedu.drawio
   - login + register DIGABUNG per role (Owner / Guest / Tenant)
 
 Cara pakai: python3 gen_activity_ngekost.py
-JANGAN edit file .drawio hasilnya — regenerate.
+JANGAN edit file .drawio hasilnya - regenerate.
 """
 import xml.sax.saxutils as sax
 import xml.etree.ElementTree as ET

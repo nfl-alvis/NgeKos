@@ -19,7 +19,7 @@ import ActivityList from "@/components/dashboard/ActivityList";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 
 /**
- * Dashboard user biasa — "aktivitas saya mencari dan mendapatkan kos".
+ * Dashboard user biasa - "aktivitas saya mencari dan mendapatkan kos".
  * Booking aktif & status pembayaran = bagian terpenting; saat user sudah
  * jadi penyewa, kartu Kos Aktif mengarah ke /tenant/dashboard (kedua
  * dashboard hidup berbarengan, tidak dipindahkan).
@@ -82,7 +82,7 @@ export default function UserDashboardPage() {
 
   return (
     <UserDashboardShell title={t("title")} greeting={t("welcome", { name: firstName })}>
-      {/* ringkasan aktivitas — selalu tampil */}
+      {/* ringkasan aktivitas - selalu tampil */}
       <div className="mb-10 grid grid-cols-2 gap-4 xl:grid-cols-4">
         {stats.map((s) => (
           <Link
@@ -141,7 +141,7 @@ export default function UserDashboardPage() {
 
           {hasAnyBooking && <RecommendationsPanel />}
 
-          {/* jelajahi kos — CTA tetap tersedia walau sedang menempati kos */}
+          {/* jelajahi kos - CTA tetap tersedia walau sedang menempati kos */}
           <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#F3EDE6]">
             <h2 className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{t("explore.title")}</h2>
             <div className="flex flex-1 flex-col gap-3 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">

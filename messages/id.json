@@ -195,7 +195,7 @@
     "skip": "Lewati ke konten"
   },
   "notFound": {
-    "eyebrow": "404 — Halaman tidak ditemukan",
+    "eyebrow": "404 - Halaman tidak ditemukan",
     "title": "Halaman yang kamu cari tidak ada.",
     "body": "Mungkin alamatnya salah ketik, atau halamannya sudah dipindah. Coba jelajahi kost terverifikasi lewat tombol di bawah.",
     "ctaPrimary": "Jelajahi kost",
@@ -365,7 +365,7 @@
     "tabDone": "Selesai/Dibatalkan",
     "statusPending": "Menunggu Persetujuan",
     "statusPendingNote": "Sisa waktu: {time}",
-    "statusAwaitPay": "Disetujui — Menunggu Pembayaran",
+    "statusAwaitPay": "Disetujui - Menunggu Pembayaran",
     "statusAwaitPayNote": "Bayar dalam: {time}",
     "statusActive": "Aktif / Lunas",
     "statusRejected": "Ditolak",
@@ -396,7 +396,7 @@
     "payNow": "Bayar Sekarang",
     "warning": "Jika waktu habis sebelum pembayaran selesai, booking akan otomatis dibatalkan.",
     "simTitle": "Simulasi: Pembayaran Berhasil",
-    "simBody": "Pembayaran dummy — tidak ada dana yang berpindah. Status booking diperbarui menjadi Lunas.",
+    "simBody": "Pembayaran dummy - tidak ada dana yang berpindah. Status booking diperbarui menjadi Lunas.",
     "backToBookings": "Kembali ke Status Booking",
     "notFound": "Tagihan tidak ditemukan"
   },
@@ -700,7 +700,7 @@
       "error": "Akun ini tidak memiliki akses Admin. Hubungi operator platform jika ini keliru.",
       "demo": "Demo: gunakan bayu.pratama@ngekost.id",
       "pickerTitle": "Pilih akun Google",
-      "pickerSubtitle": "Demo — akun di luar daftar admin akan ditolak."
+      "pickerSubtitle": "Demo - akun di luar daftar admin akan ditolak."
     },
     "queue": {
       "title": "Antrian Verifikasi",
@@ -1670,7 +1670,7 @@
         "refunding": "Sedang Diproses",
         "refunded": "Dana Dikembalikan"
       },
-      "refundingNote": "Booking ditolak — dana dikembalikan otomatis.",
+      "refundingNote": "Booking ditolak - dana dikembalikan otomatis.",
       "awaitOwnerNote": "Booking menunggu konfirmasi pemilik.",
       "empty": "Belum ada transaksi pembayaran.",
       "allSet": "Tidak ada tagihan yang menunggu pembayaran."
@@ -1721,7 +1721,7 @@
     },
     "explore": {
       "title": "Cari Kos Lain?",
-      "body": "Kamu tetap bisa mencari kos untuk masa depan — favorit dan booking aktif tidak terpengaruh.",
+      "body": "Kamu tetap bisa mencari kos untuk masa depan - favorit dan booking aktif tidak terpengaruh.",
       "cta": "Jelajahi Kos"
     },
     "profile": {
@@ -1743,7 +1743,7 @@
       "sumSpent": "Total dibayar (booking)",
       "tenancy": "Status Tenancy",
       "tenancyActive": "Penyewa Aktif",
-      "tenancyNote": "Menginap sejak {date} — semua aktivitas tinggal ada di dashboard tenant.",
+      "tenancyNote": "Menginap sejak {date} - semua aktivitas tinggal ada di dashboard tenant.",
       "tenancyCta": "Buka Dashboard Tenant"
     },
     "settings": {
@@ -1801,7 +1801,7 @@
     "room": {
       "title": "Kamar Saya",
       "header": "Kamar {room}",
-      "occupied": "Terisi — kamu",
+      "occupied": "Terisi - kamu",
       "fProperty": "Kos",
       "fFloor": "Lantai",
       "floorValue": "Lantai {floor}",

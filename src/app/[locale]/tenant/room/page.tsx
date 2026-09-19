@@ -21,7 +21,7 @@ const COMMON_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
   cctv: ShieldCheck,
 };
 
-/** Kamar Saya — detail kamar aktif, fasilitas kamar, area bersama. */
+/** Kamar Saya - detail kamar aktif, fasilitas kamar, area bersama. */
 export default function TenantRoomPage() {
   const t = useTranslations("tenantPages.room");
   const locale = useLocale();

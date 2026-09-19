@@ -18,7 +18,7 @@ const toISO = (d: Date) =>
 
 /**
  * Field tanggal mulai pakai shadcn Calendar (react-day-picker) di dalam
- * shadcn Popover — pengganti input type="date". Nilai tetap string ISO
+ * shadcn Popover - pengganti input type="date". Nilai tetap string ISO
  * "YYYY-MM-DD" (sama seperti state booking sebelumnya). Tanggal sebelum
  * hari ini di-disable.
  */

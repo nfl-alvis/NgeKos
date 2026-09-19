@@ -83,7 +83,7 @@ type Stat = {
   sparkColor: string;
 };
 
-// sparkline demo — pola 8 titik terakhir dari tren dataset
+// sparkline demo - pola 8 titik terakhir dari tren dataset
 const SPARKS = {
   revenue: [19.2, 21.4, 20.1, 23.8, 22.6, 26.9, 29.4, 33.7],
   occupancy: [52, 55, 55, 58, 58, 55, 55, 55],
@@ -155,7 +155,7 @@ export default function OwnerDashboardPage() {
     reviewTotal > 0
       ? rated.reduce((s, r) => s + r.property.rating * r.property.reviewCount, 0) / reviewTotal
       : 0;
-  // distribusi bintang demo — dihitung deterministik dari rata-rata rating
+  // distribusi bintang demo - dihitung deterministik dari rata-rata rating
   const dist = [5, 4, 3, 2, 1].map((star) => ({
     star,
     weight: Math.max(0, Math.exp(-Math.abs(star - reviewAvg) * 1.1)),
@@ -209,7 +209,7 @@ export default function OwnerDashboardPage() {
     value: { label: t("chartSeries"), color: "var(--chart-1)" },
   } satisfies ChartConfig;
 
-  // Band judul tinted di atas card putih — tidak membungkus isi card.
+  // Band judul tinted di atas card putih - tidak membungkus isi card.
   const stats: Stat[] = [
     {
       label: t("statRevenue"),
@@ -265,7 +265,7 @@ export default function OwnerDashboardPage() {
 
   return (
     <DashboardShell role="owner">
-      {/* header — judul + tanggal kiri, ekspor kanan (ala baris tanggal+Download di referensi) */}
+      {/* header - judul + tanggal kiri, ekspor kanan (ala baris tanggal+Download di referensi) */}
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-medium tracking-tight text-nk-text sm:text-3xl">
@@ -279,7 +279,7 @@ export default function OwnerDashboardPage() {
         </button>
       </div>
 
-      {/* stat cards — band judul tinted di atas, card putih menyatu di bawah */}
+      {/* stat cards - band judul tinted di atas, card putih menyatu di bawah */}
       <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((s) => (
           <div
@@ -359,7 +359,7 @@ export default function OwnerDashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* kolom kiri: spotlight + booking pending + chart */}
         <div className="flex flex-col gap-6 lg:col-span-2">
-          {/* kartu spotlight — padanan "Best seller of the month" di referensi */}
+          {/* kartu spotlight - padanan "Best seller of the month" di referensi */}
           {best && (
             <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#FBF3DC]">
               <div className="flex items-center justify-between px-4 pb-1 pt-3">
@@ -449,7 +449,7 @@ export default function OwnerDashboardPage() {
             </div>
           </section>
 
-          {/* revenue stat — pola Revenue Stat hotel dashboard: band judul + dropdown, total + trend, bar chart */}
+          {/* revenue stat - pola Revenue Stat hotel dashboard: band judul + dropdown, total + trend, bar chart */}
           <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-nk-section">
             <div className="flex items-center justify-between px-4 pb-1 pt-3">
               <h2 className="text-sm font-semibold text-nk-text">{t("chartTitle")}</h2>
@@ -515,7 +515,7 @@ export default function OwnerDashboardPage() {
 
         {/* sidebar kanan: ulasan + aktivitas */}
         <div className="flex flex-col gap-6">
-          {/* widget ulasan — padanan "Customer Reviews" di referensi */}
+          {/* widget ulasan - padanan "Customer Reviews" di referensi */}
           <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-nk-section">
             <h2 className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{t("reviewsTitle")}</h2>
             <div className="flex flex-1 flex-col gap-4 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">
@@ -593,7 +593,7 @@ export default function OwnerDashboardPage() {
         </div>
       </div>
 
-      {/* tabel performa properti — padanan "Recent Orders"/"Best Selling Products" di referensi */}
+      {/* tabel performa properti - padanan "Recent Orders"/"Best Selling Products" di referensi */}
       <section className="mt-6 flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-nk-section">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-1 pt-3">
           <h2 className="text-sm font-semibold text-nk-text">{t("perfTitle")}</h2>
@@ -656,7 +656,7 @@ export default function OwnerDashboardPage() {
                         )}
                       </TableCell>
                       <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text">
-                        {r.monthly > 0 ? `${formatIDR(r.monthly)}${t("perMonth")}` : "—"}
+                        {r.monthly > 0 ? `${formatIDR(r.monthly)}${t("perMonth")}` : "-"}
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         {r.property.rating > 0 ? (

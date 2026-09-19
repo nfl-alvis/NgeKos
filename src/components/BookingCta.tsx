@@ -25,7 +25,7 @@ import { useBookingFlow, type BookingRoom } from "@/components/BookingFlowProvid
 const DURATION_VALUES = ["1", "3", "6", "12"] as const;
 
 /**
- * Tombol ajukan sewa yang membuka popup (shadcn Dialog) di tempat —
+ * Tombol ajukan sewa yang membuka popup (shadcn Dialog) di tempat -
  * tidak navigasi ke halaman baru dulu. Di dalam popup: pilih kamar,
  * tanggal masuk (shadcn Calendar dalam Popover) dan durasi sewa
  * (shadcn Select, di sampingnya). Setelah Lanjut, state tersimpan di
@@ -94,7 +94,7 @@ export default function BookingCta({
                   <SelectContent align="start">
                     {rooms.map((r) => (
                       <SelectItem key={r.id} value={r.id}>
-                        {r.name} — {formatIDR(r.pricePerMonth)} {t("perMonth")}
+                        {r.name} - {formatIDR(r.pricePerMonth)} {t("perMonth")}
                       </SelectItem>
                     ))}
                   </SelectContent>

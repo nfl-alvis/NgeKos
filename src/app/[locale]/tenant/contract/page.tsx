@@ -14,7 +14,7 @@ import { DashSection } from "@/components/dashboard/DashSection";
 const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
 const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
 
-/** Kontrak / Masa Sewa — periode tenancy, syarat, dan peraturan kos. */
+/** Kontrak / Masa Sewa - periode tenancy, syarat, dan peraturan kos. */
 export default function TenantContractPage() {
   const t = useTranslations("tenantPages.contract");
   const locale = useLocale();
@@ -152,7 +152,7 @@ export default function TenantContractPage() {
 /** ekspor teks ringkasan kontrak (pola Blob download sama dgn Ekspor CSV owner) */
 function downloadContract(fileName: string) {
   const lines = [
-    "NgeKost — Ringkasan Kontrak Sewa",
+    "NgeKost - Ringkasan Kontrak Sewa",
     `Kos: ${PROPERTY.name}`,
     `Kamar: ${DEMO_TENANT.roomNumber}`,
     `Penyewa: ${DEMO_TENANT.name}`,

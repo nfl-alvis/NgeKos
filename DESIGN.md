@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: NgeKost
-description: Platform listing kost premium — warm neutral + terracotta, modern Indonesian boarding house marketplace.
+description: Platform listing kost premium - warm neutral + terracotta, modern Indonesian boarding house marketplace.
 colors:
   text: "#1C1917"
   text-muted: "#78716C"
@@ -84,13 +84,13 @@ NgeKost adalah platform listing kost premium Indonesia. Desain mengutamakan keha
 
 ## Colors
 
-- **Accent (#C2633B):** Terracotta hangat — driver utama untuk semua interaksi dan CTA.
+- **Accent (#C2633B):** Terracotta hangat - driver utama untuk semua interaksi dan CTA.
 - **Background (#FAF9F7):** Warm cream yang memberikan kehangatan.
 - **Text (#1C1917):** Warm near-black, bukan pure black.
 
 ## Typography
 
-**Geist** untuk seluruh permukaan — sans-serif premium dengan karakter tegas.
+**Geist** untuk seluruh permukaan - sans-serif premium dengan karakter tegas.
 
 ## Layout
 

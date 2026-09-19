@@ -17,7 +17,7 @@ import { DashSection } from "@/components/dashboard/DashSection";
 const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
 const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
 
-/** Kos Saya — properti yang sedang dihuni + info owner + kontak. */
+/** Kos Saya - properti yang sedang dihuni + info owner + kontak. */
 export default function TenantPropertyPage() {
   const t = useTranslations("tenantPages.property");
   const locale = useLocale();

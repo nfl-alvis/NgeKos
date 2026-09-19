@@ -39,6 +39,6 @@ describe("property identifiers", () => {
 
 describe("property slugs", () => {
   it("normalizes Indonesian names into URL-safe slugs", () => {
-    expect(slugifyPropertyName("  Kost Putri Mawar — Dago! ")).toBe("kost-putri-mawar-dago");
+    expect(slugifyPropertyName("  Kost Putri Mawar - Dago! ")).toBe("kost-putri-mawar-dago");
   });
 });

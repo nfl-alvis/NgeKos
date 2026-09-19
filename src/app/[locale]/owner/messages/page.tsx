@@ -79,7 +79,7 @@ export default function OwnerMessagesPage() {
   return (
     <DashboardShell role="owner">
       <div className="flex h-[calc(100vh-7.5rem)] min-h-96 gap-6">
-        {/* section kiri: menyatu dengan canvas — title, search, list kontak */}
+        {/* section kiri: menyatu dengan canvas - title, search, list kontak */}
         <aside className={cn("flex w-full min-h-0 flex-col lg:w-80 lg:shrink-0", active && "hidden lg:flex")}>
           <h1 className="px-1 pb-3 text-2xl font-medium tracking-tight text-nk-text">{t("title")}</h1>
           <div className="relative pb-3">
@@ -216,7 +216,7 @@ export default function OwnerMessagesPage() {
               </DropdownMenu>
             </header>
 
-            {/* pesan — tanggal sebagai pemisah grup di atas bubble */}
+            {/* pesan - tanggal sebagai pemisah grup di atas bubble */}
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
               {active.messages.map((m, i) => {
                 const prev = active.messages[i - 1];

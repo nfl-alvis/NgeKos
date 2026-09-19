@@ -1,9 +1,9 @@
 "use client";
 
-/* ===== store aktivitas user — favorit, pembayaran booking, ulasan =====
+/* ===== store aktivitas user - favorit, pembayaran booking, ulasan =====
    External-store sessionStorage (pola adminOpsStore). Aksi dari /dashboard
    dan turunannya ditulis ke sini; snapshot derived stabil (recompute hanya
-   saat setState/load — bukan di selector) agar aman untuk useSyncExternalStore. */
+   saat setState/load - bukan di selector) agar aman untuk useSyncExternalStore. */
 
 import { useSyncExternalStore } from "react";
 import { favoriteSlugsSeed, seedUserPayments, seedUserReviews, type BookingPayment, type UserReview } from "@/lib/data/userData";

@@ -138,7 +138,7 @@ export default function AdminHistoryPage() {
                       {formatReviewDate(h.submittedAt, locale)}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-nk-text-muted">
-                      {h.decidedAt ? formatReviewDate(h.decidedAt, locale) : "—"}
+                      {h.decidedAt ? formatReviewDate(h.decidedAt, locale) : "-"}
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       {h.decision === "approved" ? (
@@ -155,10 +155,10 @@ export default function AdminHistoryPage() {
                             alt=""
                           />
                           <AvatarFallback className="bg-nk-warm text-nk-text">
-                            {h.decidedBy ? initialOf(h.decidedBy) : "—"}
+                            {h.decidedBy ? initialOf(h.decidedBy) : "-"}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-nk-text">{h.decidedBy ?? "—"}</span>
+                        <span className="text-nk-text">{h.decidedBy ?? "-"}</span>
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-3">
@@ -186,7 +186,7 @@ export default function AdminHistoryPage() {
                     <p className="text-xs text-nk-text-muted">{h.ownerName}</p>
                     <p className="mt-0.5 text-xs text-nk-text-muted">
                       {formatReviewDate(h.submittedAt, locale)} →{" "}
-                      {h.decidedAt ? formatReviewDate(h.decidedAt, locale) : "—"}
+                      {h.decidedAt ? formatReviewDate(h.decidedAt, locale) : "-"}
                     </p>
                   </div>
                   {h.decision === "approved" ? (
@@ -196,7 +196,7 @@ export default function AdminHistoryPage() {
                   )}
                 </div>
                 <p className="mt-2 text-xs text-nk-text-muted">
-                  {t("colBy")}: {h.decidedBy ?? "—"}
+                  {t("colBy")}: {h.decidedBy ?? "-"}
                 </p>
                 <button
                   type="button"
@@ -211,7 +211,7 @@ export default function AdminHistoryPage() {
         </>
       )}
 
-      {/* modal detail — data properti penuh + hasil keputusan + alasan reject */}
+      {/* modal detail - data properti penuh + hasil keputusan + alasan reject */}
       <VerificationDetailDialog
         key={detail?.id ?? "none"}
         entry={detail}

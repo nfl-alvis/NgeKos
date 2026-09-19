@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
    Alur pendaftaran owner terinspirasi Mamikos: phone-first.
    Masuk nomor WhatsApp → OTP → data diri → kos pertama → done.
    Desain memakai design system NgeKost (warm cream, flat,
-   accent #3A2618, Geist, rounded-lg) — bukan tiruan visual.
+   accent #3A2618, Geist, rounded-lg) - bukan tiruan visual.
    ============================================================ */
 
 type Gender = "campur" | "putra" | "putri";
@@ -103,7 +103,7 @@ function StepIndicator({ current }: { current: number }) {
         })}
       </div>
       <p className="mt-3 text-xs font-medium text-nk-text-muted" aria-live="polite">
-        {ot("stepOf", { current, total: TOTAL_STEPS })} — {labels[current - 1]}
+        {ot("stepOf", { current, total: TOTAL_STEPS })} - {labels[current - 1]}
       </p>
     </div>
   );

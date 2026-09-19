@@ -28,7 +28,7 @@ export default function LanguageSwitcher() {
   function switchLocale(next: string) {
     if (next === locale) return;
     router.replace(
-      // @ts-expect-error — dynamic pathname with locale
+      // @ts-expect-error - dynamic pathname with locale
       { pathname, params },
       { locale: next }
     );

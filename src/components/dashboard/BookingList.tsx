@@ -1,6 +1,6 @@
 "use client";
 
-/* ===== daftar booking user — dipakai /bookings (standalone) & /dashboard/bookings =====
+/* ===== daftar booking user - dipakai /bookings (standalone) & /dashboard/bookings =====
    Dialog & logika kartu dipindah dari halaman lama supaya kedua halaman identik
    (aturan konsistensi lintas halaman sejenis). */
 
@@ -281,7 +281,7 @@ export default function BookingList() {
   );
 }
 
-/** riwayat booking versi ringkas (halaman /dashboard — preview booking terbaru) */
+/** riwayat booking versi ringkas (halaman /dashboard - preview booking terbaru) */
 export function BookingPreviewRow({ booking }: { booking: Booking }) {
   const t = useTranslations("myBookings");
   const locale = useLocale();

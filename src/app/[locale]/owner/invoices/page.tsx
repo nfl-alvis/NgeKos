@@ -79,7 +79,7 @@ export default function OwnerInvoicesPage() {
         </button>
       </div>
 
-      {/* ringkasan — band judul tinted di atas, card putih menyatu di bawah */}
+      {/* ringkasan - band judul tinted di atas, card putih menyatu di bawah */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:max-w-md">
         <div className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#E8EFF8]">
           <p className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{t("summaryUnpaid")}</p>
@@ -209,7 +209,7 @@ export default function OwnerInvoicesPage() {
               onChange={(e) => setNewInv((v) => ({ ...v, tenant: e.target.value }))}
               className="rounded-lg border border-nk-border bg-nk-surface px-3 py-2.5 text-sm text-nk-text outline-none focus:border-nk-accent"
             >
-              <option value="">—</option>
+              <option value="">-</option>
               {tenants.map((tn) => (
                 <option key={tn.id} value={tn.name}>
                   {tn.name}

@@ -1,6 +1,6 @@
 "use client";
 
-/* ===== store operasi tenant — tagihan lunas + pengaduan baru =====
+/* ===== store operasi tenant - tagihan lunas + pengaduan baru =====
    Pola external-store sessionStorage (sama dgn adminOpsStore):
    /tenant/bills menandai lunas, /tenant/complaints menulis pengaduan baru,
    /dashboard + /tenant/dashboard membacanya agar status berubah lintas halaman. */

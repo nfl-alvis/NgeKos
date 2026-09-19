@@ -16,7 +16,7 @@ const DialogClose = DialogPrimitive.Close;
  * rounded-lg, border nk-border, bg surface, close button pojok kanan atas.
  *
  * Guard: klik di dalam popup Base UI Select yang diportal ke body (mis.
- * di dalam dialog pengajuan sewa) bukan "outside interaction" — jangan
+ * di dalam dialog pengajuan sewa) bukan "outside interaction" - jangan
  * tutup dialog saat user memilih opsi.
  */
 const isInsidePortaledPopup = (target: EventTarget | null) => {

@@ -155,7 +155,7 @@ export default function AdminVerificationPage() {
         )}
       </div>
 
-      {/* ringkasan — pola band-card seperti stat dashboard owner */}
+      {/* ringkasan - pola band-card seperti stat dashboard owner */}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <QueueStat
           label={t("statWaiting")}
@@ -166,7 +166,7 @@ export default function AdminVerificationPage() {
         />
         <QueueStat
           label={t("statOldest")}
-          value={queue.length ? t("daysUnit", { count: oldestWait }) : "—"}
+          value={queue.length ? t("daysUnit", { count: oldestWait }) : "-"}
           note={t("statOldestNote")}
           icon={Hourglass}
           tint={{ card: "bg-[#FBF3DC]", icon: "bg-[#F3E3B8] text-[#8A6A1F]" }}
@@ -343,7 +343,7 @@ export default function AdminVerificationPage() {
         </>
       )}
 
-      {/* modal review — data properti penuh + keputusan tersimpan ke riwayat */}
+      {/* modal review - data properti penuh + keputusan tersimpan ke riwayat */}
       <VerificationDetailDialog
         key={review?.id ?? "none"}
         entry={review}

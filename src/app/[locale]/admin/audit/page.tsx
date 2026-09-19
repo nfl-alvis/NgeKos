@@ -53,7 +53,7 @@ const GROUP_COLOR: Record<string, StatusColor> = {
   notify: "gray",
 };
 
-/** Riwayat tindakan admin — audit trail seluruh operasi panel. */
+/** Riwayat tindakan admin - audit trail seluruh operasi panel. */
 export default function AdminAuditPage() {
   const t = useTranslations("admin.audit");
   const locale = useLocale();

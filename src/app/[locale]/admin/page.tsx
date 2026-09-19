@@ -108,7 +108,7 @@ function StatCard({
   );
 }
 
-/** Ringkasan kondisi platform — beranda panel admin. */
+/** Ringkasan kondisi platform - beranda panel admin. */
 export default function AdminDashboardPage() {
   const t = useTranslations("admin.dashboard");
   const tu = useTranslations("admin.units");
@@ -158,7 +158,7 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminPageShell title={t("title")}>
-      {/* baris stat — band-card + sparkline, konsisten dgn dashboard owner */}
+      {/* baris stat - band-card + sparkline, konsisten dgn dashboard owner */}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label={t("statRevenue")}
@@ -388,10 +388,10 @@ export default function AdminDashboardPage() {
             ))}
           </AdminSection>
 
-          {/* kesehatan platform — umur antrian terlama */}
+          {/* kesehatan platform - umur antrian terlama */}
           <AdminStat
             label={t("oldestTitle")}
-            value={pendingVerif ? tu("days", { count: oldestWait }) : "—"}
+            value={pendingVerif ? tu("days", { count: oldestWait }) : "-"}
             note={pendingVerif ? t("oldestNote", { count: pendingVerif }) : t("verifEmpty")}
             icon={Hourglass}
             tint={{

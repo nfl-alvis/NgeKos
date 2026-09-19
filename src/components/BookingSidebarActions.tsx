@@ -10,7 +10,7 @@ import { useBookingFlow, type BookingRoom } from "@/components/BookingFlowProvid
 /**
  * Aksi booking di sidebar detail kost. Sebelum pengajuan dipilih:
  * tombol "Sewa Sekarang" (buka popup). Setelah Lanjut di popup: section
- * ini terupdate sendiri — tidak pindah halaman — menampilkan rincian
+ * ini terupdate sendiri - tidak pindah halaman - menampilkan rincian
  * uang muka (DP) vs pembayaran penuh ala Mamikos + tombol Ubah/Lanjut.
  */
 export default function BookingSidebarActions({

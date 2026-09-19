@@ -22,7 +22,7 @@ const STATUS_TINT: Record<string, string> = {
   maintenance: "border-[#EBC4C0] bg-[#FAEAE8] text-[#9C3B32]",
 };
 
-/** Pantau kamar dan status ketersediaannya — pilih satu properti (dropdown selector). */
+/** Pantau kamar dan status ketersediaannya - pilih satu properti (dropdown selector). */
 export default function AdminRoomsPage() {
   const t = useTranslations("admin.rooms");
   const slugs = Object.keys(roomUnits);

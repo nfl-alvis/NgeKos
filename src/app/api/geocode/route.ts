@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-// Proxy for Geoapify Autocomplete — keeps the API key server-side.
+// Proxy for Geoapify Autocomplete - keeps the API key server-side.
 // Client calls /api/geocode?text=...&type=... ; we forward to Geoapify
 // and return a slimmed-down list so no token bloat or key leakage.
 export async function GET(request: Request) {

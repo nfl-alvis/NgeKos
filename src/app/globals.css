@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* shadcn chart — nilai chart di :root agar var() bisa dibaca recharts (fill via style attr) */
+/* shadcn chart - nilai chart di :root agar var() bisa dibaca recharts (fill via style attr) */
 :root {
   --chart-1: #3a2618;
   --chart-2: #8a6a1f;
@@ -52,14 +52,14 @@
   --color-input: var(--color-nk-border);
   --color-ring: var(--color-nk-accent);
 
-  /* ===== chart tokens (shadcn chart) — bar utama coklat accent, grid netral ===== */
+  /* ===== chart tokens (shadcn chart) - bar utama coklat accent, grid netral ===== */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  /* ===== sidebar tokens (dashboard owner/admin) — warm greige, jelas beda dari bg ===== */
+  /* ===== sidebar tokens (dashboard owner/admin) - warm greige, jelas beda dari bg ===== */
   --color-sidebar: #F1EEE7;
   --color-sidebar-foreground: var(--color-nk-text);
   --color-sidebar-primary: var(--color-nk-accent);
@@ -135,7 +135,7 @@ h1, h2, h3 {
 /* ===== accordion (Base UI) animation =====
    Nama keyframe HARUS unik (nk-accordion-*): tw-animate-css (di-import di
    baris 2) sudah punya keyframes `accordion-down/up` milik Radix yang memakai
-   --radix-accordion-content-height — Base UI mengatur var(--accordion-panel-height),
+   --radix-accordion-content-height - Base UI mengatur var(--accordion-panel-height),
    bukan itu, sehingga dulunya panel langsung 'jomplang' buka tanpa animasi
    (0 -> auto tidak bisa di-transition). */
 @keyframes nk-accordion-down {

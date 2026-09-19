@@ -7,14 +7,14 @@ import { Separator } from "@/components/ui/separator";
 
 type PostMeta = { title: string; excerpt: string; author: string; date: string; category: string };
 
-/** Paragraf dummy per slug — digenerate deterministik supaya tiap artikel beda. */
+/** Paragraf dummy per slug - digenerate deterministik supaya tiap artikel beda. */
 function useBody(slug: string) {
   const t = useTranslations("blog");
   const posts = t.raw("posts") as Record<string, PostMeta>;
   const meta = posts[slug];
   const paras = [
     `Mencari tempat tinggal baru jarang sesederhana kata "cari, lihat, pindah". Ada jeda antara niat dan kunci di tangan: jadwal kunjungan yang bertabrakan dengan kuliah, harga yang berubah tanpa pemberitahuan, dan perjanjian yang ditulis setengah hati. Artikel ini menata urutannya.`,
-    `Mulai dari data, bukan keinginan. Tandai batas biaya bulanan termasuk listrik dan internet, bukan hanya sewa. Lingkungan yang tampak tenang jam 2 siang bisa berisik setelah kantor dan sekolah bubar — mampirlah di jam yang sama dengan jadwalmu nanti.`,
+    `Mulai dari data, bukan keinginan. Tandai batas biaya bulanan termasuk listrik dan internet, bukan hanya sewa. Lingkungan yang tampak tenang jam 2 siang bisa berisik setelah kantor dan sekolah bubar - mampirlah di jam yang sama dengan jadwalmu nanti.`,
     `Datang dengan daftar pertanyaan, bukan hanya kamera. Tanya tentang aturan tamu, batas jam malam, dan siapa yang menanggapi kalau AC mati tengah malam. Jawaban pemilik di titik ini lebih jujur daripada setelah tanda tangan.`,
     `Perjanjian sewa adalah dokumen kerja, bukan formalitas. Baca ketentuan denda keterlambatan, syarat pengembalian deposit, dan masa pemberitahuan sebelum keluar. Foto kondisi kamar saat serah terima dengan tanggal yang jelas; itu bukti paling murah saat deposit diperdebatkan nanti.`,
     `Terakhir, percaya pola kecil. Pemilik yang merinci biaya tanpa diminta biasanya konsisten dalam hal lain. Calon penyewa yang membaca perjanjian sampai halaman kedua biasanya juga merawat kamar dengan baik. Kedua sisi saling mengenali dari kebiasaan, bukan janji.`,

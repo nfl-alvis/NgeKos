@@ -72,7 +72,7 @@ export default async function HomePage({
 
   return (
     <>
-      {/* ===== HERO — giant type + search ===== */}
+      {/* ===== HERO - giant type + search ===== */}
       <section className="relative overflow-hidden border-b border-nk-border">
         {/* full-bleed background video (mirror of hero-bg-flipped), opaque */}
         <video
@@ -102,7 +102,7 @@ export default async function HomePage({
         </div>
       </section>
 
-      {/* ===== FEATURED / KOST UNGGULAN — hairline grid ===== */}
+      {/* ===== FEATURED / KOST UNGGULAN - hairline grid ===== */}
       <section className="border-b border-nk-border">
         <div className="mx-auto w-full max-w-7xl px-6 py-16 lg:px-10 lg:py-20">
           <div className="flex items-center justify-between pb-10">
@@ -134,7 +134,7 @@ export default async function HomePage({
         </div>
       </section>
 
-      {/* ===== SHOP BY CATEGORY — full-height image columns ===== */}
+      {/* ===== SHOP BY CATEGORY - full-height image columns ===== */}
       <section className="border-b border-nk-border">
         <div className="mx-auto w-full max-w-7xl px-6 pt-16 lg:px-10">
           <div className="flex items-end justify-between pb-8">
@@ -193,7 +193,7 @@ export default async function HomePage({
           ))}
         </div>
       </section>
-      {/* ===== KOS SEKITAR KAMPUS — clickable campus image tiles (mamikos ref) ===== */}
+      {/* ===== KOS SEKITAR KAMPUS - clickable campus image tiles (mamikos ref) ===== */}
       <section className="border-b border-nk-border">
         <div className="mx-auto w-full max-w-7xl px-6 py-16 lg:px-10 lg:py-20">
           <div className="flex flex-col gap-2 pb-10">
@@ -247,7 +247,7 @@ export default async function HomePage({
         </div>
       </section>
 
-      {/* ===== WHY NGEKOST — 2x2 checkerboard, warm tint ===== */}
+      {/* ===== WHY NGEKOST - 2x2 checkerboard, warm tint ===== */}
       <section className="mt-16 border-y border-nk-border bg-nk-warm md:mt-24">
         <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-[1px] bg-nk-border md:grid-cols-2">
           {/* Row 1 · Left: agent (verified) text */}

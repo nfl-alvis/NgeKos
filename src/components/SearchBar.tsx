@@ -100,7 +100,7 @@ export default function SearchBar() {
         {t("search")}
       </button>
 
-      {/* location search popup — portalled to body, pinned to the top of the viewport.
+      {/* location search popup - portalled to body, pinned to the top of the viewport.
           key di-remount tiap buka supaya query ter-seed ulang dari input hero. */}
       <LocationSearchPopup
         key={popupOpen ? "popup-open" : "popup-closed"}

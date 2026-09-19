@@ -195,7 +195,7 @@
     "skip": "Skip to content"
   },
   "notFound": {
-    "eyebrow": "404 — Page not found",
+    "eyebrow": "404 - Page not found",
     "title": "The page you're looking for doesn't exist.",
     "body": "The address may be mistyped, or the page has moved. Try browsing verified kosts with the button below.",
     "ctaPrimary": "Browse kosts",
@@ -365,7 +365,7 @@
     "tabDone": "Completed/Cancelled",
     "statusPending": "Awaiting Approval",
     "statusPendingNote": "Time left: {time}",
-    "statusAwaitPay": "Approved — Awaiting Payment",
+    "statusAwaitPay": "Approved - Awaiting Payment",
     "statusAwaitPayNote": "Pay within: {time}",
     "statusActive": "Active / Paid",
     "statusRejected": "Rejected",
@@ -396,7 +396,7 @@
     "payNow": "Pay Now",
     "warning": "If time runs out before payment completes, the booking will be cancelled automatically.",
     "simTitle": "Simulation: Payment Successful",
-    "simBody": "Dummy payment — no funds moved. Booking status updated to Paid.",
+    "simBody": "Dummy payment - no funds moved. Booking status updated to Paid.",
     "backToBookings": "Back to Booking Status",
     "notFound": "Invoice not found"
   },
@@ -700,7 +700,7 @@
       "error": "This account has no Admin access. Contact the platform operator if you think this is a mistake.",
       "demo": "Demo: use bayu.pratama@ngekost.id",
       "pickerTitle": "Choose a Google account",
-      "pickerSubtitle": "Demo — accounts outside the admin list are rejected."
+      "pickerSubtitle": "Demo - accounts outside the admin list are rejected."
     },
     "queue": {
       "title": "Verification Queue",
@@ -1267,7 +1267,7 @@
       "A practical take-home task for your role, 3 days to complete",
       "A final conversation with the team you'd join"
     ],
-    "noMatch": "Nothing that fits? Send your CV anyway — we'll reach out when a new role opens.",
+    "noMatch": "Nothing that fits? Send your CV anyway - we'll reach out when a new role opens.",
     "openingsList": [
       {
         "title": "Frontend Engineer",
@@ -1670,7 +1670,7 @@
         "refunding": "Processing Refund",
         "refunded": "Refunded"
       },
-      "refundingNote": "Booking rejected — funds returned automatically.",
+      "refundingNote": "Booking rejected - funds returned automatically.",
       "awaitOwnerNote": "Booking awaiting owner confirmation.",
       "empty": "No payment transactions yet.",
       "allSet": "Nothing waiting for payment."
@@ -1721,7 +1721,7 @@
     },
     "explore": {
       "title": "Looking for Another Kost?",
-      "body": "You can keep searching for next year — favorites and active bookings are unaffected.",
+      "body": "You can keep searching for next year - favorites and active bookings are unaffected.",
       "cta": "Explore Kosts"
     },
     "profile": {
@@ -1743,7 +1743,7 @@
       "sumSpent": "Total paid (bookings)",
       "tenancy": "Tenancy Status",
       "tenancyActive": "Active Tenant",
-      "tenancyNote": "Staying since {date} — living activities are in the tenant dashboard.",
+      "tenancyNote": "Staying since {date} - living activities are in the tenant dashboard.",
       "tenancyCta": "Open Tenant Dashboard"
     },
     "settings": {
@@ -1801,7 +1801,7 @@
     "room": {
       "title": "My Room",
       "header": "Room {room}",
-      "occupied": "Occupied — you",
+      "occupied": "Occupied - you",
       "fProperty": "Kost",
       "fFloor": "Floor",
       "floorValue": "Floor {floor}",

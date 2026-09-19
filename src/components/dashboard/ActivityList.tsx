@@ -25,7 +25,7 @@ const ICON_TINT: Record<ActivityType, string> = {
   info: "bg-nk-section text-nk-text-muted",
 };
 
-/** riwayat aktivitas penting user — urutan terbaru di atas */
+/** riwayat aktivitas penting user - urutan terbaru di atas */
 export default function ActivityList({ limit }: { limit?: number }) {
   const t = useTranslations("userDash.activity");
   const locale = useLocale();

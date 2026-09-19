@@ -1,13 +1,13 @@
-# Penjelasan DFD — Sistem Ngekost
+# Penjelasan DFD - Sistem Ngekost
 
 **File drawio:** `DFD-Ngekost.drawio` (2 halaman / tab)
-**Generator:** `gen_dfd_ngekost.py` — data-driven, regenerate jangan edit XML manual
+**Generator:** `gen_dfd_ngekost.py` - data-driven, regenerate jangan edit XML manual
 **Sumber:** PRD-Ngekost-FULL.md v3.5/v3.6, API.md v3.5, DATABASE.md v3.5, rute `src/app/[locale]` repo ngekost-v3
-**Notasi:** Yourdon/DeMarco — kotak = entitas eksternal, elips biru = proses, kotak hijau terbuka (stored-data) = data store, panah berlabel = alur data.
+**Notasi:** Yourdon/DeMarco - kotak = entitas eksternal, elips biru = proses, kotak hijau terbuka (stored-data) = data store, panah berlabel = alur data.
 
 ---
 
-## HALAMAN 1 — DFD Context (Level 0)
+## HALAMAN 1 - DFD Context (Level 0)
 
 Satu proses tunggal `0 SISTEM NGEKOST` dikelilingi 10 lingkungan luar.
 
@@ -34,7 +34,7 @@ Sesuai enum `ActorType` di DATABASE.md (OWNER | GUEST | SYSTEM) plus Admin sebag
 
 ---
 
-## HALAMAN 2 — DFD Level 1
+## HALAMAN 2 - DFD Level 1
 
 8 proses + 6 data store. Nomor proses dirujuk dari tahap DATABASE.md (Stage 1–9).
 
@@ -43,7 +43,7 @@ Sesuai enum `ActorType` di DATABASE.md (OWNER | GUEST | SYSTEM) plus Admin sebag
 | Proses | Menjelaskan | Endpoint/API utama | Tulis ke | Baca dari |
 |---|---|---|---|---|
 | 1.0 Autentikasi & Registrasi | login email+password (bcrypt) Owner; login Google Guest/Tenant | `/api/auth/me` | D1 | D1 |
-| 2.0 Cari & Filter Kost | listing publik (hanya `verified && active`), filter fasilitas/harga/gender/lokasi | `GET /api/public/properties` + `/api/geocode` | — | D2 |
+| 2.0 Cari & Filter Kost | listing publik (hanya `verified && active`), filter fasilitas/harga/gender/lokasi | `GET /api/public/properties` + `/api/geocode` | - | D2 |
 | 3.0 Ajukan Booking | wizard 3 langkah (kamar → data penyewa → konfirmasi biaya), butuh akun Google | `POST /api/bookings` | D3 | D2 |
 | 4.0 Keputusan Booking | owner approve/reject, TANPA gating subscription (v3.5); approve = BookingRequest→WAITING_PAYMENT + Room→BOOKING_PENDING satu transaksi | `POST /api/owner/bookings/:id/approve`, `/reject` | D2 (Room), D3 | D3 |
 | 5.0 Tagihan Bulanan | dibuat saat FULLY_PAID: konversi Guest→Tenant + Invoice bulanan + RentalAgreement | `GET /api/invoices` | D4 | D3 |
@@ -68,11 +68,11 @@ Sesuai enum `ActorType` di DATABASE.md (OWNER | GUEST | SYSTEM) plus Admin sebag
 
 ## Aturan bisnis yang membentuk diagram
 
-1. **Listing publik ter-filter** — 2.0 hanya membaca D2 baris `verified=true AND active=true` (PRD v3.6); karena itu ada panah 6.0→admin approval sebelum kost muncul di pencarian.
-2. **Tanpa subscription gate pada approve** (revisi v3.5) — 4.0 tidak membaca D5; gating subscription hanya membatasi 6.0 (kuota property/kamar).
-3. **Sync Room ↔ BookingRequest wajib atomic** (v3.4) — digambar sebagai dua panah tulis 4.0→D2 dan 4.0→D3 dengan label status.
-4. **Konversi Guest→Tenant hanya di FULLY_PAID** — panah 7.0→5.0, bukan 7.0→D4 langsung; DP_PAID/WAITING_SETTLEMENT masih domain D3.
-5. **Payment FAILED ≠ booking batal** — retry membuat Payment baru oleh 7.0 selama deadline; dicatat oleh webhook/cron, bukan panah actor.
+1. **Listing publik ter-filter** - 2.0 hanya membaca D2 baris `verified=true AND active=true` (PRD v3.6); karena itu ada panah 6.0→admin approval sebelum kost muncul di pencarian.
+2. **Tanpa subscription gate pada approve** (revisi v3.5) - 4.0 tidak membaca D5; gating subscription hanya membatasi 6.0 (kuota property/kamar).
+3. **Sync Room ↔ BookingRequest wajib atomic** (v3.4) - digambar sebagai dua panah tulis 4.0→D2 dan 4.0→D3 dengan label status.
+4. **Konversi Guest→Tenant hanya di FULLY_PAID** - panah 7.0→5.0, bukan 7.0→D4 langsung; DP_PAID/WAITING_SETTLEMENT masih domain D3.
+5. **Payment FAILED ≠ booking batal** - retry membuat Payment baru oleh 7.0 selama deadline; dicatat oleh webhook/cron, bukan panah actor.
 
 ## Cara regenerate
 

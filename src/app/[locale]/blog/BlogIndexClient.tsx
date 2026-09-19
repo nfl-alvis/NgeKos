@@ -86,7 +86,7 @@ export default function BlogIndexClient() {
         </article>
       )}
 
-      {/* grid sisa post — 2 kolom zig-zag, bukan 3 kartu seragam */}
+      {/* grid sisa post - 2 kolom zig-zag, bukan 3 kartu seragam */}
       <div className="grid gap-x-10 gap-y-12 sm:grid-cols-2">
         {filtered.slice(1).map(([slug, p], i) => (
           <article key={slug} className={i % 2 === 1 ? "sm:mt-10" : ""}>

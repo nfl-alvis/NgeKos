@@ -15,7 +15,7 @@ const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
 const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
 const NOW = new Date("2026-09-03T12:00:00");
 
-/** Pengumuman dari owner — daftar kronologis dengan waktu relatif. */
+/** Pengumuman dari owner - daftar kronologis dengan waktu relatif. */
 export default function TenantAnnouncementsPage() {
   const t = useTranslations("tenantPages.announcements");
   const locale = useLocale();

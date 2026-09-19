@@ -77,7 +77,7 @@ Query yang diproses:
 
 - `kota={nama-kota}`
 - `max={harga-maksimal}`
-- `fas={fasilitas}` — boleh berulang
+- `fas={fasilitas}` - boleh berulang
 - `gender=mixed|male|female`
 - `sort=rating|price-asc|price-desc`
 
@@ -356,8 +356,8 @@ Proxy server-side untuk autocomplete Geoapify agar API key tidak dikirim ke brow
 
 Query:
 
-- `text` — minimal dua karakter
-- `type` — opsional
+- `text` - minimal dua karakter
+- `type` - opsional
 
 Perilaku:
 

@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 /**
  * Isi popup login ala Mamikos (tombol Google + email/password + kotak akun
  * demo). Dipakai oleh SeekerAuthModal di halaman /book dan popup "Masuk"
- * di Navbar — satu tampilan, satu perilaku; header/konteks tiap pemanggil
+ * di Navbar - satu tampilan, satu perilaku; header/konteks tiap pemanggil
  * berbeda, jadi tidak ikut dibungkus di sini.
  */
 export default function AuthPopupForm({

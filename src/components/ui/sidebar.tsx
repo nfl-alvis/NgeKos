@@ -259,7 +259,7 @@ function SidebarTrigger({
 }: React.ComponentProps<"button">) {
   const { toggleSidebar } = useSidebar()
 
-  // Button shadcn lokal tidak expose onClick — pakai native button
+  // Button shadcn lokal tidak expose onClick - pakai native button
   return (
     <button
       type="button"

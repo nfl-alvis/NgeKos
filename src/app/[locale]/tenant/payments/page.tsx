@@ -21,7 +21,7 @@ import { DashSection } from "@/components/dashboard/DashSection";
 const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
 const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
 
-/** Riwayat pembayaran sewa — metode, tanggal bayar, nominal, status lunas. */
+/** Riwayat pembayaran sewa - metode, tanggal bayar, nominal, status lunas. */
 export default function TenantPaymentsPage() {
   const t = useTranslations("tenantPages.payments");
   const locale = useLocale();
@@ -116,10 +116,10 @@ export default function TenantPaymentsPage() {
                     {formatIDR(r.amount)}
                   </TableCell>
                   <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text-muted">
-                    {r.status === "lunas" ? fmt(r.paidAt ?? r.dueDate) : "—"}
+                    {r.status === "lunas" ? fmt(r.paidAt ?? r.dueDate) : "-"}
                   </TableCell>
                   <TableCell className="px-4 py-3 whitespace-nowrap text-nk-text-muted">
-                    {r.status === "lunas" ? methods[idx % methods.length] : "—"}
+                    {r.status === "lunas" ? methods[idx % methods.length] : "-"}
                   </TableCell>
                   <TableCell className="px-4 py-3">
                     {r.status === "lunas" ? (

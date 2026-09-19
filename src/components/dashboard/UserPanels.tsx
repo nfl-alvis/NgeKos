@@ -22,7 +22,7 @@ function payDeadline(b: (typeof bookings)[number]) {
   return new Date(start + b.payDeadlineMin * 60_000);
 }
 
-/* ===== 1. Booking aktif — panel paling penting di /dashboard ===== */
+/* ===== 1. Booking aktif - panel paling penting di /dashboard ===== */
 
 export function ActiveBookingPanel({ compact = false }: { compact?: boolean }) {
   const t = useTranslations("userDash.booking");
@@ -340,7 +340,7 @@ export function FavoritesPanel({ limit, full = false }: { limit?: number; full?:
   );
 }
 
-/* ===== 4. Kos aktif — shortcut ke dashboard tenant ===== */
+/* ===== 4. Kos aktif - shortcut ke dashboard tenant ===== */
 
 export function ActiveKostCard() {
   const t = useTranslations("userDash.activeKost");

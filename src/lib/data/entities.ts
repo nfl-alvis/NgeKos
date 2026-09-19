@@ -36,7 +36,7 @@ export const ADMIN_PROFILE: SessionUser = {
   email: "admin@ngekost.id",
 };
 
-/** daftar email admin terdaftar — login admin selain ini ditolak */
+/** daftar email admin terdaftar - login admin selain ini ditolak */
 export const ADMIN_ALLOWED_EMAILS = [
   "admin@ngekost.id",
   "bayu.pratama@ngekost.id",
@@ -56,7 +56,7 @@ export const ADMIN_DEMO_ACCOUNT = {
 };
 
 /**
- * Akun demo pencari kos (tempmail sungguhan — dibuat via api.mail.tm,
+ * Akun demo pencari kos (tempmail sungguhan - dibuat via api.mail.tm,
  * inbox bisa diakses untuk uji alur notifikasi). Dipakai tombol
  * "Gunakan akun demo" di modal login alur pengajuan sewa.
  */
@@ -195,7 +195,7 @@ export const bookings: Booking[] = [
   },
 ];
 
-/* booking masuk ke owner — terpisah dari booking penyewa demo */
+/* booking masuk ke owner - terpisah dari booking penyewa demo */
 export const ownerBookings: Booking[] = [
   {
     id: "BK-1234",
@@ -493,7 +493,7 @@ export const notifications: NotificationItem[] = [
     id: "n-5",
     type: "payment",
     title: "Pembayaran gagal",
-    body: "Percobaan bayar #BK-1197 (Dimas Aryasatya) tidak berhasil — dana belum masuk.",
+    body: "Percobaan bayar #BK-1197 (Dimas Aryasatya) tidak berhasil - dana belum masuk.",
     at: "2026-08-31T21:18:00",
     read: true,
     linkUrl: "/owner/bookings",

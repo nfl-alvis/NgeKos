@@ -157,7 +157,7 @@ export default function Navbar() {
 
       </nav>
 
-      {/* Role picker modal — must live OUTSIDE <nav>: backdrop-filter on the
+      {/* Role picker modal - must live OUTSIDE <nav>: backdrop-filter on the
           nav creates a containing block that breaks position:fixed, pinning
           the modal to the nav's box (top of page) instead of the viewport. */}
       {roleOpen && (

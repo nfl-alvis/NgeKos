@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Generator DFD Ngekost v3 — Context (Level 0) + Level 1.
+"""Generator DFD Ngekost v3 - Context (Level 0) + Level 1.
 
 Sumber: DATABASE.md v3.5, API.md, PRD-Ngekost-FULL.md, rute src/app (repo ngekost-v3).
 Konvensi notation Yourdon/DeMarco style sederhana:
@@ -8,7 +8,7 @@ Konvensi notation Yourdon/DeMarco style sederhana:
   - Proses = ellipse
   - Data store = open rect (tiga garis, kotak terbuka kiri-kanan)
   - Alur data = panah berlabel
-Cara pakai: python3 gen_dfd_ngekost.py  (JANGAN edit .drawio hasilnya — regenerate)
+Cara pakai: python3 gen_dfd_ngekost.py  (JANGAN edit .drawio hasilnya - regenerate)
 """
 import xml.sax.saxutils as sax
 
@@ -34,7 +34,7 @@ ST_NOTE = ("text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=le
 
 PAGES = [
     dict(name="DFD Context (Level 0)",
-         title="DFD Level 0 (Context) — Sistem Ngekost",
+         title="DFD Level 0 (Context) - Sistem Ngekost",
          nodes=[
             ("owner",   "entity",  "Owner\n(pemilik kost)",          40,  150, 170, 70),
             ("guest",   "entity",  "Guest\n(pencari kost)",           40,  330, 170, 70),
@@ -70,7 +70,7 @@ PAGES = [
          w=1560, h=920),
 
     dict(name="DFD Level 1",
-         title="DFD Level 1 — Proses Utama Sistem Ngekost",
+         title="DFD Level 1 - Proses Utama Sistem Ngekost",
          nodes=[
             ("owner",   "entity",  "Owner",                          30,  140, 120, 60),
             ("guest",   "entity",  "Guest",                          30,  470, 120, 60),

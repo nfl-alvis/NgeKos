@@ -42,7 +42,7 @@ import { useEffect, useState } from "react";
 // tenant demo = t-1 (I made Sudiarta, Kost Griya Cemara A-101)
 const DEMO_TENANT_ID = "t-1";
 const DEMO_TODAY = new Date("2026-09-03");
-// akhir perjanjian aktif — sumber tunggal di userData (dipakai jg halaman kontrak)
+// akhir perjanjian aktif - sumber tunggal di userData (dipakai jg halaman kontrak)
 const ACTIVE_AGREEMENT_END = contractInfo.endDate;
 
 export default function TenantDashboardPage() {
@@ -147,8 +147,8 @@ export default function TenantDashboardPage() {
     },
     {
       label: t("statInvoice"),
-      value: thisMonth ? formatIDR(thisMonth.amount) : "—",
-      note: t("statInvoiceDue", { date: thisMonth ? fmtDate(thisMonth.dueDate) : "—" }),
+      value: thisMonth ? formatIDR(thisMonth.amount) : "-",
+      note: t("statInvoiceDue", { date: thisMonth ? fmtDate(thisMonth.dueDate) : "-" }),
       icon: Receipt,
       tint: { card: "bg-[#E8EFF8]", icon: "bg-[#D3E0F0] text-[#33517C]" },
       badge:
@@ -198,7 +198,7 @@ export default function TenantDashboardPage() {
         </p>
       </div>
 
-      {/* kartu kamar aktif — padanan spotlight referensi */}
+      {/* kartu kamar aktif - padanan spotlight referensi */}
       <section className="mb-6 flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#E9F4EC]">
         <div className="flex items-center justify-between px-4 pb-1 pt-3">
           <h2 className="text-sm font-semibold text-nk-text">{t("myRoom")}</h2>
@@ -251,7 +251,7 @@ export default function TenantDashboardPage() {
         </div>
       </section>
 
-      {/* quick actions — padanan nav "perlu ditindaklanjuti" */}
+      {/* quick actions - padanan nav "perlu ditindaklanjuti" */}
       <nav aria-label={t("quickActions")} className="mb-10 grid gap-4 sm:grid-cols-3">
         {quickActions.map((a) => (
           <Link
@@ -265,7 +265,7 @@ export default function TenantDashboardPage() {
         ))}
       </nav>
 
-      {/* stat cards — band tinted + sparkline ala owner dashboard */}
+      {/* stat cards - band tinted + sparkline ala owner dashboard */}
       <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((s) => (
           <div

@@ -67,7 +67,7 @@ export async function generateMetadata({
   if (!p) p = getPropertyBySlug(slug) ?? null;
   if (!p) return { title: "Not Found" };
   return {
-    title: `${p.name} — ${p.district}, ${p.city}`,
+    title: `${p.name} - ${p.district}, ${p.city}`,
     description: p.tagline,
   };
 }
@@ -120,14 +120,14 @@ export default async function DetailPage({
             <div className="overflow-hidden bg-nk-section">
               <img
                 src={`https://picsum.photos/seed/${p.imageSeed}-b/600/400`}
-                alt={`${p.name} — interior`}
+                alt={`${p.name} - interior`}
                 className="aspect-[3/2] w-full object-cover"
               />
             </div>
             <div className="overflow-hidden bg-nk-section">
               <img
                 src={`https://picsum.photos/seed/${p.imageSeed}-c/600/400`}
-                alt={`${p.name} — lingkungan`}
+                alt={`${p.name} - lingkungan`}
                 className="aspect-[3/2] w-full object-cover"
               />
             </div>
@@ -274,7 +274,7 @@ export default async function DetailPage({
             </div>
           </div>
 
-          {/* Sidebar — CTA */}
+          {/* Sidebar - CTA */}
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <div className="border border-nk-dark-border bg-nk-section p-6">
               <div className="space-y-5">

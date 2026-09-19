@@ -17,7 +17,7 @@ import { useSession } from "@/components/SessionProvider";
  *  - butuh akun (modal login di tempat, opsi akun demo tempmail);
  *  - form satu layar: data pemesan di kiri, Ringkasan Pengajuan di kanan
  *    (kartu sticky ala panel pengajuan Mamikos);
- *  - pembayaran TIDAK di sini — baru setelah pemilik menyetujui
+ *  - pembayaran TIDAK di sini - baru setelah pemilik menyetujui
  *    (halaman /bookings/[id]/pay).
  * Kamar/tanggal/durasi sudah dipilih di popup halaman detail; ubah lewat
  * tautan "Ubah pilihan" di ringkasan.
@@ -149,7 +149,7 @@ function BookingForm({
           params.locale === "id" ? "id-ID" : "en-GB",
           { day: "numeric", month: "long", year: "numeric" }
         )
-      : "—";
+      : "-";
   const totalPeriod = room.pricePerMonth * months;
   const firstPay = room.pricePerMonth + dp;
   const formOk = name.trim().length >= 3 && phone.replace(/\D/g, "").length >= 9 && validDate && agree;
@@ -335,7 +335,7 @@ function BookingForm({
               </div>
               <div className="flex items-start justify-between gap-3">
                 <span className="text-nk-text-muted">{t("checkIn")}</span>
-                <span className="text-right font-medium text-nk-text">{validDate ? nice(prefillDate) : "—"}</span>
+                <span className="text-right font-medium text-nk-text">{validDate ? nice(prefillDate) : "-"}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-nk-text-muted">{t("durationLabel")}</span>
@@ -404,7 +404,7 @@ function BookingForm({
             </a>
             <button
               type="button"
-              onClick={() => i18nRouter.push("/bookings")}
+              onClick={() => i18nRouter.push("/dashboard/bookings")}
               className="inline-flex min-h-12 items-center justify-center rounded-lg border border-nk-border px-5 text-sm font-medium text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
             >
               {t("successCta")}

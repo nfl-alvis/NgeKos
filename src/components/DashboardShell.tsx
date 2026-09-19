@@ -121,7 +121,7 @@ const ADMIN_GROUPS: { groupKey?: string; items: Item[] }[] = [
 
 const ADMIN_ITEMS: Item[] = ADMIN_GROUPS.flatMap((g) => g.items);
 
-/* ===== user biasa (pencari/penyewa kos) — aktivitas mencari & booking ===== */
+/* ===== user biasa (pencari/penyewa kos) - aktivitas mencari & booking ===== */
 
 const USER_GROUPS: { groupKey?: string; items: Item[] }[] = [
   { items: [
@@ -141,7 +141,7 @@ const USER_GROUPS: { groupKey?: string; items: Item[] }[] = [
 
 const USER_ITEMS: Item[] = USER_GROUPS.flatMap((g) => g.items);
 
-/* ===== tenant — aktivitas selama tinggal di kos ===== */
+/* ===== tenant - aktivitas selama tinggal di kos ===== */
 
 const TENANT_GROUPS: { groupKey?: string; items: Item[] }[] = [
   { items: [
@@ -190,7 +190,7 @@ export default function DashboardShell({
   const { user, logout } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // NOTE: guard sesi/admin untuk sementara DILEPAS atas permintaan user —
+  // NOTE: guard sesi/admin untuk sementara DILEPAS atas permintaan user -
   // halaman dashboard bisa diakses langsung via URL tanpa login.
   // (useEffect redirect role + skeleton gate dihapus; lihat git history 3cfa87d)
 
@@ -341,7 +341,7 @@ export default function DashboardShell({
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher />
 
-            {/* bell notifikasi — owner, tenant & user (dataset milik owner; fallback link per role) */}
+            {/* bell notifikasi - owner, tenant & user (dataset milik owner; fallback link per role) */}
             {role !== "admin" && (
             <DropdownMenu>
               <DropdownMenuTrigger

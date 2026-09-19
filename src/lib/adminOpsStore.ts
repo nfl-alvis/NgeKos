@@ -1,6 +1,6 @@
 "use client";
 
-/* ===== store operasi admin — sumber kebenaran tindakan lintas halaman =====
+/* ===== store operasi admin - sumber kebenaran tindakan lintas halaman =====
    Pola sama dengan adminReviewStore: external store sessionStorage +
    useSyncExternalStore dengan snapshot derived stabil. Setiap aksi admin
    (nonaktifkan/hapus properti, tangguhkan owner, blokir user, putuskan

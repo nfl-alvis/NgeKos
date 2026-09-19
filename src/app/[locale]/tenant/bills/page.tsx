@@ -19,7 +19,7 @@ const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
 const DEMO_TODAY = new Date("2026-09-03");
 const NEXT_DUE = "2026-10-05";
 
-/** Tagihan sewa — kartu tagihan berikutnya + daftar invoice; bayar in-place. */
+/** Tagihan sewa - kartu tagihan berikutnya + daftar invoice; bayar in-place. */
 export default function TenantBillsPage() {
   const t = useTranslations("tenantPages.bills");
   const locale = useLocale();
@@ -55,7 +55,7 @@ export default function TenantBillsPage() {
   const my = bills.sort((a: any, b: any) => b.dueDate.localeCompare(a.dueDate));
   const isPaid = (id: string, status: string) => status === "lunas" || ops.paidInvoiceIds.includes(id);
 
-  // tagihan periode berikutnya (belum terbit di seed) — disintesis utk demo
+  // tagihan periode berikutnya (belum terbit di seed) - disintesis utk demo
   const nextBill: (typeof invoices)[number] = {
     id: "INV-2610-01",
     tenantName: DEMO_TENANT.name,

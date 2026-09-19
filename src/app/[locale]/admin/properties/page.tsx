@@ -272,7 +272,7 @@ export default function AdminPropertiesPage() {
         </div>
       </AdminSection>
 
-      {/* konfirmasi hapus — alasan wajib */}
+      {/* konfirmasi hapus - alasan wajib */}
       <Dialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <DialogContent className="sm:max-w-md" key={deleting?.slug ?? "none"}>
           <DialogHeader>

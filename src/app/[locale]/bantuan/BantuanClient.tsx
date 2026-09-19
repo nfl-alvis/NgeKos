@@ -66,7 +66,7 @@ export default function BantuanClient({ cats, topics }: { cats: Cats; topics: Re
         )}
       </div>
 
-      {/* accordion per kategori — teks rata kiri */}
+      {/* accordion per kategori - teks rata kiri */}
       <div className="rounded-lg border border-nk-border bg-nk-surface px-6">
         {Object.entries(filtered).map(([cat, items]) => (
           <Accordion key={cat} className="py-2">
@@ -105,7 +105,7 @@ export default function BantuanClient({ cats, topics }: { cats: Cats; topics: Re
           </Accordion>
         ))}
         {Object.keys(filtered).length === 0 && (
-          <p className="py-8 text-center text-sm text-nk-text-muted">—</p>
+          <p className="py-8 text-center text-sm text-nk-text-muted">-</p>
         )}
       </div>
 

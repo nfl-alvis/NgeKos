@@ -19,7 +19,7 @@ export default function KarirClient({
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-12 lg:px-10 lg:py-20">
-      {/* split header: kiri judul, kanan deskripsi — bukan centered */}
+      {/* split header: kiri judul, kanan deskripsi - bukan centered */}
       <header className="mb-14 grid gap-8 lg:grid-cols-2 lg:gap-16">
         <h1 className="text-4xl font-light leading-[1.05] tracking-tight text-nk-text lg:text-6xl">
           {t("title")}

@@ -72,7 +72,7 @@ function mapDbComplaint(c: any): Complaint {
   };
 }
 
-/** Pengaduan penyewa — daftar + dialog buat baru + stepper status. */
+/** Pengaduan penyewa - daftar + dialog buat baru + stepper status. */
 export default function TenantComplaintsPage() {
   const t = useTranslations("tenantPages.complaints");
   const locale = useLocale();
