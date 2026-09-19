@@ -83,7 +83,7 @@ export default function OwnerPropertiesPage() {
           <p className="mt-1 max-w-sm text-sm text-nk-text-muted">{t("emptyBody")}</p>
           <button
             type="button"
-            onClick={() => setCreateOpen(true)}
+            onClick={() => router.push("/owner/properties/new")}
             className="mt-6 rounded-lg bg-nk-accent px-6 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
           >
             {t("emptyCta")}
@@ -135,7 +135,7 @@ export default function OwnerPropertiesPage() {
           <button
             type="button"
             disabled={atLimit}
-            onClick={() => setCreateOpen(true)}
+            onClick={() => router.push("/owner/properties/new")}
             aria-describedby={atLimit ? "limit-tooltip" : undefined}
             className="inline-flex items-center gap-2 rounded-lg bg-nk-accent px-4 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-nk-section disabled:text-nk-text-muted"
           >

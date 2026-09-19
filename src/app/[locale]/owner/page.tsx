@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useSession } from "@/components/SessionProvider";
 import {
   AlertCircle,
   BedDouble,
@@ -114,6 +115,37 @@ export default function OwnerDashboardPage() {
   const t = useTranslations("owner");
   const router = useRouter();
   const locale = useLocale();
+  const { user, ready } = useSession();
+  const [hasProperties, setHasProperties] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkProperties() {
+      try {
+        const res = await fetch("/api/properties?mine=true");
+        if (res.ok) {
+          const json = await res.json();
+          if (!cancelled) {
+            const count = Array.isArray(json.data) ? json.data.length : 0;
+            if (user && count === 0) {
+              setHasProperties(false);
+            } else {
+              setHasProperties(true);
+            }
+          }
+        }
+      } catch {
+        if (!cancelled && user) setHasProperties(false);
+      }
+    }
+    if (ready) {
+      checkProperties();
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, user]);
+
   const monthNames = t.raw("months") as string[];
 
   const pending = ownerBookings.filter((b) => b.status === "pending");
@@ -262,6 +294,45 @@ export default function OwnerDashboardPage() {
       sparkColor: "var(--chart-2)",
     },
   ];
+
+  if (hasProperties === false) {
+    const displayName = user?.name ? user.name.split(" ")[0] : "Pemilik Kos";
+    return (
+      <DashboardShell role="owner">
+        <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-16 text-center">
+          <div className="mb-6 flex size-20 items-center justify-center rounded-2xl bg-nk-accent/10 text-nk-accent">
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-light tracking-tight text-nk-text sm:text-4xl">
+            Hai, <span className="font-semibold">{displayName}</span>!
+          </h1>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-nk-text-muted">
+            Selamat datang di NgeKost! Anda belum memiliki properti kos yang didaftarkan. Ayo mulai daftarkan iklan kos pertama Anda sekarang untuk mulai menjangkau calon penyewa.
+          </p>
+          <div className="mt-8">
+            <Link
+              href="/owner/properties/new"
+              className="inline-flex h-12 items-center justify-center rounded-lg bg-nk-accent px-8 text-sm font-medium text-nk-text-inverse shadow-sm transition-all hover:opacity-90 active:scale-[0.99]"
+            >
+              Buat Iklan Kos Pertama Anda
+            </Link>
+          </div>
+        </div>
+      </DashboardShell>
+    );
+  }
 
   return (
     <DashboardShell role="owner">

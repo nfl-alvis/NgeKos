@@ -119,17 +119,11 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-3">
-              <Link
-                href="/login"
-                className="text-sm font-medium text-nk-text-muted transition-colors hover:text-nk-text"
-              >
-                {loginT("submit")}
-              </Link>
+            <div className="flex items-center">
               <button
                 type="button"
                 onClick={() => setRoleOpen(true)}
-                className="inline-flex items-center rounded-lg bg-nk-accent px-4 py-2 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+                className="inline-flex items-center rounded-none bg-nk-accent px-5 py-2 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
               >
                 {loginT("register")}
               </button>
@@ -139,16 +133,10 @@ export default function Navbar() {
 
         <div className="flex items-center gap-2 md:hidden">
           <LanguageSwitcher />
-          <Link
-            href="/login"
-            className="rounded-md border border-nk-border px-2.5 py-1 text-xs font-medium text-nk-text"
-          >
-            {loginT("submit")}
-          </Link>
           <button
             type="button"
             onClick={() => setRoleOpen(true)}
-            className="rounded-md bg-nk-accent px-2.5 py-1 text-xs font-medium text-nk-text-inverse"
+            className="rounded-none bg-nk-accent px-3.5 py-1.5 text-xs font-medium text-nk-text-inverse"
           >
             {loginT("register")}
           </button>
