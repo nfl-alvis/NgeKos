@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Plus,
   Minus,
   Trash2,
@@ -29,6 +30,45 @@ import {
   AlertCircle,
   Loader2,
   Navigation,
+  Bed,
+  DoorOpen,
+  Bath,
+  ImagePlus,
+  Wifi,
+  Zap,
+  ZapOff,
+  Utensils,
+  Droplets,
+  Droplet,
+  Refrigerator,
+  Video,
+  KeyRound,
+  UserCheck,
+  Bike,
+  Car,
+  Fan,
+  Wind,
+  AirVent,
+  AppWindow,
+  Armchair,
+  Shirt,
+  Flame,
+  Tv,
+  Sofa,
+  Sun,
+  SunMedium,
+  Trees,
+  Flower2,
+  Cigarette,
+  Clock,
+  Moon,
+  GraduationCap,
+  Heart,
+  PawPrint,
+  Ban,
+  IdCard,
+  AlertTriangle,
+  Users,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -45,6 +85,85 @@ const STEPS = [
   { id: 2, label: "Kamar Kos", icon: BedDouble },
   { id: 3, label: "Foto & Fasilitas", icon: Camera },
   { id: 4, label: "Data Rekening", icon: CreditCard },
+];
+
+const PHOTO_SLOTS = [
+  { key: "kamarTidur", label: "Foto Kamar Tidur", icon: Bed, required: true },
+  { key: "depanKamar", label: "Foto Depan Kamar", icon: DoorOpen, required: true },
+  { key: "kamarMandi", label: "Foto Kamar Mandi", icon: Bath, required: true },
+  { key: "bangunanKos", label: "Foto Bangunan Kos", icon: Building2, required: true },
+  { key: "fasilitasBersama", label: "Foto Fasilitas Bersama", icon: Users, required: true },
+  { key: "bangunanJalan", label: "Bangunan dari Jalan", icon: Car, required: true },
+  { key: "lainnya", label: "Foto Lainnya", icon: ImagePlus, required: false },
+];
+
+const FASILITAS_DASAR_ITEMS = [
+  { label: "Kamar Mandi Dalam", icon: Bath },
+  { label: "Kamar Mandi Luar", icon: Bath },
+  { label: "Kasur", icon: Bed },
+  { label: "Bantal", icon: Sparkles },
+  { label: "Guling", icon: Sparkles },
+  { label: "Tanpa Kasur", icon: Ban },
+  { label: "AC", icon: AirVent },
+  { label: "Ventilasi", icon: Wind },
+  { label: "Jendela", icon: AppWindow },
+  { label: "Kipas Angin", icon: Fan },
+  { label: "WiFi", icon: Wifi },
+  { label: "Termasuk Listrik", icon: Zap },
+  { label: "Tidak termasuk listrik", icon: ZapOff },
+  { label: "Dapur Bersama", icon: Utensils },
+  { label: "Dispenser Bersama", icon: Droplets },
+  { label: "Kulkas Bersama", icon: Refrigerator },
+  { label: "Kunci Gerbang 24 Jam", icon: KeyRound },
+  { label: "Penjaga Kos", icon: UserCheck },
+  { label: "Pengurus Kos", icon: UserCheck },
+  { label: "CCTV", icon: Video },
+  { label: "Kartu Akses", icon: IdCard },
+  { label: "Parkir Motor", icon: Bike },
+  { label: "Parkir Mobil", icon: Car },
+];
+
+const FASILITAS_LANJUTAN_ITEMS = [
+  { label: "Meja Belajar", icon: Armchair },
+  { label: "Kursi", icon: Armchair },
+  { label: "Lemari Baju", icon: Shirt },
+  { label: "Cermin", icon: Sparkles },
+  { label: "Gantungan Baju", icon: Shirt },
+  { label: "Water Heater", icon: Flame },
+  { label: "Kloset Duduk", icon: Bath },
+  { label: "Kloset Jongkok", icon: Bath },
+  { label: "Ember Mandi", icon: Droplet },
+  { label: "Shower", icon: Droplet },
+  { label: "TV", icon: Tv },
+  { label: "Ruang Santai", icon: Sofa },
+  { label: "Balkon", icon: Sun },
+];
+
+const FASILITAS_BERSAMA_ITEMS = [
+  { label: "Mesin Cuci", icon: Sparkles },
+  { label: "Tempat Jemuran", icon: SunMedium },
+  { label: "Wastafel", icon: Droplet },
+  { label: "Air PDAM", icon: Droplets },
+  { label: "Sumur Bor", icon: Droplet },
+  { label: "Ruang Tamu Bersama", icon: Users },
+  { label: "Gazebo", icon: Trees },
+  { label: "Taman", icon: Flower2 },
+  { label: "Area Merokok", icon: Cigarette },
+  { label: "Petugas Kebersihan", icon: Sparkles },
+  { label: "Tempat Sampah Tiap Lantai", icon: Trash2 },
+];
+
+const PERATURAN_KOS_ITEMS = [
+  { label: "Akses 24 Jam", icon: Clock },
+  { label: "Jam Malam (Maksimal 22:00)", icon: Moon },
+  { label: "Khusus Mahasiswa/Karyawan", icon: GraduationCap },
+  { label: "Pasutri Boleh (Buku Nikah)", icon: Heart },
+  { label: "Tidak Boleh Bawa Anak", icon: Ban },
+  { label: "Hewan Peliharaan Boleh", icon: PawPrint },
+  { label: "Dilarang Hewan Peliharaan", icon: Ban },
+  { label: "Tamu Lawan Jenis Dilarang Masuk Kamar", icon: Ban },
+  { label: "Wajib KTP saat Check-in", icon: IdCard },
+  { label: "Denda Kerusakan / Piket", icon: AlertTriangle },
 ];
 
 export default function NewPropertyPage() {
@@ -156,6 +275,23 @@ export default function NewPropertyPage() {
   const [deskripsiKos, setDeskripsiKos] = useState(
     "Kos nyaman, aman, dan tenang di lingkungan strategis dekat kampus dan pusat perbelanjaan. Bangunan bersih terawat dengan sirkulasi udara baik."
   );
+
+  // Accordion state for Step 3
+  const [accordionOpen, setAccordionOpen] = useState<{
+    dasar: boolean;
+    lanjutan: boolean;
+    bersama: boolean;
+    peraturan: boolean;
+  }>({
+    dasar: true,
+    lanjutan: false,
+    bersama: false,
+    peraturan: false,
+  });
+
+  const toggleAccordion = (key: keyof typeof accordionOpen) => {
+    setAccordionOpen((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // -------------------------------------------------------------
   // STEP 4: DATA REKENING
@@ -1052,22 +1188,15 @@ export default function NewPropertyPage() {
               </p>
             </div>
 
-            {/* 7 Foto Upload Slots */}
+            {/* 7 Foto Upload Slots dengan Ikon Khusus */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-nk-text">
                 Foto Properti Kos (Minimal 3 foto) <span className="text-rose-500">*</span>
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {[
-                  { key: "kamarTidur", label: "Foto Kamar Tidur", required: true },
-                  { key: "depanKamar", label: "Foto Depan Kamar", required: true },
-                  { key: "kamarMandi", label: "Foto Kamar Mandi", required: true },
-                  { key: "bangunanKos", label: "Foto Bangunan Kos", required: true },
-                  { key: "fasilitasBersama", label: "Foto Fasilitas Bersama", required: true },
-                  { key: "bangunanJalan", label: "Bangunan dari Jalan", required: true },
-                  { key: "lainnya", label: "Foto Lainnya", required: false },
-                ].map((slot) => {
+                {PHOTO_SLOTS.map((slot) => {
                   const preview = photos[slot.key];
+                  const SlotIcon = slot.icon;
                   return (
                     <div
                       key={slot.key}
@@ -1086,7 +1215,7 @@ export default function NewPropertyPage() {
                             onClick={() =>
                               setPhotos((prev) => ({ ...prev, [slot.key]: "" }))
                             }
-                            className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-rose-600 text-white shadow-sm hover:bg-rose-700"
+                            className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-rose-600 text-white shadow-sm hover:bg-rose-700 transition-colors"
                           >
                             <Trash2 className="size-3.5" />
                           </button>
@@ -1096,7 +1225,9 @@ export default function NewPropertyPage() {
                         </>
                       ) : (
                         <label className="flex flex-col items-center justify-center size-full cursor-pointer p-2">
-                          <UploadCloud className="size-6 text-nk-text-muted group-hover:text-nk-accent transition-colors" />
+                          <div className="flex size-11 items-center justify-center rounded-full bg-nk-surface text-nk-accent shadow-sm group-hover:scale-110 group-hover:bg-nk-accent group-hover:text-white transition-all">
+                            <SlotIcon className="size-5" />
+                          </div>
                           <span className="mt-2 text-xs font-medium text-nk-text text-center line-clamp-2">
                             {slot.label}
                           </span>
@@ -1119,207 +1250,274 @@ export default function NewPropertyPage() {
               </div>
             </div>
 
-            {/* Fasilitas Dasar (Wajib) */}
-            <div className="space-y-3 rounded-xl border border-nk-border bg-nk-warm/30 p-5">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="size-4 text-emerald-600" />
-                <h3 className="text-sm font-semibold text-nk-text">
-                  Fasilitas Dasar (Wajib)
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {[
-                  "Kamar Mandi Dalam",
-                  "Kamar Mandi Luar",
-                  "Kasur",
-                  "Bantal",
-                  "Guling",
-                  "Tanpa Kasur",
-                  "AC",
-                  "Ventilasi",
-                  "Jendela",
-                  "Kipas Angin",
-                  "WiFi",
-                  "Termasuk Listrik",
-                  "Tidak termasuk listrik",
-                  "Dapur Bersama",
-                  "Dispenser Bersama",
-                  "Kulkas Bersama",
-                  "Kunci Gerbang 24 Jam",
-                  "Penjaga Kos",
-                  "Pengurus Kos",
-                  "CCTV",
-                  "Kartu Akses",
-                  "Parkir Motor",
-                  "Parkir Mobil",
-                ].map((item) => {
-                  const checked = fasilitasDasar.includes(item);
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() =>
-                        toggleArrayItem(fasilitasDasar, setFasilitasDasar, item)
-                      }
-                      className={`flex items-center gap-2 rounded-lg border p-2.5 text-left text-xs font-medium transition-all ${
-                        checked
-                          ? "border-nk-accent bg-nk-accent text-white"
-                          : "border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm"
+            {/* Menu Akordion Fasilitas & Peraturan Kos */}
+            <div className="space-y-4">
+              {/* Akordion 1: Fasilitas Dasar (Wajib) */}
+              <div className="rounded-xl border border-nk-border bg-nk-surface overflow-hidden transition-all shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => toggleAccordion("dasar")}
+                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                      <ShieldCheck className="size-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-nk-text">
+                        Fasilitas Dasar (Wajib)
+                      </h3>
+                      <p className="text-xs text-nk-text-muted">
+                        Kamar mandi, kasur, AC, WiFi, listrik, keamanan, dan parkir
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    {fasilitasDasar.length > 0 && (
+                      <span className="rounded-full bg-nk-accent/10 px-2.5 py-0.5 text-xs font-semibold text-nk-accent">
+                        {fasilitasDasar.length} dipilih
+                      </span>
+                    )}
+                    <ChevronDown
+                      className={`size-4 text-nk-text-muted transition-transform duration-200 ${
+                        accordionOpen.dasar ? "rotate-180" : ""
                       }`}
-                    >
-                      <div
-                        className={`flex size-4 shrink-0 items-center justify-center rounded border ${
-                          checked ? "border-white bg-white/20" : "border-nk-border bg-nk-bg"
-                        }`}
-                      >
-                        {checked && <Check className="size-3" />}
-                      </div>
-                      <span className="truncate">{item}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                    />
+                  </div>
+                </button>
 
-            {/* Fasilitas Lanjutan (Opsional) */}
-            <div className="space-y-3 rounded-xl border border-nk-border bg-nk-surface p-5">
-              <h3 className="text-sm font-semibold text-nk-text">
-                Fasilitas Lanjutan (Opsional)
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {[
-                  "Meja Belajar",
-                  "Kursi",
-                  "Lemari Baju",
-                  "Cermin",
-                  "Gantungan Baju",
-                  "Water Heater",
-                  "Kloset Duduk",
-                  "Kloset Jongkok",
-                  "Ember Mandi",
-                  "Shower",
-                  "TV",
-                  "Ruang Santai",
-                  "Balkon",
-                ].map((item) => {
-                  const checked = fasilitasLanjutan.includes(item);
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() =>
-                        toggleArrayItem(fasilitasLanjutan, setFasilitasLanjutan, item)
-                      }
-                      className={`flex items-center gap-2 rounded-lg border p-2.5 text-left text-xs font-medium transition-all ${
-                        checked
-                          ? "border-nk-accent bg-nk-accent text-white"
-                          : "border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm"
-                      }`}
-                    >
-                      <div
-                        className={`flex size-4 shrink-0 items-center justify-center rounded border ${
-                          checked ? "border-white bg-white/20" : "border-nk-border bg-nk-bg"
-                        }`}
-                      >
-                        {checked && <Check className="size-3" />}
-                      </div>
-                      <span className="truncate">{item}</span>
-                    </button>
-                  );
-                })}
+                {accordionOpen.dasar && (
+                  <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      {FASILITAS_DASAR_ITEMS.map((item) => {
+                        const checked = fasilitasDasar.includes(item.label);
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() =>
+                              toggleArrayItem(fasilitasDasar, setFasilitasDasar, item.label)
+                            }
+                            className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                              checked
+                                ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
+                                : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                            }`}
+                          >
+                            <Icon
+                              className={`size-4 shrink-0 transition-colors ${
+                                checked ? "text-white" : "text-nk-text-muted"
+                              }`}
+                            />
+                            <span className="truncate">{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Fasilitas Bersama (Opsional) */}
-            <div className="space-y-3 rounded-xl border border-nk-border bg-nk-surface p-5">
-              <h3 className="text-sm font-semibold text-nk-text">
-                Fasilitas Bersama (Opsional)
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {[
-                  "Mesin Cuci",
-                  "Tempat Jemuran",
-                  "Wastafel",
-                  "Air PDAM",
-                  "Sumur Bor",
-                  "Ruang Tamu Bersama",
-                  "Gazebo",
-                  "Taman",
-                  "Area Merokok",
-                  "Petugas Kebersihan",
-                  "Tempat Sampah Tiap Lantai",
-                ].map((item) => {
-                  const checked = fasilitasBersama.includes(item);
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() =>
-                        toggleArrayItem(fasilitasBersama, setFasilitasBersama, item)
-                      }
-                      className={`flex items-center gap-2 rounded-lg border p-2.5 text-left text-xs font-medium transition-all ${
-                        checked
-                          ? "border-nk-accent bg-nk-accent text-white"
-                          : "border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm"
+              {/* Akordion 2: Fasilitas Lanjutan (Opsional) */}
+              <div className="rounded-xl border border-nk-border bg-nk-surface overflow-hidden transition-all shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => toggleAccordion("lanjutan")}
+                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                      <Sparkles className="size-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-nk-text">
+                        Fasilitas Lanjutan (Opsional)
+                      </h3>
+                      <p className="text-xs text-nk-text-muted">
+                        Perabot kamar, water heater, kloset, TV, dan balkon
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    {fasilitasLanjutan.length > 0 && (
+                      <span className="rounded-full bg-nk-accent/10 px-2.5 py-0.5 text-xs font-semibold text-nk-accent">
+                        {fasilitasLanjutan.length} dipilih
+                      </span>
+                    )}
+                    <ChevronDown
+                      className={`size-4 text-nk-text-muted transition-transform duration-200 ${
+                        accordionOpen.lanjutan ? "rotate-180" : ""
                       }`}
-                    >
-                      <div
-                        className={`flex size-4 shrink-0 items-center justify-center rounded border ${
-                          checked ? "border-white bg-white/20" : "border-nk-border bg-nk-bg"
-                        }`}
-                      >
-                        {checked && <Check className="size-3" />}
-                      </div>
-                      <span className="truncate">{item}</span>
-                    </button>
-                  );
-                })}
+                    />
+                  </div>
+                </button>
+
+                {accordionOpen.lanjutan && (
+                  <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      {FASILITAS_LANJUTAN_ITEMS.map((item) => {
+                        const checked = fasilitasLanjutan.includes(item.label);
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() =>
+                              toggleArrayItem(fasilitasLanjutan, setFasilitasLanjutan, item.label)
+                            }
+                            className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                              checked
+                                ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
+                                : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                            }`}
+                          >
+                            <Icon
+                              className={`size-4 shrink-0 transition-colors ${
+                                checked ? "text-white" : "text-nk-text-muted"
+                              }`}
+                            />
+                            <span className="truncate">{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Peraturan Kos (Opsional) */}
-            <div className="space-y-3 rounded-xl border border-nk-border bg-nk-surface p-5">
-              <h3 className="text-sm font-semibold text-nk-text">
-                Peraturan Kos (Opsional)
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {[
-                  "Akses 24 Jam",
-                  "Jam Malam (Maksimal 22:00)",
-                  "Khusus Mahasiswa/Karyawan",
-                  "Pasutri Boleh (Buku Nikah)",
-                  "Tidak Boleh Bawa Anak",
-                  "Hewan Peliharaan Boleh",
-                  "Dilarang Hewan Peliharaan",
-                  "Tamu Lawan Jenis Dilarang Masuk Kamar",
-                  "Wajib KTP saat Check-in",
-                  "Denda Kerusakan / Piket",
-                ].map((item) => {
-                  const checked = peraturanKos.includes(item);
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() =>
-                        toggleArrayItem(peraturanKos, setPeraturanKos, item)
-                      }
-                      className={`flex items-center gap-2 rounded-lg border p-2.5 text-left text-xs font-medium transition-all ${
-                        checked
-                          ? "border-nk-accent bg-nk-accent text-white"
-                          : "border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm"
+              {/* Akordion 3: Fasilitas Bersama (Opsional) */}
+              <div className="rounded-xl border border-nk-border bg-nk-surface overflow-hidden transition-all shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => toggleAccordion("bersama")}
+                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                      <Users className="size-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-nk-text">
+                        Fasilitas Bersama (Opsional)
+                      </h3>
+                      <p className="text-xs text-nk-text-muted">
+                        Mesin cuci, jemuran, ruang tamu, gazebo, taman, dan kebersihan
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    {fasilitasBersama.length > 0 && (
+                      <span className="rounded-full bg-nk-accent/10 px-2.5 py-0.5 text-xs font-semibold text-nk-accent">
+                        {fasilitasBersama.length} dipilih
+                      </span>
+                    )}
+                    <ChevronDown
+                      className={`size-4 text-nk-text-muted transition-transform duration-200 ${
+                        accordionOpen.bersama ? "rotate-180" : ""
                       }`}
-                    >
-                      <div
-                        className={`flex size-4 shrink-0 items-center justify-center rounded border ${
-                          checked ? "border-white bg-white/20" : "border-nk-border bg-nk-bg"
-                        }`}
-                      >
-                        {checked && <Check className="size-3" />}
-                      </div>
-                      <span className="truncate">{item}</span>
-                    </button>
-                  );
-                })}
+                    />
+                  </div>
+                </button>
+
+                {accordionOpen.bersama && (
+                  <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      {FASILITAS_BERSAMA_ITEMS.map((item) => {
+                        const checked = fasilitasBersama.includes(item.label);
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() =>
+                              toggleArrayItem(fasilitasBersama, setFasilitasBersama, item.label)
+                            }
+                            className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                              checked
+                                ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
+                                : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                            }`}
+                          >
+                            <Icon
+                              className={`size-4 shrink-0 transition-colors ${
+                                checked ? "text-white" : "text-nk-text-muted"
+                              }`}
+                            />
+                            <span className="truncate">{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Akordion 4: Peraturan Kos (Opsional) */}
+              <div className="rounded-xl border border-nk-border bg-nk-surface overflow-hidden transition-all shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => toggleAccordion("peraturan")}
+                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-rose-50 text-rose-700">
+                      <FileText className="size-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-nk-text">
+                        Peraturan Kos (Opsional)
+                      </h3>
+                      <p className="text-xs text-nk-text-muted">
+                        Akses 24 jam, jam malam, kriteria penghuni, dan tata tertib
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    {peraturanKos.length > 0 && (
+                      <span className="rounded-full bg-nk-accent/10 px-2.5 py-0.5 text-xs font-semibold text-nk-accent">
+                        {peraturanKos.length} dipilih
+                      </span>
+                    )}
+                    <ChevronDown
+                      className={`size-4 text-nk-text-muted transition-transform duration-200 ${
+                        accordionOpen.peraturan ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                </button>
+
+                {accordionOpen.peraturan && (
+                  <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {PERATURAN_KOS_ITEMS.map((item) => {
+                        const checked = peraturanKos.includes(item.label);
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() =>
+                              toggleArrayItem(peraturanKos, setPeraturanKos, item.label)
+                            }
+                            className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                              checked
+                                ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
+                                : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                            }`}
+                          >
+                            <Icon
+                              className={`size-4 shrink-0 transition-colors ${
+                                checked ? "text-white" : "text-nk-text-muted"
+                              }`}
+                            />
+                            <span className="truncate">{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
