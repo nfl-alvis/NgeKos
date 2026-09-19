@@ -1,18 +1,10 @@
-"use client";
+import { redirect } from "@/i18n/navigation";
 
-import { useEffect } from "react";
-import { useParams } from "next/navigation";
-import { useRouter as useI18nRouter } from "@/i18n/navigation";
-
-export default function RedirectToPayPage() {
-  const params = useParams<{ id: string }>();
-  const router = useI18nRouter();
-
-  useEffect(() => {
-    if (params.id) {
-      router.replace(`/bookings/${params.id}/pay`);
-    }
-  }, [params.id, router]);
-
-  return null;
+export default async function BookingsBayarRedirect({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>;
+}) {
+  const { locale, id } = await params;
+  redirect({ href: `/dashboard/bookings/${id}/pay`, locale });
 }

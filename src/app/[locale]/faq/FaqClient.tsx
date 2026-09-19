@@ -72,7 +72,7 @@ export default function FaqClient({
 
       <div className="mt-12 flex flex-col items-start gap-3 rounded-lg border border-nk-border bg-nk-warm p-6">
         <p className="text-sm text-nk-text">{bantuanT("stillStuck")}</p>
-        <Button href="/bantuan" variant="outline" size="sm">
+        <Button href="/help" variant="outline" size="sm">
           {bantuanT("title")}
         </Button>
       </div>

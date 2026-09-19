@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
-import BantuanClient from "../bantuan/BantuanClient";
+import HelpClient from "./HelpClient";
 
 export const metadata: Metadata = { title: "Help Center" };
 
@@ -11,5 +11,5 @@ export default async function HelpPage({ params }: { params: Promise<{ locale: s
   const t = await getTranslations({ locale, namespace: "bantuan" });
   const cats = t.raw("cats") as Record<string, string>;
   const topics = t.raw("topics") as Record<string, string[]>;
-  return <BantuanClient cats={cats} topics={topics} />;
+  return <HelpClient cats={cats} topics={topics} />;
 }

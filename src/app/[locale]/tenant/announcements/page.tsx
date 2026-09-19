@@ -1,25 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Megaphone } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { tenants } from "@/lib/data/entities";
 import { getPropertyBySlug } from "@/lib/data/properties";
-import { announcements } from "@/lib/data/userData";
+import { announcements as staticAnnouncements } from "@/lib/data/userData";
 import { cn } from "@/lib/utils";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
 
 const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
 const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
-const NOW = new Date("2026-09-03T12:00:00");
+const NOW = new Date();
 
-/** Pengumuman dari owner - daftar kronologis dengan waktu relatif. */
+interface AnnouncementItem {
+  id: string;
+  titleId: string;
+  titleEn: string;
+  bodyId: string;
+  bodyEn: string;
+  at: string;
+  read?: boolean;
+}
+
+/** Pengumuman dari owner - terhubung ke API database /api/announcements */
 export default function TenantAnnouncementsPage() {
   const t = useTranslations("tenantPages.announcements");
   const locale = useLocale();
+  const [list, setList] = useState<AnnouncementItem[]>(staticAnnouncements);
   const [seen, setSeen] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/announcements")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const mapped: AnnouncementItem[] = json.data.map((item: any) => ({
+            id: item.id,
+            titleId: item.title,
+            titleEn: item.title,
+            bodyId: item.body,
+            bodyEn: item.body,
+            at: typeof item.publishedAt === "string" ? item.publishedAt : new Date().toISOString(),
+            read: Array.isArray(item.reads) && item.reads.length > 0,
+          }));
+          setList(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleMarkRead = (id: string) => {
+    setSeen((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    fetch(`/api/announcements/${id}/read`, { method: "PATCH" }).catch(() => {});
+  };
 
   const relTime = (at: string) => {
     const mins = Math.max(0, Math.floor((NOW.getTime() - new Date(at).getTime()) / 60_000));
@@ -33,16 +69,16 @@ export default function TenantAnnouncementsPage() {
     <UserDashboardShell role="tenant" title={t("title")}>
       <DashSection
         title={t("listTitle")}
-        right={<span className="text-xs text-nk-text-muted">{PROPERTY.name}</span>}
+        right={<span className="text-xs text-nk-text-muted">{PROPERTY?.name || "Kos"}</span>}
         bodyClass="divide-y divide-nk-border"
       >
-        {announcements.map((a, i) => {
-          const fresh = i === 0 && !seen.includes(a.id);
+        {list.map((a, i) => {
+          const fresh = (i === 0 || !a.read) && !seen.includes(a.id);
           return (
             <button
               key={a.id}
               type="button"
-              onClick={() => setSeen((prev) => (prev.includes(a.id) ? prev : [...prev, a.id]))}
+              onClick={() => handleMarkRead(a.id)}
               className={cn(
                 "flex w-full items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-nk-warm focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-nk-accent",
                 fresh && "bg-nk-section"

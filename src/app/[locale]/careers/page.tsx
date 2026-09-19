@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
-import KarirClient from "../karir/KarirClient";
+import CareersClient from "./CareersClient";
 
 export const metadata: Metadata = { title: "Careers" };
 
@@ -16,5 +16,5 @@ export default async function CareersPage({ params }: { params: Promise<{ locale
     team: string;
   }[];
   const steps = t.raw("processSteps") as string[];
-  return <KarirClient openings={openings} steps={steps} />;
+  return <CareersClient openings={openings} steps={steps} />;
 }

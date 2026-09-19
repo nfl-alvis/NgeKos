@@ -79,7 +79,7 @@ export default function BantuanClient({ cats, topics }: { cats: Cats; topics: Re
                   {items.map((item) => (
                     <li key={item}>
                       <Link
-                        href={`/bantuan/${slugify(item)}`}
+                        href={`/help/${slugify(item)}`}
                         className="flex items-center justify-between gap-3 py-2.5 text-sm text-nk-text-muted transition-colors hover:text-nk-text"
                       >
                         {item}

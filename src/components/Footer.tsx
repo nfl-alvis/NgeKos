@@ -16,12 +16,12 @@ export default function Footer() {
   const companyLinks: { href: string; label: string }[] = [
     { href: "/about", label: t("about") },
     { href: "/blog", label: t("blog") },
-    { href: "/karir", label: t("jobs") },
+    { href: "/careers", label: t("jobs") },
     { href: "/mitra", label: t("partners") },
   ];
 
   const supportLinks = [
-    { href: "/bantuan", label: t("help") },
+    { href: "/help", label: t("help") },
     { href: "/faq", label: t("faq") },
     { href: "/legal/syarat-ketentuan", label: t("terms") },
     { href: "/legal/privasi", label: t("privacy") },
