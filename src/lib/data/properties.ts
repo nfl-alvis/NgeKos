@@ -2,6 +2,31 @@ import type { Property } from "./types";
 
 export const properties: Property[] = [
   {
+    slug: "kost-test-midtrans-500",
+    name: "Kost Uji Coba Midtrans (Rp 500)",
+    tagline: "Khusus uji coba transfer pembayaran Midtrans Rp 500.",
+    description:
+      "Kost simulasi dan pengujian transaksi online Midtrans Snap Sandbox dengan nominal Rp 500 perak. Tanpa uang jaminan / deposit, siap digunakan untuk uji coba checkout payment gateway.",
+    city: "Jakarta",
+    district: "Gambir",
+    address: "Jl. Medan Merdeka Barat No. 1, Gambir, Jakarta Pusat",
+    gender: "mixed",
+    verified: true,
+    active: true,
+    rating: 5.0,
+    reviewCount: 99,
+    imageSeed: "test-midtrans-500",
+    facilities: ["wifi", "ac", "bathroom-in", "parking", "access-24h", "cctv"],
+    roomTypes: [
+      { id: "test-500-std", name: "Kamar Test 500", pricePerMonth: 500, available: 5, total: 5, sizeM2: 12 },
+    ],
+    minPrice: 500,
+    distanceToCampusM: 100,
+    depositInfo: "Tanpa deposit (Rp 0)",
+    depositAmount: null,
+    verificationStatus: "verified",
+  },
+  {
     slug: "kost-griya-cemara-dago",
     name: "Kost Griya Cemara",
     tagline: "Hijau, tenang, 5 menit ke kampus ITB.",

@@ -80,6 +80,30 @@ export const OWNER_PROPERTY_SLUGS = [
 
 export const bookings: Booking[] = [
   {
+    id: "BK-500",
+    propertySlug: "kost-test-midtrans-500",
+    propertyName: "Kost Uji Coba Midtrans (Rp 500)",
+    city: "Jakarta",
+    roomType: "Kamar Test 500",
+    roomId: "test-500-std",
+    roomNumber: "T-101",
+    startDate: "2026-09-20",
+    note: "Uji coba transfer Midtrans Rp 500",
+    status: "approved-awaiting-payment",
+    applicantName: "Akun Uji Coba Midtrans",
+    applicantPhone: "+62 812-3456-7890",
+    applicantEmail: "tester@ngekost.id",
+    createdAt: "2026-09-19T21:00:00",
+    payDeadlineMin: 1440,
+    usesDp: false,
+    monthlyPrice: 500,
+    timeline: [
+      { at: "2026-09-19T21:00:00", stage: "diajukan" },
+      { at: "2026-09-19T21:01:00", stage: "disetujui" },
+      { at: "2026-09-19T21:01:00", stage: "menunggu-bayar" },
+    ],
+  },
+  {
     id: "BK-1234",
     propertySlug: "kost-griya-cemara-dago",
     propertyName: "Kost Griya Cemara",
@@ -726,6 +750,13 @@ export interface RoomUnit {
 }
 
 export const roomUnits: Record<string, RoomUnit[]> = {
+  "kost-test-midtrans-500": [
+    { number: "T-101", status: "dipesan" },
+    { number: "T-102", status: "kosong" },
+    { number: "T-103", status: "kosong" },
+    { number: "T-104", status: "kosong" },
+    { number: "T-105", status: "kosong" },
+  ],
   "kost-griya-cemara-dago": [
     { number: "A-101", status: "terisi" },
     { number: "A-102", status: "terisi" },
