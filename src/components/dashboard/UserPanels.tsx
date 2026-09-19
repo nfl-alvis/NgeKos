@@ -129,7 +129,7 @@ export function ActiveBookingPanel({ compact = false }: { compact?: boolean }) {
               {b.status === "approved-awaiting-payment" && payment?.status !== "paid" && (
                 <button
                   type="button"
-                  onClick={() => router.push(`/bookings/${b.id}/bayar`)}
+                  onClick={() => router.push(`/bookings/${b.id}/pay`)}
                   className="inline-flex items-center justify-center bg-nk-accent px-4 py-2 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent active:scale-[0.99]"
                 >
                   {t("payNow")}

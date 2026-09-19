@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Ban, CheckCircle2, Ellipsis, Search, ShieldCheck, Users } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -34,19 +34,71 @@ export default function AdminUsersPage() {
   const { user } = useSession();
   const ops = useAdminOps();
   const [search, setSearch] = useState("");
+  const [usersList, setUsersList] = useState<any[]>(seekerAccounts);
+
+  useEffect(() => {
+    fetch("/api/admin/users")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const mapped = json.data.map((u: any) => ({
+            id: u.id,
+            name: u.fullName || u.email.split("@")[0],
+            email: u.email,
+            phone: u.phone || "-",
+            city:
+              u.role === "SEEKER"
+                ? "Pencari Kos"
+                : u.role === "OWNER"
+                  ? "Pemilik Kos"
+                  : "Admin",
+            status: u.status === "ACTIVE" ? "aktif" : "diblokir",
+            joinedAt:
+              typeof u.createdAt === "string"
+                ? u.createdAt.slice(0, 10)
+                : "2026-09-01",
+          }));
+          setUsersList(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return seekerAccounts
+    return usersList
       .map((u) => ({ u, st: seekerStatus(ops, u.id, u.status) }))
-      .filter((r) => (q ? `${r.u.name} ${r.u.email} ${r.u.city}`.toLowerCase().includes(q) : true));
-  }, [ops, search]);
+      .filter((r) =>
+        q
+          ? `${r.u.name} ${r.u.email} ${r.u.city}`.toLowerCase().includes(q)
+          : true
+      );
+  }, [ops, search, usersList]);
 
   const blocked = rows.filter((r) => r.st === "diblokir").length;
 
-  const toggle = (id: string, name: string, next: "ban" | "unban") => {
+  const toggle = async (id: string, name: string, next: "ban" | "unban") => {
     recordOp(id, next, user?.email, name);
-    show(next === "ban" ? t("toastBlocked", { name }) : t("toastUnblocked", { name }));
+    setUsersList((prev) =>
+      prev.map((u) =>
+        u.id === id ? { ...u, status: next === "ban" ? "diblokir" : "aktif" } : u
+      )
+    );
+    show(
+      next === "ban"
+        ? t("toastBlocked", { name })
+        : t("toastUnblocked", { name })
+    );
+
+    try {
+      await fetch(`/api/admin/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: next === "ban" ? "SUSPENDED" : "ACTIVE",
+        }),
+      });
+    } catch {}
   };
 
   return (

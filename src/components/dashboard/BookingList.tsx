@@ -90,7 +90,7 @@ function BookingCard({
         {booking.status === "approved-awaiting-payment" ? (
           <button
             type="button"
-            onClick={() => router.push(`/bookings/${booking.id}/bayar`)}
+            onClick={() => router.push(`/bookings/${booking.id}/pay`)}
             className="rounded-lg bg-nk-accent px-4 py-2 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
           >
             {t("payNow")}

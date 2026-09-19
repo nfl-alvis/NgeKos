@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import DashboardShell from "@/components/DashboardShell";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -18,6 +18,28 @@ export default function OwnerInvoicesPage() {
   const [rows, setRows] = useState<Invoice[]>(seedInvoices);
   const [createOpen, setCreateOpen] = useState(false);
   const [newInv, setNewInv] = useState({ tenant: "", period: "", amount: "" });
+
+  useEffect(() => {
+    fetch("/api/invoices")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const mapped: Invoice[] = json.data.map((item: any) => ({
+            id: item.code || item.id,
+            tenantName: item.tenant?.fullName || item.tenantName || "Penyewa",
+            period: item.period || "Periode Berjalan",
+            amount: Number(item.amountSnapshot || item.amount || 0),
+            status: item.status === "PAID" ? "lunas" : "belum-lunas",
+            dueDate:
+              typeof item.dueDate === "string"
+                ? item.dueDate.slice(0, 10)
+                : "2026-09-20",
+          }));
+          setRows(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const filtered = useMemo(() => {
     if (filter === "lunas") return rows.filter((r) => r.status === "lunas");

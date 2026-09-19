@@ -18,7 +18,7 @@ import { useSession } from "@/components/SessionProvider";
  *  - form satu layar: data pemesan di kiri, Ringkasan Pengajuan di kanan
  *    (kartu sticky ala panel pengajuan Mamikos);
  *  - pembayaran TIDAK di sini — baru setelah pemilik menyetujui
- *    (halaman /bookings/[id]/bayar).
+ *    (halaman /bookings/[id]/pay).
  * Kamar/tanggal/durasi sudah dipilih di popup halaman detail; ubah lewat
  * tautan "Ubah pilihan" di ringkasan.
  */

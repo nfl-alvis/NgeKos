@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { roomUnits, type RoomUnit } from "@/lib/data/entities";
 import { getPropertyBySlug } from "@/lib/data/properties";
+import type { Property } from "@/lib/data/types";
 import { formatIDR, cn } from "@/lib/utils";
 import PropertyPhotoManager from "@/components/owner/PropertyPhotoManager";
 
@@ -24,7 +25,10 @@ export default function OwnerPropertyDetailPage() {
   const propsT = useTranslations("owner.properties");
   const params = useParams<{ slug: string }>();
 
-  const property = getPropertyBySlug(params.slug);
+  const [property, setProperty] = useState<Property | null>(
+    getPropertyBySlug(params.slug) ?? null
+  );
+  const [loading, setLoading] = useState(!property);
   const [tab, setTab] = useState<"rooms" | "photos" | "settings">("rooms");
   const [openType, setOpenType] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Record<string, RoomUnit[]>>(
@@ -32,10 +36,87 @@ export default function OwnerPropertyDetailPage() {
   );
   const [menuRoom, setMenuRoom] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!property && params.slug) {
+      setLoading(true);
+      fetch("/api/properties?mine=true")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (json?.data && Array.isArray(json.data)) {
+            const found = json.data.find(
+              (p: any) => p.slug === params.slug || p.id === params.slug
+            );
+            if (found) {
+              const mapped: Property = {
+                id: found.id,
+                slug: found.slug,
+                name: found.name,
+                tagline: found.tagline ?? "",
+                description: found.description,
+                city: found.city,
+                district: found.district,
+                address: found.address,
+                gender: found.gender ? found.gender.toLowerCase() : "mixed",
+                verified: found.status === "VERIFIED",
+                active: found.status === "VERIFIED",
+                rating: found.rating ?? 0,
+                reviewCount: found.reviewCount ?? 0,
+                imageSeed: found.slug,
+                facilities: (found.facilities || []).map((f: any) => f.key || f),
+                minPrice: found.minPrice ?? 0,
+                distanceToCampusM: found.distanceToCampusM ?? 0,
+                depositInfo: found.depositAmount
+                  ? `DP Rp ${found.depositAmount.toLocaleString("id-ID")}`
+                  : "Tanpa deposit",
+                depositAmount: found.depositAmount,
+                verificationStatus:
+                  found.status === "VERIFIED"
+                    ? "verified"
+                    : found.status === "REJECTED"
+                      ? "rejected"
+                      : "pending",
+                verificationNote: found.rejectionNote ?? undefined,
+                roomTypes: (found.roomTypes || []).map((rt: any) => ({
+                  id: rt.id,
+                  name: rt.name,
+                  pricePerMonth: rt.pricePerMonth,
+                  available: rt.available ?? 0,
+                  total: rt.total ?? 0,
+                  sizeM2: rt.sizeM2 ?? 12,
+                })),
+              };
+              setProperty(mapped);
+
+              const dynamicUnits: RoomUnit[] = [];
+              (found.roomTypes || []).forEach((rt: any) => {
+                const total = rt.total || 2;
+                for (let i = 1; i <= total; i++) {
+                  dynamicUnits.push({
+                    number: `${rt.name.slice(0, 1).toUpperCase()}-${100 + i}`,
+                    status: i <= (rt.available ?? 1) ? "kosong" : "terisi",
+                  });
+                }
+              });
+              setRooms({ [mapped.slug]: dynamicUnits });
+            }
+          }
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [property, params.slug]);
+
+  if (loading) {
+    return (
+      <DashboardShell role="owner">
+        <p className="py-24 text-center text-sm text-nk-text-muted">Memuat rincian properti...</p>
+      </DashboardShell>
+    );
+  }
+
   if (!property) {
     return (
       <DashboardShell role="owner">
-        <p className="py-24 text-center text-sm text-nk-text-muted">404</p>
+        <p className="py-24 text-center text-sm text-nk-text-muted">404 - Properti Tidak Ditemukan</p>
       </DashboardShell>
     );
   }
@@ -240,7 +321,7 @@ export default function OwnerPropertyDetailPage() {
 
       {/* TAB: Foto */}
       {tab === "photos" && (
-        <PropertyPhotoManager slug={params.slug} />
+        <PropertyPhotoManager slug={property.slug} propertyId={property.id} />
       )}
 
       {/* TAB: Pengaturan */}

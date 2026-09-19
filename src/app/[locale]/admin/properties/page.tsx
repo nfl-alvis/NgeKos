@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Ban, Building2, CheckCircle2, Ellipsis, RotateCcw, Search, Trash2 } from "lucide-react";
 import Image from "next/image";
@@ -59,25 +59,75 @@ export default function AdminPropertiesPage() {
   const [deleting, setDeleting] = useState<Property | null>(null);
   const [reason, setReason] = useState("");
   const [reasonError, setReasonError] = useState(false);
+  const [propertiesList, setPropertiesList] = useState<Property[]>(properties);
+
+  useEffect(() => {
+    fetch("/api/properties")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const mapped: Property[] = json.data.map((dto: any) => ({
+            id: dto.id,
+            slug: dto.slug,
+            name: dto.name,
+            tagline: dto.tagline ?? "",
+            description: dto.description,
+            city: dto.city,
+            district: dto.district,
+            address: dto.address,
+            gender: dto.gender ? dto.gender.toLowerCase() : "mixed",
+            verified: dto.status === "VERIFIED",
+            active: dto.status === "VERIFIED",
+            rating: dto.rating ?? 0,
+            reviewCount: dto.reviewCount ?? 0,
+            imageSeed: dto.slug,
+            facilities: (dto.facilities || []).map((f: any) => f.key || f),
+            minPrice: dto.minPrice ?? 0,
+            distanceToCampusM: dto.distanceToCampusM ?? 0,
+            depositInfo: dto.depositAmount
+              ? `DP Rp ${dto.depositAmount.toLocaleString("id-ID")}`
+              : "Tanpa deposit",
+            depositAmount: dto.depositAmount,
+            verificationStatus:
+              dto.status === "VERIFIED"
+                ? "verified"
+                : dto.status === "REJECTED"
+                  ? "rejected"
+                  : "pending",
+            verificationNote: dto.rejectionNote ?? undefined,
+            roomTypes: (dto.roomTypes || []).map((rt: any) => ({
+              id: rt.id,
+              name: rt.name,
+              pricePerMonth: rt.pricePerMonth,
+              available: rt.available ?? 0,
+              total: rt.total ?? 0,
+              sizeM2: rt.sizeM2 ?? 12,
+            })),
+          }));
+          setPropertiesList(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return properties
+    return propertiesList
       .map((p) => ({ p, st: propertyStatus(ops, p.slug, p.active) }))
       .filter((r) => (status === "all" ? r.st !== "dihapus" : r.st === status))
       .filter((r) =>
         q ? `${r.p.name} ${r.p.city} ${r.p.slug}`.toLowerCase().includes(q) : true
       );
-  }, [ops, search, status]);
+  }, [ops, search, status, propertiesList]);
 
   const counts = useMemo(() => {
-    const all = properties.map((p) => propertyStatus(ops, p.slug, p.active));
+    const all = propertiesList.map((p) => propertyStatus(ops, p.slug, p.active));
     return {
       aktif: all.filter((s) => s === "aktif").length,
       nonaktif: all.filter((s) => s === "nonaktif").length,
       dihapus: all.filter((s) => s === "dihapus").length,
     };
-  }, [ops]);
+  }, [ops, propertiesList]);
 
   const toggle = (p: Property, next: "enable" | "disable") => {
     recordOp(p.slug, next, user?.email);

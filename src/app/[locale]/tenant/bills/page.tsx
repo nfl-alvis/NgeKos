@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { CheckCircle2, Receipt, Wallet } from "lucide-react";
@@ -23,10 +24,35 @@ export default function TenantBillsPage() {
   const t = useTranslations("tenantPages.bills");
   const locale = useLocale();
   const ops = useTenantOps();
+  const [bills, setBills] = useState<(typeof invoices)>(
+    invoices.filter((i) => i.tenantName === DEMO_TENANT.name)
+  );
 
-  const my = invoices
-    .filter((i) => i.tenantName === DEMO_TENANT.name)
-    .sort((a, b) => b.dueDate.localeCompare(a.dueDate));
+  useEffect(() => {
+    fetch("/api/invoices")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const mapped = json.data.map((item: any) => ({
+            id: item.code || item.id,
+            tenantName: item.tenant?.fullName || item.tenantName || "Penyewa",
+            period: item.period || "Periode Berjalan",
+            amount: Number(item.amountSnapshot || item.amount || 0),
+            status: (item.status === "PAID" ? "lunas" : "belum-lunas") as
+              | "lunas"
+              | "belum-lunas",
+            dueDate:
+              typeof item.dueDate === "string"
+                ? item.dueDate.slice(0, 10)
+                : "2026-09-20",
+          }));
+          setBills(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const my = bills.sort((a: any, b: any) => b.dueDate.localeCompare(a.dueDate));
   const isPaid = (id: string, status: string) => status === "lunas" || ops.paidInvoiceIds.includes(id);
 
   // tagihan periode berikutnya (belum terbit di seed) — disintesis utk demo

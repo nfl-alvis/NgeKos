@@ -38,10 +38,10 @@ export async function createRoomUnit(profile: Profile, propertyId: string, input
   return prisma.roomUnit.create({ data: { ...input, propertyId } });
 }
 
-export async function updateRoomUnitStatus(profile: Profile, propertyId: string, roomId: string, status: "AVAILABLE" | "MAINTENANCE") {
+export async function updateRoomUnitStatus(profile: Profile, propertyId: string, roomId: string, status: "AVAILABLE" | "MAINTENANCE" | "OCCUPIED") {
   await ownedProperty(profile, propertyId);
   const unit = await prisma.roomUnit.findFirst({ where: { id: roomId, propertyId, deletedAt: null } });
   if (!unit) throw new ApiError(404, "ROOM_NOT_FOUND", "Kamar tidak ditemukan");
-  if (["OCCUPIED", "RESERVED"].includes(unit.status)) throw new ApiError(409, "ROOM_IN_USE", "Status kamar yang sedang digunakan tidak dapat diubah manual");
+  if (unit.status === "RESERVED") throw new ApiError(409, "ROOM_IN_USE", "Status kamar yang sedang dipesan (reserved) tidak dapat diubah manual");
   return prisma.roomUnit.update({ where: { id: roomId }, data: { status } });
 }

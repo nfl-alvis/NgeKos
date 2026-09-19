@@ -36,6 +36,9 @@ import { properties } from "@/lib/data/properties";
 import { FACILITY_META } from "@/lib/data/facilities";
 import { cn, formatIDR } from "@/lib/utils";
 
+import { useSession } from "@/components/SessionProvider";
+import { useEffect, useState } from "react";
+
 // tenant demo = t-1 (I made Sudiarta, Kost Griya Cemara A-101)
 const DEMO_TENANT_ID = "t-1";
 const DEMO_TODAY = new Date("2026-09-03");
@@ -46,9 +49,39 @@ export default function TenantDashboardPage() {
   const t = useTranslations("tenant");
   const locale = useLocale();
   const months = t.raw("months") as string[];
+  const { user } = useSession();
+  const [activeBooking, setActiveBooking] = useState<any | null>(null);
 
-  const tenant = tenants.find((tn) => tn.id === DEMO_TENANT_ID)!;
-  const property = properties.find((p) => p.slug === tenant.propertySlug)!;
+  useEffect(() => {
+    fetch("/api/bookings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          const active = json.data.find(
+            (b: any) =>
+              b.status === "ACTIVE" ||
+              b.status === "APPROVED_AWAITING_PAYMENT"
+          );
+          if (active) setActiveBooking(active);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const baseTenant = tenants.find((tn) => tn.id === DEMO_TENANT_ID)!;
+  const baseProperty = properties.find((p) => p.slug === baseTenant.propertySlug)!;
+
+  const tenant = {
+    ...baseTenant,
+    name: user?.name || activeBooking?.applicant?.fullName || baseTenant.name,
+    roomNumber: activeBooking?.roomUnit?.number || baseTenant.roomNumber,
+    monthlyRent: activeBooking?.monthlyPriceSnapshot || baseTenant.monthlyRent,
+  };
+
+  const property = {
+    ...baseProperty,
+    name: activeBooking?.property?.name || baseProperty.name,
+  };
   // invoice yang dilunasi sesi ini (dari /tenant/bills) ikut dihitung lunas
   const ops = useTenantOps();
   const invStatus = (inv: (typeof invoices)[number]) =>
