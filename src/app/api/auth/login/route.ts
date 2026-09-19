@@ -7,7 +7,7 @@ const signInSchema = z
   .object({
     email: z.email().trim(),
     password: z.string().min(8).max(128),
-    role: z.enum(["seeker", "owner"]),
+    role: z.enum(["seeker", "owner", "admin"]).optional(),
   })
   .strict();
 
@@ -20,14 +20,18 @@ export const POST = withApi(async (request: Request) => {
   }
 
   const profile = await prisma.profile.findUnique({ where: { id: data.user.id }, select: { role: true, status: true } });
-  const requestedRole = input.role === "owner" ? "OWNER" : "SEEKER";
   if (!profile || profile.status !== "ACTIVE") {
     await supabase.auth.signOut();
     throw new ApiError(403, "ACCOUNT_DISABLED", "Akun tidak aktif");
   }
-  if (profile.role !== requestedRole) {
-    await supabase.auth.signOut();
-    throw new ApiError(403, "ROLE_MISMATCH", input.role === "owner" ? "Akun ini bukan akun pemilik kos" : "Akun ini bukan akun pencari kos");
+
+  if (input.role) {
+    const requestedRole = input.role === "admin" ? "ADMIN" : input.role === "owner" ? "OWNER" : "SEEKER";
+    if (profile.role !== requestedRole) {
+      await supabase.auth.signOut();
+      const roleName = input.role === "admin" ? "admin" : input.role === "owner" ? "pemilik kos" : "pencari kos";
+      throw new ApiError(403, "ROLE_MISMATCH", `Akun ini bukan akun ${roleName}`);
+    }
   }
 
   return successResponse({ user: { id: data.user.id, email: data.user.email, role: profile.role } });

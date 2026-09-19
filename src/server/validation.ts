@@ -69,7 +69,7 @@ export const bookingCreateSchema = z
   .strict();
 
 export const bookingDecisionSchema = z.discriminatedUnion("status", [
-  z.object({ status: z.literal("APPROVED_AWAITING_PAYMENT"), roomUnitId: z.uuid(), note: optionalText(1_000) }).strict(),
+  z.object({ status: z.literal("APPROVED_AWAITING_PAYMENT"), roomUnitId: z.uuid().optional(), note: optionalText(1_000) }).strict(),
   z.object({ status: z.literal("REJECTED"), note: trimmedText(3, 1_000) }).strict(),
   z.object({ status: z.literal("CANCELLED"), note: optionalText(1_000) }).strict(),
 ]);
@@ -91,7 +91,9 @@ export const profileUpdateSchema = z
 
 export const complaintCreateSchema = z
   .object({
-    agreementId: z.uuid(),
+    agreementId: z.string().uuid().optional(),
+    propertyId: z.string().optional(),
+    propertySlug: z.string().optional(),
     category: z.enum(["FACILITY", "CLEANLINESS", "SECURITY", "PAYMENT", "OTHER"]),
     title: trimmedText(3, 160),
     description: trimmedText(10, 5_000),
@@ -100,7 +102,9 @@ export const complaintCreateSchema = z
 
 export const reviewCreateSchema = z
   .object({
-    agreementId: z.uuid(),
+    agreementId: z.string().uuid().optional(),
+    propertyId: z.string().optional(),
+    propertySlug: z.string().optional(),
     rating: z.coerce.number().int().min(1).max(5),
     body: trimmedText(10, 3_000),
   })

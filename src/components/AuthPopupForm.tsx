@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { AlertCircle } from "lucide-react";
 import { useSession } from "@/components/SessionProvider";
 import GoogleButton from "@/components/GoogleButton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 /**
  * Isi popup login ala Mamikos (tombol Google + email/password + kotak akun
@@ -94,7 +96,12 @@ export default function AuthPopupForm({
             className={inputCls}
           />
         </label>
-        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+        {error && (
+          <Alert variant="destructive" className="py-2.5">
+            <AlertCircle className="size-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         <button
           type="submit"
           disabled={pending || !email || !password}

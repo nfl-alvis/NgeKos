@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Plus } from "lucide-react";
+import { Loader2, Plus, AlertCircle, CheckCircle2 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -40,11 +41,46 @@ const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
 const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
 const DEMO_TODAY = new Date("2026-09-03");
 
+function mapDbComplaint(c: any): Complaint {
+  const catMap: Record<string, ComplaintCategory> = {
+    FACILITY: "fasilitas",
+    CLEANLINESS: "kebersihan",
+    SECURITY: "keamanan",
+    PAYMENT: "pembayaran",
+    OTHER: "lainnya",
+  };
+  const statusMap: Record<string, any> = {
+    OPEN: "open",
+    ACKNOWLEDGED: "acknowledged",
+    IN_PROGRESS: "in_progress",
+    RESOLVED: "resolved",
+    CLOSED: "closed",
+  };
+  return {
+    id: c.code || c.id,
+    title: c.title,
+    category: catMap[c.category] || "fasilitas",
+    room: c.agreement?.roomUnit?.number || "101",
+    reporter: "Saya",
+    propertySlug: c.property?.slug || "",
+    propertyName: c.property?.name || "Kost",
+    at: typeof c.createdAt === "string" ? c.createdAt.slice(0, 10) : new Date(c.createdAt).toISOString().slice(0, 10),
+    updatedAt: typeof c.updatedAt === "string" ? c.updatedAt.slice(0, 10) : new Date(c.updatedAt).toISOString().slice(0, 10),
+    status: statusMap[c.status] || "open",
+    noteId: c.ownerNote || "Belum ada catatan pemilik.",
+    noteEn: c.ownerNote || "No owner note yet.",
+  };
+}
+
 /** Pengaduan penyewa — daftar + dialog buat baru + stepper status. */
 export default function TenantComplaintsPage() {
   const t = useTranslations("tenantPages.complaints");
   const locale = useLocale();
-  const items = useTenantComplaints();
+  const defaultItems = useTenantComplaints();
+  const [items, setItems] = useState<Complaint[]>(defaultItems);
+  const [isLoading, setIsLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Complaint | null>(null);
@@ -52,6 +88,22 @@ export default function TenantComplaintsPage() {
   const [cat, setCat] = useState<ComplaintCategory>("fasilitas");
   const [desc, setDesc] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+
+  const fetchComplaints = () => {
+    fetch("/api/complaints")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          setItems(json.data.map(mapDbComplaint));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => {
+    fetchComplaints();
+  }, []);
 
   const fmt = (iso: string) =>
     new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
@@ -61,22 +113,61 @@ export default function TenantComplaintsPage() {
       timeZone: "UTC",
     });
 
-  const submit = () => {
-    addComplaint({
-      title: title.trim(),
-      category: cat,
-      room: tenantRoomInfo.roomNumber,
-      reporter: DEMO_TENANT.name,
-      propertySlug: PROPERTY.slug,
-      propertyName: PROPERTY.name,
-      at: DEMO_TODAY.toISOString().slice(0, 10),
-    });
-    setOpen(false);
-    setTitle("");
-    setDesc("");
-    setCat("fasilitas");
-    setToast(t("created"));
-    window.setTimeout(() => setToast(null), 5000);
+  const catToDb: Record<ComplaintCategory, string> = {
+    fasilitas: "FACILITY",
+    air: "FACILITY",
+    listrik: "FACILITY",
+    internet: "FACILITY",
+    kebersihan: "CLEANLINESS",
+    keamanan: "SECURITY",
+    pembayaran: "PAYMENT",
+    lainnya: "OTHER",
+  };
+
+  const submit = async () => {
+    setSubmitting(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch("/api/complaints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: catToDb[cat],
+          title: title.trim(),
+          description: desc.trim().length >= 10 ? desc.trim() : `${desc.trim()} (rincian pengaduan)`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Gagal mengirim pengaduan");
+      }
+
+      if (data.data) {
+        const newComplaint = mapDbComplaint(data.data);
+        setItems((prev) => [newComplaint, ...prev]);
+      } else {
+        addComplaint({
+          title: title.trim(),
+          category: cat,
+          room: tenantRoomInfo.roomNumber,
+          reporter: DEMO_TENANT.name,
+          propertySlug: PROPERTY.slug,
+          propertyName: PROPERTY.name,
+          at: DEMO_TODAY.toISOString().slice(0, 10),
+        });
+      }
+
+      setOpen(false);
+      setTitle("");
+      setDesc("");
+      setCat("fasilitas");
+      setToast(t("created"));
+      window.setTimeout(() => setToast(null), 5000);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Gagal mengirim pengaduan. Silakan coba lagi.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -171,12 +262,21 @@ export default function TenantComplaintsPage() {
               />
             </div>
           </div>
+          {errorMsg && (
+            <Alert className="mt-4 border border-red-200 bg-red-50 text-red-900">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="size-4 text-red-600" />
+                <AlertDescription className="text-xs">{errorMsg}</AlertDescription>
+              </div>
+            </Alert>
+          )}
           <button
             type="button"
             onClick={submit}
-            disabled={title.trim().length < 4 || desc.trim().length < 8}
-            className="mt-6 w-full bg-nk-accent px-5 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={submitting || title.trim().length < 4 || desc.trim().length < 8}
+            className="mt-6 flex w-full items-center justify-center gap-2 bg-nk-accent px-5 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
+            {submitting && <Loader2 className="size-4 animate-spin" />}
             {t("submit")}
           </button>
         </DialogContent>

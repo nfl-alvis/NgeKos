@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import type { Property } from "@/lib/data/types";
 import { formatIDR, formatDistance } from "@/lib/utils";
+import FavoriteButton from "@/components/FavoriteButton";
 
 const GENDER_LABEL: Record<Property["gender"], "genderMixed" | "genderMale" | "genderFemale"> = {
   mixed: "genderMixed",
@@ -27,14 +28,9 @@ export default async function PropertyCard({ property }: { property: Property })
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        {property.verified && (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-md bg-white/90 px-2.5 py-1 text-xs font-medium text-nk-text backdrop-blur-sm">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-            {t("verified")}
-          </span>
-        )}
+        <div className="absolute right-3 top-3 z-10">
+          <FavoriteButton propertySlug={property.slug} propertyId={property.id} size="sm" />
+        </div>
         <span className="absolute bottom-3 right-3 rounded-md bg-nk-dark/85 px-2.5 py-1 text-xs font-medium text-nk-text-inverse">
           {formatDistance(property.distanceToCampusM)}
         </span>

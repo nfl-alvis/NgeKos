@@ -109,17 +109,74 @@ function BookingCard({
   );
 }
 
+function mapDbBooking(b: any): Booking {
+  const statusMap: Record<string, BookingStatus> = {
+    PENDING: "pending",
+    APPROVED_AWAITING_PAYMENT: "approved-awaiting-payment",
+    ACTIVE: "active",
+    REJECTED: "rejected",
+    EXPIRED: "expired",
+    CANCELLED: "cancelled",
+    COMPLETED: "active",
+  };
+
+  const timeline: { at: string; stage: "diajukan" | "disetujui" | "menunggu-bayar" | "lunas" }[] = [];
+  if (b.createdAt) timeline.push({ at: b.createdAt, stage: "diajukan" });
+  if (b.approvedAt) {
+    timeline.push({ at: b.approvedAt, stage: "disetujui" });
+    timeline.push({ at: b.approvedAt, stage: "menunggu-bayar" });
+  }
+  if (b.status === "ACTIVE" || b.status === "COMPLETED") {
+    timeline.push({ at: b.updatedAt || b.createdAt, stage: "lunas" });
+  }
+
+  return {
+    id: b.id,
+    propertySlug: b.property?.slug || b.propertyId || "",
+    propertyName: b.property?.name || "Kost",
+    city: b.property?.city || "",
+    roomType: b.roomType?.name || "Kamar",
+    roomId: b.roomUnitId || b.roomTypeId || "",
+    roomNumber: b.roomUnit?.number || "-",
+    startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : new Date(b.startDate).toISOString().slice(0, 10),
+    note: b.note || undefined,
+    status: statusMap[b.status] || "pending",
+    statusNote: b.statusNote || undefined,
+    applicantName: b.applicant?.fullName || "Saya",
+    applicantPhone: b.applicant?.phone || "-",
+    applicantEmail: b.applicant?.email || "-",
+    createdAt: b.createdAt,
+    payDeadlineMin: 1440,
+    usesDp: Boolean(b.depositSnapshot),
+    monthlyPrice: b.monthlyPriceSnapshot || 0,
+    timeline: timeline.length > 0 ? timeline : [{ at: b.createdAt, stage: "diajukan" }],
+    payments: [],
+  };
+}
+
 export default function BookingList() {
   const t = useTranslations("myBookings");
   const router = useRouter();
   const [tab, setTab] = useState<"all" | "active" | "done">("all");
   const [detail, setDetail] = useState<Booking | null>(null);
+  const [items, setItems] = useState<Booking[]>(bookings);
+
+  useEffect(() => {
+    fetch("/api/bookings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          setItems(json.data.map(mapDbBooking));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const filtered = useMemo(() => {
-    if (tab === "active") return bookings.filter((b) => ACTIVE.includes(b.status));
-    if (tab === "done") return bookings.filter((b) => DONE.includes(b.status));
-    return bookings;
-  }, [tab]);
+    if (tab === "active") return items.filter((b) => ACTIVE.includes(b.status));
+    if (tab === "done") return items.filter((b) => DONE.includes(b.status));
+    return items;
+  }, [tab, items]);
 
   const tabs = [
     { id: "all" as const, label: t("tabAll") },

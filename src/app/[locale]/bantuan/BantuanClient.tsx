@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { slugify } from "@/lib/utils";
 
 type Cats = Record<string, string>;
 
@@ -76,9 +78,8 @@ export default function BantuanClient({ cats, topics }: { cats: Cats; topics: Re
                 <ul className="flex flex-col divide-y divide-nk-border/60">
                   {items.map((item) => (
                     <li key={item}>
-                      <a
-                        href="#"
-                        onClick={(e) => e.preventDefault()}
+                      <Link
+                        href={`/bantuan/${slugify(item)}`}
                         className="flex items-center justify-between gap-3 py-2.5 text-sm text-nk-text-muted transition-colors hover:text-nk-text"
                       >
                         {item}
@@ -95,7 +96,7 @@ export default function BantuanClient({ cats, topics }: { cats: Cats; topics: Re
                         >
                           <path d="M5 12h14m-6-6 6 6-6 6" />
                         </svg>
-                      </a>
+                      </Link>
                     </li>
                   ))}
                 </ul>

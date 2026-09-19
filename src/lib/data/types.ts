@@ -26,6 +26,7 @@ export interface RoomType {
 }
 
 export interface Property {
+  id?: string;
   slug: string;
   name: string;
   tagline: string;
@@ -46,6 +47,7 @@ export interface Property {
   minPrice: number;
   distanceToCampusM: number;
   depositInfo: string;
+  depositAmount?: number | null;
   /** owner domain: verification workflow state (admin review queue) */
   verificationStatus: "verified" | "pending" | "rejected";
   verificationNote?: string;

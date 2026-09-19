@@ -1,15 +1,72 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import DashboardShell from "@/components/DashboardShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getOwnerProperties, subscriptionState } from "@/lib/data/entities";
+import CreatePropertyDialog from "@/components/owner/CreatePropertyDialog";
+import type { Property } from "@/lib/data/types";
 
 export default function OwnerPropertiesPage() {
   const t = useTranslations("owner.properties");
   const router = useRouter();
-  const props = getOwnerProperties();
+  const [props, setProps] = useState<Array<ReturnType<typeof getOwnerProperties>[number] | Property>>(
+    getOwnerProperties()
+  );
+  const [createOpen, setCreateOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadMine() {
+      try {
+        const res = await fetch("/api/properties?mine=true");
+        if (!res.ok) return;
+        const json = await res.json();
+        if (Array.isArray(json.data) && json.data.length > 0 && !cancelled) {
+          const mapped: Property[] = json.data.map((dto: any) => ({
+            id: dto.id,
+            slug: dto.slug,
+            name: dto.name,
+            tagline: dto.tagline ?? "",
+            description: dto.description,
+            city: dto.city,
+            district: dto.district,
+            address: dto.address,
+            gender: dto.gender ? dto.gender.toLowerCase() : "mixed",
+            verified: dto.status === "VERIFIED",
+            active: dto.status === "VERIFIED",
+            rating: dto.rating ?? 0,
+            reviewCount: dto.reviewCount ?? 0,
+            imageSeed: dto.slug,
+            facilities: (dto.facilities || []).map((f: any) => f.key || f),
+            minPrice: dto.minPrice ?? 0,
+            distanceToCampusM: dto.distanceToCampusM ?? 0,
+            depositInfo: dto.depositAmount ? `DP Rp ${dto.depositAmount.toLocaleString("id-ID")}` : "Tanpa deposit",
+            depositAmount: dto.depositAmount,
+            verificationStatus: dto.status === "VERIFIED" ? "verified" : dto.status === "REJECTED" ? "rejected" : "pending",
+            verificationNote: dto.rejectionNote ?? undefined,
+            roomTypes: (dto.roomTypes || []).map((rt: any) => ({
+              id: rt.id,
+              name: rt.name,
+              pricePerMonth: rt.pricePerMonth,
+              available: rt.available ?? 0,
+              total: rt.total ?? 0,
+              sizeM2: rt.sizeM2 ?? 12,
+            })),
+          }));
+          setProps(mapped);
+        }
+      } catch {
+        // fallback to initial props
+      }
+    }
+    loadMine();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const isTrial = subscriptionState.status === "trial";
   const LIMIT = isTrial ? 1 : Infinity;
@@ -26,11 +83,46 @@ export default function OwnerPropertiesPage() {
           <p className="mt-1 max-w-sm text-sm text-nk-text-muted">{t("emptyBody")}</p>
           <button
             type="button"
+            onClick={() => setCreateOpen(true)}
             className="mt-6 rounded-lg bg-nk-accent px-6 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
           >
             {t("emptyCta")}
           </button>
         </div>
+        <CreatePropertyDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSuccess={(newProp) => {
+            if (newProp) {
+              setProps((prev) => [
+                {
+                  id: newProp.id,
+                  slug: newProp.slug,
+                  name: newProp.name,
+                  tagline: newProp.tagline ?? "",
+                  description: newProp.description,
+                  city: newProp.city,
+                  district: newProp.district,
+                  address: newProp.address,
+                  gender: newProp.gender ? newProp.gender.toLowerCase() : "mixed",
+                  verified: newProp.status === "VERIFIED",
+                  active: newProp.status === "VERIFIED",
+                  rating: 0,
+                  reviewCount: 0,
+                  imageSeed: newProp.slug,
+                  facilities: (newProp.facilities || []).map((f: any) => f.key || f),
+                  minPrice: newProp.minPrice ?? 0,
+                  distanceToCampusM: 0,
+                  depositInfo: newProp.depositAmount ? `DP Rp ${newProp.depositAmount.toLocaleString("id-ID")}` : "Tanpa deposit",
+                  depositAmount: newProp.depositAmount,
+                  verificationStatus: "pending",
+                  roomTypes: [],
+                },
+                ...prev,
+              ]);
+            }
+          }}
+        />
       </DashboardShell>
     );
   }
@@ -43,6 +135,7 @@ export default function OwnerPropertiesPage() {
           <button
             type="button"
             disabled={atLimit}
+            onClick={() => setCreateOpen(true)}
             aria-describedby={atLimit ? "limit-tooltip" : undefined}
             className="inline-flex items-center gap-2 rounded-lg bg-nk-accent px-4 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-nk-section disabled:text-nk-text-muted"
           >
@@ -131,6 +224,41 @@ export default function OwnerPropertiesPage() {
           );
         })}
       </div>
+
+      <CreatePropertyDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onSuccess={(newProp) => {
+          if (newProp) {
+            setProps((prev) => [
+              {
+                id: newProp.id,
+                slug: newProp.slug,
+                name: newProp.name,
+                tagline: newProp.tagline ?? "",
+                description: newProp.description,
+                city: newProp.city,
+                district: newProp.district,
+                address: newProp.address,
+                gender: newProp.gender ? newProp.gender.toLowerCase() : "mixed",
+                verified: newProp.status === "VERIFIED",
+                active: newProp.status === "VERIFIED",
+                rating: 0,
+                reviewCount: 0,
+                imageSeed: newProp.slug,
+                facilities: (newProp.facilities || []).map((f: any) => f.key || f),
+                minPrice: newProp.minPrice ?? 0,
+                distanceToCampusM: 0,
+                depositInfo: newProp.depositAmount ? `DP Rp ${newProp.depositAmount.toLocaleString("id-ID")}` : "Tanpa deposit",
+                depositAmount: newProp.depositAmount,
+                verificationStatus: "pending",
+                roomTypes: [],
+              },
+              ...prev,
+            ]);
+          }
+        }}
+      />
     </DashboardShell>
   );
 }

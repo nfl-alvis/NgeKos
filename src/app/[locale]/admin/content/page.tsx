@@ -34,41 +34,6 @@ export default function AdminContentPage() {
   return (
     <AdminPageShell title={t("title")}>
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {/* banner */}
-        <AdminSection title={t("bannerTitle")} bodyClass="overflow-hidden">
-          <Table className="w-full text-sm">
-            <TableHeader>
-              <TableRow className="border-b border-nk-border text-left text-xs text-nk-text-muted">
-                <TableHead className="px-4 py-3 font-medium">{t("bannerColTitle")}</TableHead>
-                <TableHead className="px-4 py-3 font-medium">{t("bannerColPosition")}</TableHead>
-                <TableHead className="px-4 py-3 font-medium">{t("bannerColPeriod")}</TableHead>
-                <TableHead className="px-4 py-3 font-medium">{t("colStatus")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {contentBanners.map((b) => (
-                <TableRow key={b.id} className="border-b border-nk-border last:border-b-0">
-                  <TableCell className="px-4 py-3">
-                    <div className="flex items-start gap-2.5">
-                      <ImageIcon className="mt-0.5 size-4 shrink-0 text-nk-text-muted" aria-hidden="true" />
-                      <p className="min-w-0 text-nk-text">{locale === "id" ? b.titleId : b.titleEn}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-nk-text-muted">{b.position === "hero" ? t("posHero") : t("posList")}</TableCell>
-                  <TableCell className="px-4 py-3 whitespace-nowrap text-xs text-nk-text-muted tabular-nums">
-                    <span className="flex items-center gap-1">
-                      <CalendarDays className="size-3.5" aria-hidden="true" />
-                      {formatReviewDate(b.from, locale)} – {formatReviewDate(b.to, locale)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <StatusBadge color={bannerColor[b.status]}>{t(`st${b.status.charAt(0).toUpperCase()}${b.status.slice(1)}`)}</StatusBadge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </AdminSection>
 
         {/* kota populer */}
         <AdminSection title={t("cityTitle")} bodyClass="overflow-hidden">

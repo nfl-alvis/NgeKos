@@ -34,7 +34,11 @@ export default function Navbar() {
 
   const goRole = (role: "seeker" | "owner") => {
     setRoleOpen(false);
-    router.push(`/login?role=${role}`);
+    if (role === "owner") {
+      router.push("/register/owner");
+    } else {
+      router.push("/register");
+    }
   };
 
   const closeRole = () => setRoleOpen(false);
@@ -115,25 +119,38 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-          <button
-            type="button"
-            onClick={() => setRoleOpen(true)}
-            className="inline-flex items-center bg-nk-accent px-5 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
-          >
-            {t("login")}
-          </button>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/login"
+                className="text-sm font-medium text-nk-text-muted transition-colors hover:text-nk-text"
+              >
+                {loginT("submit")}
+              </Link>
+              <button
+                type="button"
+                onClick={() => setRoleOpen(true)}
+                className="inline-flex items-center rounded-lg bg-nk-accent px-4 py-2 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+              >
+                {loginT("register")}
+              </button>
+            </div>
           )}
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
           <LanguageSwitcher />
-          <button
-            aria-label={t("menu")}
-            className="flex flex-col gap-1.5 p-2"
+          <Link
+            href="/login"
+            className="rounded-md border border-nk-border px-2.5 py-1 text-xs font-medium text-nk-text"
           >
-            <span className="h-[2px] w-5 rounded-full bg-nk-text-muted"></span>
-            <span className="h-[2px] w-5 rounded-full bg-nk-text-muted"></span>
-            <span className="h-[2px] w-5 rounded-full bg-nk-text-muted"></span>
+            {loginT("submit")}
+          </Link>
+          <button
+            type="button"
+            onClick={() => setRoleOpen(true)}
+            className="rounded-md bg-nk-accent px-2.5 py-1 text-xs font-medium text-nk-text-inverse"
+          >
+            {loginT("register")}
           </button>
         </div>
       </div>
@@ -153,9 +170,14 @@ export default function Navbar() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
-              <h2 className="text-lg font-medium tracking-tight text-nk-text">
-                {loginT("roleTitle")}
-              </h2>
+              <div>
+                <h2 className="text-lg font-medium tracking-tight text-nk-text">
+                  Daftar Akun NgeKost
+                </h2>
+                <p className="mt-1 text-xs text-nk-text-muted">
+                  Pilih tipe pendaftaran yang sesuai dengan Anda
+                </p>
+              </div>
               <button
                 type="button"
                 aria-label={loginT("cancel")}
@@ -182,7 +204,7 @@ export default function Navbar() {
                 </span>
                 <span className="flex flex-col">
                   <span className="text-sm font-medium text-nk-text">
-                    {loginT("roleSeeker")}
+                    Daftar sebagai Pencari Kos
                   </span>
                   <span className="text-xs text-nk-text-muted">
                     {loginT("roleSeekerDesc")}
@@ -206,7 +228,7 @@ export default function Navbar() {
                 </span>
                 <span className="flex flex-col">
                   <span className="text-sm font-medium text-nk-text">
-                    {loginT("roleOwner")}
+                    Daftar sebagai Pemilik Kos
                   </span>
                   <span className="text-xs text-nk-text-muted">
                     {loginT("roleOwnerDesc")}
@@ -218,13 +240,18 @@ export default function Navbar() {
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={closeRole}
-              className="mt-4 w-full text-center text-sm text-nk-text-muted transition-colors hover:text-nk-text"
-            >
-              {loginT("cancel")}
-            </button>
+            <div className="mt-5 border-t border-nk-border pt-4 text-center">
+              <p className="text-xs text-nk-text-muted">
+                Sudah punya akun?{" "}
+                <Link
+                  href="/login"
+                  onClick={closeRole}
+                  className="font-medium text-nk-accent hover:underline"
+                >
+                  Masuk di sini
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       )}

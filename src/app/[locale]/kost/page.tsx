@@ -2,13 +2,47 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import FilterPanel, { type FilterState } from "@/components/FilterPanel";
 import PropertyCard from "@/components/PropertyCard";
+import { listPublicProperties, propertyDto } from "@/server/property-service";
 import { getVerifiedProperties } from "@/lib/data/properties";
-import type { Property, Facility } from "@/lib/data/types";
+import type { Property, Facility, Gender } from "@/lib/data/types";
 
 export function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   return params.then(({ locale }) => ({
     title: locale === "en" ? "Explore Boarding Houses" : "Jelajahi Kost",
   }));
+}
+
+function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
+  return {
+    id: dto.id,
+    slug: dto.slug,
+    name: dto.name,
+    tagline: dto.tagline ?? "",
+    description: dto.description,
+    city: dto.city,
+    district: dto.district,
+    address: dto.address,
+    gender: (dto.gender.toLowerCase() as Gender) ?? "mixed",
+    verified: dto.status === "VERIFIED",
+    active: dto.status === "VERIFIED",
+    rating: dto.rating,
+    reviewCount: dto.reviewCount,
+    imageSeed: dto.slug,
+    facilities: dto.facilities.map((f) => f.key as Facility),
+    minPrice: dto.minPrice,
+    distanceToCampusM: dto.distanceToCampusM ?? 0,
+    depositAmount: dto.depositAmount,
+    depositInfo: dto.depositAmount ? `DP Rp ${dto.depositAmount.toLocaleString("id-ID")}` : "Tanpa deposit",
+    verificationStatus: dto.status === "VERIFIED" ? "verified" : dto.status === "REJECTED" ? "rejected" : "pending",
+    roomTypes: dto.roomTypes.map((rt) => ({
+      id: rt.id,
+      name: rt.name,
+      pricePerMonth: rt.pricePerMonth,
+      available: rt.available,
+      total: rt.total,
+      sizeM2: rt.sizeM2 ?? 12,
+    })),
+  };
 }
 
 function filterAndSort(list: Property[], filters: FilterState): Property[] {
@@ -42,7 +76,7 @@ export default async function ListPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ kota?: string; max?: string; fas?: string | string[]; gender?: string; sort?: string }>;
+  searchParams: Promise<{ kota?: string; max?: string; fas?: string | string[]; gender?: string; sort?: string; q?: string }>;
 }) {
   const { locale } = await params;
   const sp = await searchParams;
@@ -57,8 +91,40 @@ export default async function ListPage({
     sort: sp.sort || "rating",
   };
 
-  const all = getVerifiedProperties();
-  const filtered = filterAndSort(all, filterState);
+  let filtered: Property[] = [];
+  try {
+    const genderEnum =
+      sp.gender === "male"
+        ? "MALE"
+        : sp.gender === "female"
+          ? "FEMALE"
+          : sp.gender === "mixed"
+            ? "MIXED"
+            : undefined;
+
+    const dbResult = await listPublicProperties({
+      q: sp.q?.trim() || undefined,
+      city: sp.kota?.trim() || undefined,
+      maxPrice: sp.max ? Number(sp.max) : undefined,
+      gender: genderEnum,
+      sort: (["rating", "price-asc", "price-desc", "newest"].includes(sp.sort ?? "")
+        ? (sp.sort as "rating" | "price-asc" | "price-desc" | "newest")
+        : "rating"),
+      facilities: Array.isArray(sp.fas) ? sp.fas : sp.fas ? [sp.fas] : [],
+      page: 1,
+      limit: 50,
+    });
+
+    if (dbResult.items.length > 0) {
+      filtered = dbResult.items.map(toUiProperty);
+    } else if (!sp.q && !sp.kota && !sp.max && !sp.fas && !sp.gender) {
+      filtered = getVerifiedProperties();
+    }
+  } catch (e) {
+    console.error("Failed to load properties from database, falling back to static seed:", e);
+    const all = getVerifiedProperties();
+    filtered = filterAndSort(all, filterState);
+  }
 
   return (
     <>

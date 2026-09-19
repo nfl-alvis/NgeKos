@@ -129,6 +129,17 @@ export function recordDecision(
   decidedBy: string,
   rejectionReason?: string
 ) {
+  if (entry.id) {
+    fetch(`/api/admin/verifications/${entry.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        decision: decision === "approved" ? "APPROVED" : "REJECTED",
+        ...(decision === "rejected" ? { reason: rejectionReason || "Tidak memenuhi kelayakan properti" } : {}),
+      }),
+    }).catch(() => {});
+  }
+
   setState({
     decisions: {
       ...persisted.decisions,

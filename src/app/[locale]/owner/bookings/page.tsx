@@ -1,17 +1,64 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import DashboardShell from "@/components/DashboardShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { ownerBookings } from "@/lib/data/entities";
-import type { Booking } from "@/lib/data/types";
+import type { Booking, BookingStatus } from "@/lib/data/types";
 import { formatIDR } from "@/lib/utils";
 
 type Tab = "all" | "pending" | "processing" | "done" | "rejected";
+
+function mapDbBooking(b: any): Booking {
+  const statusMap: Record<string, BookingStatus> = {
+    PENDING: "pending",
+    APPROVED_AWAITING_PAYMENT: "approved-awaiting-payment",
+    ACTIVE: "active",
+    REJECTED: "rejected",
+    EXPIRED: "expired",
+    CANCELLED: "cancelled",
+    COMPLETED: "active",
+  };
+
+  const timeline: { at: string; stage: "diajukan" | "disetujui" | "menunggu-bayar" | "lunas" }[] = [];
+  if (b.createdAt) timeline.push({ at: b.createdAt, stage: "diajukan" });
+  if (b.approvedAt) {
+    timeline.push({ at: b.approvedAt, stage: "disetujui" });
+    timeline.push({ at: b.approvedAt, stage: "menunggu-bayar" });
+  }
+  if (b.status === "ACTIVE" || b.status === "COMPLETED") {
+    timeline.push({ at: b.updatedAt || b.createdAt, stage: "lunas" });
+  }
+
+  return {
+    id: b.id,
+    propertySlug: b.property?.slug || b.propertyId || "",
+    propertyName: b.property?.name || "Kost",
+    city: b.property?.city || "",
+    roomType: b.roomType?.name || "Kamar Reguler",
+    roomId: b.roomUnitId || b.roomTypeId || "",
+    roomNumber: b.roomUnit?.number || "-",
+    startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : new Date(b.startDate).toISOString().slice(0, 10),
+    note: b.note || undefined,
+    status: statusMap[b.status] || "pending",
+    statusNote: b.statusNote || undefined,
+    applicantName: b.applicant?.fullName || "Pemohon",
+    applicantPhone: b.applicant?.phone || "-",
+    applicantEmail: b.applicant?.email || "-",
+    createdAt: b.createdAt,
+    payDeadlineMin: 1440,
+    usesDp: Boolean(b.depositSnapshot),
+    monthlyPrice: b.monthlyPriceSnapshot || 0,
+    timeline: timeline.length > 0 ? timeline : [{ at: b.createdAt, stage: "diajukan" }],
+    payments: [],
+  };
+}
 
 function statusBadge(b: Booking, tr: Record<string, string>) {
   switch (b.status) {
@@ -38,23 +85,41 @@ export default function OwnerBookingsPage() {
   const [detail, setDetail] = useState<Booking | null>(null);
   const [rejectTarget, setRejectTarget] = useState<Booking | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [localStatus, setLocalStatus] = useState<Record<string, Booking["status"]>>({});
+  const [bookingsList, setBookingsList] = useState<Booking[]>(ownerBookings);
+  const [isLoading, setIsLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [banner, setBanner] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const fetchBookings = () => {
+    fetch("/api/bookings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          setBookingsList(json.data.map(mapDbBooking));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
 
   const filtered = useMemo(() => {
-    const withStatus = ownerBookings.map((b) => ({ ...b, status: localStatus[b.id] ?? b.status }));
     switch (tab) {
       case "pending":
-        return withStatus.filter((b) => b.status === "pending");
+        return bookingsList.filter((b) => b.status === "pending");
       case "processing":
-        return withStatus.filter((b) => b.status === "approved-awaiting-payment");
+        return bookingsList.filter((b) => b.status === "approved-awaiting-payment");
       case "done":
-        return withStatus.filter((b) => b.status === "active");
+        return bookingsList.filter((b) => b.status === "active");
       case "rejected":
-        return withStatus.filter((b) => ["rejected", "expired", "cancelled"].includes(b.status));
+        return bookingsList.filter((b) => ["rejected", "expired", "cancelled"].includes(b.status));
       default:
-        return withStatus;
+        return bookingsList;
     }
-  }, [tab, localStatus]);
+  }, [tab, bookingsList]);
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "all", label: t("tabAll") },
@@ -81,17 +146,88 @@ export default function OwnerBookingsPage() {
     lunas: t("stageLunas"),
   };
 
-  const setStatus = (id: string, status: Booking["status"]) => {
-    setLocalStatus((prev) => ({ ...prev, [id]: status }));
-    setRejectTarget(null);
-    setRejectReason("");
+  const handleApprove = async (booking: Booking) => {
+    setActionLoading(booking.id);
+    setBanner(null);
+    try {
+      const res = await fetch(`/api/bookings/${booking.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "APPROVED_AWAITING_PAYMENT" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Gagal menyetujui booking");
+      }
+      setBookingsList((prev) =>
+        prev.map((b) => (b.id === booking.id ? { ...b, status: "approved-awaiting-payment" } : b))
+      );
+      setBanner({ type: "success", message: `Booking untuk ${booking.applicantName} berhasil disetujui!` });
+    } catch (err: any) {
+      setBanner({ type: "error", message: err.message || "Terjadi kesalahan saat menyetujui booking." });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectTarget) return;
+    if (rejectReason.trim().length < 3) {
+      setBanner({ type: "error", message: "Alasan penolakan minimal 3 karakter." });
+      return;
+    }
+    setActionLoading(rejectTarget.id);
+    setBanner(null);
+    try {
+      const res = await fetch(`/api/bookings/${rejectTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "REJECTED", note: rejectReason.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Gagal menolak booking");
+      }
+      setBookingsList((prev) =>
+        prev.map((b) => (b.id === rejectTarget.id ? { ...b, status: "rejected", statusNote: rejectReason.trim() } : b))
+      );
+      setBanner({ type: "success", message: `Booking untuk ${rejectTarget.applicantName} telah ditolak.` });
+      setRejectTarget(null);
+      setRejectReason("");
+    } catch (err: any) {
+      setBanner({ type: "error", message: err.message || "Terjadi kesalahan saat menolak booking." });
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const payStatusColor = { berhasil: "green", gagal: "red", pending: "yellow" } as const;
 
   return (
     <DashboardShell role="owner">
-      <h1 className="mb-6 text-2xl font-medium tracking-tight text-nk-text">{t("title")}</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-medium tracking-tight text-nk-text">{t("title")}</h1>
+        {isLoading && <Loader2 className="size-4 animate-spin text-nk-text-muted" />}
+      </div>
+
+      {banner && (
+        <Alert
+          className={`mb-6 border ${
+            banner.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-red-200 bg-red-50 text-red-900"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {banner.type === "success" ? (
+              <CheckCircle2 className="size-4 text-emerald-600" />
+            ) : (
+              <AlertCircle className="size-4 text-red-600" />
+            )}
+            <AlertDescription className="text-sm font-medium">{banner.message}</AlertDescription>
+          </div>
+        </Alert>
+      )}
 
       {/* tab filter */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
@@ -141,15 +277,18 @@ export default function OwnerBookingsPage() {
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => setStatus(b.id, "approved-awaiting-payment")}
-                        className="rounded-md bg-[#2F6B3C] px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
+                        disabled={actionLoading === b.id}
+                        onClick={() => handleApprove(b)}
+                        className="inline-flex items-center gap-1 rounded-md bg-[#2F6B3C] px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
                       >
+                        {actionLoading === b.id && <Loader2 className="size-3 animate-spin" />}
                         {to("approve")}
                       </button>
                       <button
                         type="button"
+                        disabled={actionLoading === b.id}
                         onClick={() => setRejectTarget(b)}
-                        className="rounded-md border border-[#EBC4C0] px-3 py-1.5 text-xs font-medium text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] active:scale-[0.98]"
+                        className="rounded-md border border-[#EBC4C0] px-3 py-1.5 text-xs font-medium text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] active:scale-[0.98] disabled:opacity-50"
                       >
                         {to("reject")}
                       </button>
@@ -191,15 +330,18 @@ export default function OwnerBookingsPage() {
                 <>
                   <button
                     type="button"
-                    onClick={() => setStatus(b.id, "approved-awaiting-payment")}
-                    className="flex-1 rounded-md bg-[#2F6B3C] px-3 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                    disabled={actionLoading === b.id}
+                    onClick={() => handleApprove(b)}
+                    className="flex flex-1 items-center justify-center gap-1 rounded-md bg-[#2F6B3C] px-3 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
+                    {actionLoading === b.id && <Loader2 className="size-3 animate-spin" />}
                     {to("approve")}
                   </button>
                   <button
                     type="button"
+                    disabled={actionLoading === b.id}
                     onClick={() => setRejectTarget(b)}
-                    className="flex-1 rounded-md border border-[#EBC4C0] px-3 py-2 text-xs font-medium text-[#9C3B32] transition-colors hover:bg-[#FAEAE8]"
+                    className="flex-1 rounded-md border border-[#EBC4C0] px-3 py-2 text-xs font-medium text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] disabled:opacity-50"
                   >
                     {to("reject")}
                   </button>
@@ -312,9 +454,11 @@ export default function OwnerBookingsPage() {
             />
             <button
               type="button"
-              onClick={() => setStatus(rejectTarget.id, "rejected")}
-              className="mt-4 w-full rounded-lg bg-[#9C3B32] px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 active:scale-[0.99]"
+              disabled={actionLoading === rejectTarget.id || rejectReason.trim().length < 3}
+              onClick={handleReject}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#9C3B32] px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
+              {actionLoading === rejectTarget.id && <Loader2 className="size-4 animate-spin" />}
               {t("rejectConfirm")}
             </button>
           </>

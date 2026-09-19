@@ -123,9 +123,9 @@ export default function Footer() {
           <div className="mt-4 flex items-center gap-4 md:mt-0">
             <a href="https://icons8.com/license" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">{t("iconsCredit")}</a>
             <span>·</span>
-            <a href="#" className="transition-colors hover:text-white">{t("privacy")}</a>
+            <Link href="/legal/privasi" className="transition-colors hover:text-white">{t("privacy")}</Link>
             <span>·</span>
-            <a href="#" className="transition-colors hover:text-white">{t("terms")}</a>
+            <Link href="/legal/syarat-ketentuan" className="transition-colors hover:text-white">{t("terms")}</Link>
           </div>
         </div>
       </div>

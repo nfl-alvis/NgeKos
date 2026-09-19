@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { AlertCircle, Info } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { Link, useRouter as useI18nRouter } from "@/i18n/navigation";
 import GoogleButton from "@/components/GoogleButton";
 import { useSession } from "@/components/SessionProvider";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function LoginForm({
   role,
@@ -12,31 +15,48 @@ export default function LoginForm({
   onDone,
   redirectAfter = true,
   initialError,
+  isAlertInfo = false,
 }: {
-  role: "seeker" | "owner";
+  role?: "seeker" | "owner";
   onBack?: () => void;
   onDone?: () => void;
   redirectAfter?: boolean;
   initialError?: string | null;
+  isAlertInfo?: boolean;
 }) {
   const t = useTranslations("login");
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(initialError ?? null);
+  const [isInfoAlert, setIsInfoAlert] = useState<boolean>(isAlertInfo);
   const { login, loginWithGoogle } = useSession();
   const i18nRouter = useI18nRouter();
+
+  useEffect(() => {
+    if (initialError) {
+      setError(initialError);
+      setIsInfoAlert(isAlertInfo);
+    }
+  }, [initialError, isAlertInfo]);
 
   const finishLogin = (signedInRole: "seeker" | "owner" | "admin") => {
     onDone?.();
     if (!redirectAfter) return;
+    const nextUrl = searchParams?.get("next");
+    if (nextUrl && nextUrl.startsWith("/")) {
+      i18nRouter.push(nextUrl);
+      return;
+    }
     i18nRouter.push(signedInRole === "owner" ? "/owner" : signedInRole === "admin" ? "/admin" : "/dashboard");
   };
 
   const attemptLogin = async () => {
     setPending(true);
     setError(null);
+    setIsInfoAlert(false);
     try {
       const signedIn = await login(email, password, role);
       finishLogin(signedIn.role);
@@ -50,6 +70,7 @@ export default function LoginForm({
   const attemptGoogleLogin = async () => {
     setPending(true);
     setError(null);
+    setIsInfoAlert(false);
     try {
       await loginWithGoogle(role, "login");
     } catch (reason) {
@@ -73,17 +94,56 @@ export default function LoginForm({
             </svg>
           </button>
         )}
-        <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-nk-accent/10 px-3 py-1 text-xs font-medium text-nk-accent">
-          {role === "seeker" ? t("roleSeeker") : t("roleOwner")}
-        </span>
+        {role && (
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-nk-accent/10 px-3 py-1 text-xs font-medium text-nk-accent">
+            {role === "seeker" ? t("roleSeeker") : t("roleOwner")}
+          </span>
+        )}
       </div>
 
       <h1 className="mt-4 text-3xl font-light tracking-tight text-nk-text">
-        {role === "seeker" ? t("titleSeeker") : t("titleOwner")}
+        {role ? (role === "seeker" ? t("titleSeeker") : t("titleOwner")) : t("title")}
       </h1>
       <p className="mt-2 text-sm leading-relaxed text-nk-text-muted">{t("subtitle")}</p>
 
-      <div className="mt-7">
+      {error && (
+        <Alert variant={isInfoAlert ? "default" : "destructive"} className="mt-5 border-nk-accent/30">
+          {isInfoAlert ? <Info className="size-4 text-nk-accent" /> : <AlertCircle className="size-4" />}
+          <AlertTitle className="font-semibold">{isInfoAlert ? "Perhatian" : "Gagal Masuk"}</AlertTitle>
+          <AlertDescription className="text-xs leading-relaxed">{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="mt-5 rounded-lg border border-nk-accent/20 bg-nk-warm p-3.5 text-left">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wider text-nk-accent">Akun Demo Siap Pakai</span>
+          <span className="text-[10px] text-nk-text-muted">Klik untuk isi form</span>
+        </div>
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setEmail("owner@ngekost.id");
+              setPassword("Password123!");
+            }}
+            className="rounded border border-nk-border bg-nk-surface px-2.5 py-1 text-xs font-medium text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
+          >
+            Demo Pemilik (owner@ngekost.id)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail("admin@ngekost.id");
+              setPassword("Password123!");
+            }}
+            className="rounded border border-nk-border bg-nk-surface px-2.5 py-1 text-xs font-medium text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
+          >
+            Demo Admin (admin@ngekost.id)
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-6">
         <GoogleButton label={t("google")} onClick={() => void attemptGoogleLogin()} disabled={pending} />
       </div>
 
@@ -149,12 +209,10 @@ export default function LoginForm({
         </label>
 
         <div className="flex justify-end">
-          <Link href={`/login?role=${role}`} className="text-xs text-nk-text-muted transition-colors hover:text-nk-accent">
+          <Link href="/login" className="text-xs text-nk-text-muted transition-colors hover:text-nk-accent">
             {t("forgot")}
           </Link>
         </div>
-
-        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
 
         <button
           type="submit"
@@ -165,16 +223,28 @@ export default function LoginForm({
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-nk-text-muted">
-        {t("noAccount")}{" "}
-        <Link
-          href={`/register?role=${role}`}
-          onClick={onDone}
-          className="font-medium text-nk-accent transition-colors hover:opacity-80"
-        >
-          {t("register")}
-        </Link>
-      </p>
+      <div className="mt-6 flex flex-col items-center gap-2 text-center text-sm text-nk-text-muted">
+        <div>
+          {t("noAccount")}{" "}
+          <Link
+            href="/register"
+            onClick={onDone}
+            className="font-medium text-nk-accent transition-colors hover:opacity-80"
+          >
+            {t("register")}
+          </Link>
+        </div>
+        <div className="text-xs">
+          Pemilik kos?{" "}
+          <Link
+            href="/register/owner"
+            onClick={onDone}
+            className="font-medium text-nk-accent transition-colors hover:opacity-80"
+          >
+            Daftar sebagai Pemilik Kos
+          </Link>
+        </div>
+      </div>
     </>
   );
 }

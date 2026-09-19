@@ -6,7 +6,7 @@ type Context = { params: Promise<{ propertyId: string }> };
 
 export const DELETE = withApi(async (_request: Request, context: Context) => {
   const { propertyId } = await context.params;
-  const { profile } = await requireUser(["SEEKER"]);
+  const { profile } = await requireUser();
   await removeFavorite(profile, propertyId);
   return new Response(null, { status: 204 });
 });

@@ -96,7 +96,7 @@ export async function getBooking(profile: Profile, id: string) {
 export async function transitionBooking(
   profile: Profile,
   id: string,
-  input: { status: "APPROVED_AWAITING_PAYMENT"; roomUnitId: string; note?: string } | { status: "REJECTED" | "CANCELLED"; note?: string },
+  input: { status: "APPROVED_AWAITING_PAYMENT"; roomUnitId?: string; note?: string } | { status: "REJECTED" | "CANCELLED"; note?: string },
 ) {
   return prisma.$transaction(async (tx) => {
     const booking = await tx.booking.findUnique({ where: { id }, include: { property: { select: { ownerId: true } } } });
@@ -109,12 +109,21 @@ export async function transitionBooking(
 
     let roomUnitId = booking.roomUnitId;
     if (input.status === "APPROVED_AWAITING_PAYMENT") {
+      let targetUnitId = input.roomUnitId ?? booking.roomUnitId;
+      if (!targetUnitId) {
+        const availableUnit = await tx.roomUnit.findFirst({
+          where: { propertyId: booking.propertyId, roomTypeId: booking.roomTypeId, status: "AVAILABLE", deletedAt: null },
+          orderBy: { number: "asc" },
+        });
+        if (!availableUnit) throw new ApiError(409, "ROOM_UNAVAILABLE", "Tidak ada kamar tersedia untuk tipe ini");
+        targetUnitId = availableUnit.id;
+      }
       const reserved = await tx.roomUnit.updateMany({
-        where: { id: input.roomUnitId, propertyId: booking.propertyId, roomTypeId: booking.roomTypeId, status: "AVAILABLE", deletedAt: null },
+        where: { id: targetUnitId, propertyId: booking.propertyId, roomTypeId: booking.roomTypeId, status: "AVAILABLE", deletedAt: null },
         data: { status: "RESERVED" },
       });
       if (reserved.count !== 1) throw new ApiError(409, "ROOM_UNAVAILABLE", "Kamar sudah tidak tersedia");
-      roomUnitId = input.roomUnitId;
+      roomUnitId = targetUnitId;
     }
 
     if (input.status === "CANCELLED" && roomUnitId) {

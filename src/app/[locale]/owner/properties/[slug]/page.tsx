@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { roomUnits, type RoomUnit } from "@/lib/data/entities";
 import { getPropertyBySlug } from "@/lib/data/properties";
 import { formatIDR, cn } from "@/lib/utils";
+import PropertyPhotoManager from "@/components/owner/PropertyPhotoManager";
 
 const roomStatusColor: Record<RoomUnit["status"], { badge: "green" | "gray" | "red" | "yellow"; cls: string }> = {
   kosong: { badge: "green", cls: "border-[#BFDCC5] bg-[#E9F4EC]" },
@@ -239,9 +240,7 @@ export default function OwnerPropertyDetailPage() {
 
       {/* TAB: Foto */}
       {tab === "photos" && (
-        <div className="rounded-lg border border-dashed border-nk-border px-6 py-16 text-center text-sm text-nk-text-muted">
-          {t("photosEmpty")}
-        </div>
+        <PropertyPhotoManager slug={params.slug} />
       )}
 
       {/* TAB: Pengaturan */}

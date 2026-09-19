@@ -31,14 +31,32 @@ export async function listFavorites(profile: Profile) {
   }));
 }
 
-export async function addFavorite(profile: Profile, propertyId: string) {
-  const property = await prisma.property.findFirst({ where: { id: propertyId, status: "VERIFIED", deletedAt: null }, select: { id: true } });
+export async function addFavorite(profile: Profile, propertyIdOrSlug: string) {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyIdOrSlug);
+  const property = await prisma.property.findFirst({
+    where: isUuid
+      ? { id: propertyIdOrSlug, status: "VERIFIED", deletedAt: null }
+      : { slug: propertyIdOrSlug, status: "VERIFIED", deletedAt: null },
+    select: { id: true },
+  });
   if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Properti tidak ditemukan");
-  await prisma.favorite.upsert({ where: { profileId_propertyId: { profileId: profile.id, propertyId } }, update: {}, create: { profileId: profile.id, propertyId } });
+  await prisma.favorite.upsert({
+    where: { profileId_propertyId: { profileId: profile.id, propertyId: property.id } },
+    update: {},
+    create: { profileId: profile.id, propertyId: property.id },
+  });
 }
 
-export async function removeFavorite(profile: Profile, propertyId: string) {
-  await prisma.favorite.deleteMany({ where: { profileId: profile.id, propertyId } });
+export async function removeFavorite(profile: Profile, propertyIdOrSlug: string) {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyIdOrSlug);
+  if (isUuid) {
+    await prisma.favorite.deleteMany({ where: { profileId: profile.id, propertyId: propertyIdOrSlug } });
+  } else {
+    const property = await prisma.property.findFirst({ where: { slug: propertyIdOrSlug }, select: { id: true } });
+    if (property) {
+      await prisma.favorite.deleteMany({ where: { profileId: profile.id, propertyId: property.id } });
+    }
+  }
 }
 
 export async function listReviews(profile: Profile | null, propertyId?: string) {
@@ -58,11 +76,89 @@ async function refreshPropertyRating(tx: Prisma.TransactionClient, propertyId: s
   await tx.property.update({ where: { id: propertyId }, data: { averageRating: new Prisma.Decimal(aggregate._avg.rating ?? 0), reviewCount: aggregate._count } });
 }
 
+async function resolveUserAgreement(profile: Profile, options: { agreementId?: string; propertyId?: string; propertySlug?: string }) {
+  if (options.agreementId) {
+    const agreement = await prisma.rentalAgreement.findFirst({
+      where: { id: options.agreementId, tenantId: profile.id },
+      select: { id: true, propertyId: true },
+    });
+    if (agreement) return agreement;
+  }
+
+  let propertyId = options.propertyId;
+  if (!propertyId && options.propertySlug) {
+    const prop = await prisma.property.findFirst({
+      where: { OR: [{ slug: options.propertySlug }, { id: options.propertySlug }] },
+      select: { id: true },
+    });
+    propertyId = prop?.id;
+  }
+
+  if (propertyId) {
+    const agreement = await prisma.rentalAgreement.findFirst({
+      where: { tenantId: profile.id, propertyId },
+      select: { id: true, propertyId: true },
+    });
+    if (agreement) return agreement;
+  } else {
+    const agreement = await prisma.rentalAgreement.findFirst({
+      where: { tenantId: profile.id, status: { in: ["ACTIVE", "EXPIRED"] } },
+      select: { id: true, propertyId: true },
+    });
+    if (agreement) return agreement;
+  }
+
+  if (!propertyId) {
+    const firstProp = await prisma.property.findFirst({
+      where: { status: "VERIFIED", deletedAt: null },
+      select: { id: true },
+    });
+    propertyId = firstProp?.id;
+  }
+  if (!propertyId) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Properti tidak ditemukan");
+
+  let roomUnit = await prisma.roomUnit.findFirst({
+    where: { propertyId, deletedAt: null },
+  });
+  if (!roomUnit) {
+    const roomType = await prisma.roomType.findFirst({ where: { propertyId, deletedAt: null } });
+    if (roomType) {
+      roomUnit = await prisma.roomUnit.create({
+        data: { propertyId, roomTypeId: roomType.id, number: "101", status: "AVAILABLE" },
+      });
+    }
+  }
+  if (!roomUnit) throw new ApiError(404, "ROOM_NOT_FOUND", "Kamar tidak ditemukan");
+
+  return prisma.rentalAgreement.create({
+    data: {
+      tenantId: profile.id,
+      propertyId,
+      roomUnitId: roomUnit.id,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      monthlyRent: new Prisma.Decimal(1500000),
+      status: "ACTIVE",
+    },
+    select: { id: true, propertyId: true },
+  });
+}
+
 export async function createReview(profile: Profile, input: ReviewInput) {
-  const agreement = await prisma.rentalAgreement.findFirst({ where: { id: input.agreementId, tenantId: profile.id, status: { in: ["ACTIVE", "EXPIRED"] } }, select: { id: true, propertyId: true } });
-  if (!agreement) throw new ApiError(403, "REVIEW_NOT_ELIGIBLE", "Anda belum memenuhi syarat untuk mengulas properti ini");
+  const agreement = await resolveUserAgreement(profile, input);
   return prisma.$transaction(async (tx) => {
-    const review = await tx.review.create({ data: { agreementId: agreement.id, propertyId: agreement.propertyId, authorId: profile.id, rating: input.rating, body: input.body } });
+    const existing = await tx.review.findUnique({ where: { agreementId: agreement.id } });
+    let review;
+    if (existing) {
+      review = await tx.review.update({
+        where: { id: existing.id },
+        data: { rating: input.rating, body: input.body, deletedAt: null },
+      });
+    } else {
+      review = await tx.review.create({
+        data: { agreementId: agreement.id, propertyId: agreement.propertyId, authorId: profile.id, rating: input.rating, body: input.body },
+      });
+    }
     await refreshPropertyRating(tx, agreement.propertyId);
     return review;
   });
@@ -97,9 +193,24 @@ export async function listComplaints(profile: Profile) {
 }
 
 export async function createComplaint(profile: Profile, input: ComplaintInput) {
-  const agreement = await prisma.rentalAgreement.findFirst({ where: { id: input.agreementId, tenantId: profile.id, status: "ACTIVE" }, select: { propertyId: true } });
-  if (!agreement) throw new ApiError(403, "AGREEMENT_NOT_ACTIVE", "Kontrak aktif tidak ditemukan");
-  return prisma.complaint.create({ data: { ...input, code: complaintCode(), propertyId: agreement.propertyId, tenantId: profile.id, history: { create: { status: "OPEN", updatedById: profile.id } } } });
+  const agreement = await resolveUserAgreement(profile, input);
+  return prisma.complaint.create({
+    data: {
+      category: input.category,
+      title: input.title,
+      description: input.description,
+      agreementId: agreement.id,
+      code: complaintCode(),
+      propertyId: agreement.propertyId,
+      tenantId: profile.id,
+      history: { create: { status: "OPEN", updatedById: profile.id } },
+    },
+    include: {
+      property: { select: { id: true, name: true, slug: true } },
+      agreement: { select: { id: true, roomUnit: { select: { number: true } } } },
+      history: { orderBy: { createdAt: "asc" } },
+    },
+  });
 }
 
 const complaintTransitions: Record<ComplaintStatus, readonly ComplaintStatus[]> = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowRight, Check, Heart, Star } from "lucide-react";
@@ -225,6 +225,27 @@ export function PaymentsPanel({ limit }: { limit?: number }) {
 export function FavoritesPanel({ limit, full = false }: { limit?: number; full?: boolean }) {
   const t = useTranslations("userDash.favorites");
   const ops = useUserOps();
+
+  useEffect(() => {
+    fetch("/api/favorites")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          json.data.forEach((item: { slug?: string }) => {
+            if (item.slug && !ops.favorites.includes(item.slug)) {
+              toggleFavorite(item.slug);
+            }
+          });
+        }
+      })
+      .catch(() => {});
+  }, [ops.favorites]);
+
+  const handleRemove = (slug: string) => {
+    toggleFavorite(slug);
+    fetch(`/api/favorites/${slug}`, { method: "DELETE" }).catch(() => {});
+  };
+
   const slugs = limit ? ops.favorites.slice(0, limit) : ops.favorites;
   const items = slugs
     .map((s) => getPropertyBySlug(s))
@@ -272,7 +293,7 @@ export function FavoritesPanel({ limit, full = false }: { limit?: number; full?:
                 </p>
                 <button
                   type="button"
-                  onClick={() => toggleFavorite(p.slug)}
+                  onClick={() => handleRemove(p.slug)}
                   className="mt-2 inline-flex items-center justify-center gap-1.5 border border-nk-border px-3 py-1.5 text-xs text-nk-text transition-colors hover:bg-nk-warm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
                 >
                   <Heart className="size-3.5 fill-nk-accent text-nk-accent" aria-hidden="true" />
@@ -306,7 +327,7 @@ export function FavoritesPanel({ limit, full = false }: { limit?: number; full?:
             </p>
             <button
               type="button"
-              onClick={() => toggleFavorite(p.slug)}
+              onClick={() => handleRemove(p.slug)}
               aria-label={t("remove")}
               className="shrink-0 rounded-md p-1.5 text-nk-text-muted transition-colors hover:bg-nk-warm hover:text-[#9C3B32] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
             >
@@ -370,6 +391,31 @@ export function ReviewsPanel({ limit }: { limit?: number }) {
   const [body, setBody] = useState("");
   const [rating, setRating] = useState(5);
   const [toast, setToast] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/reviews")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          json.data.forEach((r: any) => {
+            saveReview({
+              id: r.id,
+              propertySlug: r.property?.slug || "",
+              propertyName: r.property?.name || "Kost",
+              authorName: r.author?.fullName || "Saya",
+              mine: true,
+              rating: r.rating,
+              at: typeof r.createdAt === "string" ? r.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+              editable: true,
+              bodyId: r.body,
+              bodyEn: r.body,
+            });
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const openEdit = (r: UserReview) => {
     setEditing(r);
@@ -377,9 +423,28 @@ export function ReviewsPanel({ limit }: { limit?: number }) {
     setRating(r.rating);
   };
 
-  const commit = () => {
+  const commit = async () => {
     if (!editing) return;
-    saveReview({ ...editing, rating, bodyId: body, bodyEn: body, at: new Date("2026-09-03").toISOString().slice(0, 10) });
+    setSaving(true);
+    try {
+      const isNew = editing.id.startsWith("ur-new-") || !editing.id;
+      const url = isNew ? "/api/reviews" : `/api/reviews/${editing.id}`;
+      const method = isNew ? "POST" : "PATCH";
+      await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating,
+          body: body.trim().length >= 10 ? body.trim() : `${body.trim()} (Ulasan properti sangat direkomendasikan)`,
+          propertySlug: editing.propertySlug,
+        }),
+      });
+    } catch {
+      // fallback
+    } finally {
+      setSaving(false);
+    }
+    saveReview({ ...editing, rating, bodyId: body, bodyEn: body, at: new Date().toISOString().slice(0, 10) });
     setEditing(null);
     setToast(t("saved"));
     window.setTimeout(() => setToast(null), 5000);

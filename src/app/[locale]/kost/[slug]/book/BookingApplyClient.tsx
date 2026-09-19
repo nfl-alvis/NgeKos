@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useParams, useSearchParams } from "next/navigation";
 import { Link, useRouter as useI18nRouter } from "@/i18n/navigation";
@@ -8,8 +8,9 @@ import { getPropertyBySlug } from "@/lib/data/properties";
 import type { Property, RoomType } from "@/lib/data/types";
 import { formatIDR, cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import { useSession } from "@/components/SessionProvider";
-import SeekerAuthModal from "@/components/SeekerAuthModal";
 
 /**
  * Halaman "Ajukan Booking" bergaya Mamikos (/room/.../booking):
@@ -47,7 +48,11 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
-export default function BookingApplyPage() {
+export default function BookingApplyPage({
+  initialProperty,
+}: {
+  initialProperty?: Property | null;
+}) {
   const t = useTranslations("booking");
   const lt = useTranslations("login");
   const params = useParams<{ locale: string; slug: string }>();
@@ -57,7 +62,7 @@ export default function BookingApplyPage() {
   const [authOpen, setAuthOpen] = useState(false);
 
   const slug = params.slug;
-  const property = getPropertyBySlug(slug);
+  const property = initialProperty ?? getPropertyBySlug(slug);
   const rooms = useMemo(() => (property ? property.roomTypes.filter((r) => r.available > 0) : []), [property]);
 
   if (!property || rooms.length === 0) {
@@ -71,37 +76,20 @@ export default function BookingApplyPage() {
     );
   }
 
-  /* ===== gerbang login (Mamikos: harus punya akun untuk mengajukan) ===== */
-  if (!ready) {
-    return <div className="mx-auto max-w-5xl px-6 py-24 lg:px-10" aria-busy="true" />;
-  }
-  if (!user) {
+  const router = useI18nRouter();
+
+  useEffect(() => {
+    if (ready && !user) {
+      const currentPath = typeof window !== "undefined" ? window.location.pathname + window.location.search : `/kost/${slug}/book`;
+      router.replace(`/login?next=${encodeURIComponent(currentPath)}&error=login_required`);
+    }
+  }, [ready, user, router, slug]);
+
+  if (!ready || !user) {
     return (
-      <div className="mx-auto w-full max-w-2xl px-6 py-24 text-center lg:px-10">
-        <span className="inline-flex size-12 items-center justify-center rounded-full bg-nk-accent/10 text-nk-accent">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-        </span>
-        <h1 className="mt-4 text-xl font-medium tracking-tight text-nk-text">{t("gateTitle")}</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-nk-text-muted">{t("gateBody")}</p>
-        <div className="mt-8 flex flex-col items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setAuthOpen(true)}
-            className="inline-flex min-h-12 w-full max-w-sm items-center justify-center rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
-          >
-            {t("gateSignIn")}
-          </button>
-          <Link
-            href="/register?role=seeker"
-            className="text-sm font-medium text-nk-accent transition-opacity hover:opacity-80"
-          >
-            {lt("register")}
-          </Link>
-        </div>
-        <SeekerAuthModal open={authOpen} onOpenChange={setAuthOpen} onSuccess={() => setAuthOpen(false)} />
+      <div className="mx-auto flex min-h-[50vh] max-w-5xl flex-col items-center justify-center px-6 py-24 text-center lg:px-10">
+        <div className="size-8 animate-spin rounded-full border-2 border-nk-accent border-t-transparent mb-4" />
+        <p className="text-sm text-nk-text-muted">Mengalihkan ke halaman masuk...</p>
       </div>
     );
   }
@@ -145,10 +133,12 @@ function BookingForm({
   const [name, setName] = useState(userName);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState(userEmail);
-  const [refCode, setRefCode] = useState("");
   const [note, setNote] = useState("");
   const [agree, setAgree] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [actualBookingCode, setActualBookingCode] = useState("");
 
   const room = rooms.find((r) => r.id === roomId) ?? rooms[0];
   const dp = property.dpAmount ?? 0;
@@ -163,10 +153,68 @@ function BookingForm({
   const totalPeriod = room.pricePerMonth * months;
   const firstPay = room.pricePerMonth + dp;
   const formOk = name.trim().length >= 3 && phone.replace(/\D/g, "").length >= 9 && validDate && agree;
-  const bookingCode = `BK-${(prefillDate || "00000000").replace(/-/g, "").slice(4)}${months}`;
+  const fallbackBookingCode = `BK-${(prefillDate || "00000000").replace(/-/g, "").slice(4)}${months}`;
+  const displayCode = actualBookingCode || fallbackBookingCode;
   const waText = encodeURIComponent(
-    t("waMessage", { name, property: property.name, room: room.name, code: bookingCode })
+    t("waMessage", { name, property: property.name, room: room.name, code: displayCode })
   );
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!formOk || loading) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      let propId = property.id;
+      let rId = room.id;
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!propId || !uuidRegex.test(propId) || !uuidRegex.test(rId)) {
+        const res = await fetch(`/api/properties/${property.slug}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) {
+            propId = json.data.id;
+            const foundRoom = json.data.roomTypes?.find(
+              (rt: { id: string; name: string }) => rt.name.toLowerCase() === room.name.toLowerCase()
+            ) || json.data.roomTypes?.[0];
+            if (foundRoom) rId = foundRoom.id;
+          }
+        }
+      }
+
+      const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId: propId,
+          roomTypeId: rId,
+          startDate: prefillDate,
+          durationMonths: months,
+          note: note.trim() || undefined,
+        }),
+      });
+
+      const json = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const msg = json?.error?.message || json?.message || "Gagal mengajukan sewa. Pastikan data terisi dengan benar.";
+        setError(msg);
+        setLoading(false);
+        return;
+      }
+
+      if (json?.data?.code) {
+        setActualBookingCode(json.data.code);
+      }
+      setSubmitted(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Terjadi gangguan koneksi. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const rowCls =
     "w-full rounded-lg border border-nk-border bg-nk-surface px-4 py-3 text-sm text-nk-text outline-none transition-colors placeholder:text-nk-text-muted focus:border-nk-accent";
@@ -192,10 +240,7 @@ function BookingForm({
         {/* ---------- form data pemesan: card putih berborder ala Mamikos ---------- */}
         <form
           className="flex flex-col gap-5 rounded-lg border border-nk-border bg-nk-surface p-5 sm:p-8"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (formOk) setSubmitted(true);
-          }}
+          onSubmit={handleSubmit}
         >
           <h2 className="text-sm font-medium text-nk-text">{t("fillData")}</h2>
           <div className="flex flex-col gap-2">
@@ -212,10 +257,6 @@ function BookingForm({
             <p className="text-xs text-nk-text-muted">{t("emailOptional")}</p>
           </div>
           <div className="flex flex-col gap-2">
-            <label htmlFor="ref" className={labelCls}>{t("refCode")}</label>
-            <input id="ref" type="text" value={refCode} onChange={(e) => setRefCode(e.target.value)} placeholder={t("refCodePlaceholder")} className={cn(rowCls, "min-h-11")} />
-          </div>
-          <div className="flex flex-col gap-2">
             <label htmlFor="note" className={labelCls}>{t("note")}</label>
             <textarea id="note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("notePlaceholder")} className={cn(rowCls, "resize-none")} />
           </div>
@@ -230,6 +271,18 @@ function BookingForm({
           </label>
           <p className="text-xs leading-relaxed text-nk-text-muted">{t("privacyNote")}</p>
 
+          {error && (
+            <Alert variant="destructive">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="size-4 mt-0.5 shrink-0" />
+                <div>
+                  <AlertTitle>Pengajuan Belum Berhasil</AlertTitle>
+                  <AlertDescription className="mt-1 text-xs">{error}</AlertDescription>
+                </div>
+              </div>
+            </Alert>
+          )}
+
           {!validDate && (
             <p className="rounded-lg border border-[#E7C9A8] bg-[#FBF3E6] p-3 text-xs leading-relaxed text-[#7A5A33]">
               {t("chooseOnDetail")}{" "}
@@ -241,10 +294,20 @@ function BookingForm({
 
           <button
             type="submit"
-            disabled={!formOk}
-            className="inline-flex min-h-12 items-center justify-center rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-opacity duration-200 hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!formOk || loading}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-opacity duration-200 hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {t("submit")}
+            {loading ? (
+              <>
+                <svg className="size-4 animate-spin text-nk-text-inverse" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span>Mengirim...</span>
+              </>
+            ) : (
+              t("submit")
+            )}
           </button>
         </form>
 
@@ -324,7 +387,7 @@ function BookingForm({
           </div>
           <h2 className="text-lg font-medium text-nk-text">{t("successTitle")}</h2>
           <p className="mt-2 text-sm leading-relaxed text-nk-text-muted">
-            {t("successBody", { code: bookingCode })}
+            {t("successBody", { code: displayCode })}
           </p>
           <p className="mt-2 text-xs leading-relaxed text-nk-text-muted">{t("payAfterApproval")}</p>
           <div className="mt-6 flex flex-col gap-2.5">

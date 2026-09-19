@@ -33,14 +33,27 @@ export const OWNER_PROFILE: OwnerProfile = {
 export const ADMIN_PROFILE: SessionUser = {
   role: "admin",
   name: "Bayu Pratama",
-  email: "bayu.pratama@ngekost.id",
+  email: "admin@ngekost.id",
 };
 
 /** daftar email admin terdaftar — login admin selain ini ditolak */
 export const ADMIN_ALLOWED_EMAILS = [
+  "admin@ngekost.id",
   "bayu.pratama@ngekost.id",
   "operator@ngekost.id",
 ];
+
+export const OWNER_DEMO_ACCOUNT = {
+  email: "owner@ngekost.id",
+  password: "Password123!",
+  name: "Ratri Wulandari",
+};
+
+export const ADMIN_DEMO_ACCOUNT = {
+  email: "admin@ngekost.id",
+  password: "Password123!",
+  name: "Bayu Pratama",
+};
 
 /**
  * Akun demo pencari kos (tempmail sungguhan — dibuat via api.mail.tm,

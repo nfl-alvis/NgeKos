@@ -22,8 +22,8 @@ type ApiProfile = {
 interface SessionContextValue {
   user: SessionUser | null;
   ready: boolean;
-  login: (email: string, password: string, role: "seeker" | "owner") => Promise<SessionUser>;
-  loginWithGoogle: (role: "seeker" | "owner", intent?: "login" | "register") => Promise<void>;
+  login: (email: string, password: string, role?: "seeker" | "owner" | "admin") => Promise<SessionUser>;
+  loginWithGoogle: (role?: "seeker" | "owner", intent?: "login" | "register") => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<SessionUser | null>;
 }
@@ -109,11 +109,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return fetchCurrentProfile();
   }, []);
 
-  const login = useCallback(async (email: string, password: string, role: "seeker" | "owner") => {
+  const login = useCallback(async (email: string, password: string, role?: "seeker" | "owner" | "admin") => {
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, role }),
+      body: JSON.stringify({ email, password, ...(role ? { role } : {}) }),
     });
     await readJson(response);
     const profile = await fetchCurrentProfile();
@@ -121,11 +121,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return profile;
   }, []);
 
-  const loginWithGoogle = useCallback(async (role: "seeker" | "owner", intent: "login" | "register" = "login") => {
+  const loginWithGoogle = useCallback(async (role?: "seeker" | "owner", intent: "login" | "register" = "login") => {
     const supabase = createClient();
     const locale = location.pathname.split("/")[1] === "en" ? "en" : "id";
     const callbackUrl = new URL("/auth/callback", location.origin);
-    callbackUrl.searchParams.set("role", role);
+    if (role) callbackUrl.searchParams.set("role", role);
     callbackUrl.searchParams.set("intent", intent);
     callbackUrl.searchParams.set("locale", locale);
     callbackUrl.searchParams.set("next", `/${locale}/${role === "owner" ? "owner" : "dashboard"}`);

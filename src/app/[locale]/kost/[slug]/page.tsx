@@ -9,6 +9,42 @@ import BookingCta from "@/components/BookingCta";
 import FacilityIcon from "@/components/FacilityIcon";
 import BookingSidebarActions from "@/components/BookingSidebarActions";
 import { BookingFlowProvider } from "@/components/BookingFlowProvider";
+import FavoriteButton from "@/components/FavoriteButton";
+import { getProperty, propertyDto } from "@/server/property-service";
+import type { Property, Gender, Facility } from "@/lib/data/types";
+
+function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
+  return {
+    id: dto.id,
+    slug: dto.slug,
+    name: dto.name,
+    tagline: dto.tagline ?? "",
+    description: dto.description,
+    city: dto.city,
+    district: dto.district,
+    address: dto.address,
+    gender: (dto.gender.toLowerCase() as Gender) ?? "mixed",
+    verified: dto.status === "VERIFIED",
+    active: dto.status === "VERIFIED",
+    rating: dto.rating,
+    reviewCount: dto.reviewCount,
+    imageSeed: dto.slug,
+    facilities: dto.facilities.map((f) => f.key as Facility),
+    minPrice: dto.minPrice,
+    distanceToCampusM: dto.distanceToCampusM ?? 0,
+    depositAmount: dto.depositAmount,
+    depositInfo: dto.depositAmount ? `DP Rp ${dto.depositAmount.toLocaleString("id-ID")}` : "Tanpa deposit",
+    verificationStatus: dto.status === "VERIFIED" ? "verified" : dto.status === "REJECTED" ? "rejected" : "pending",
+    roomTypes: dto.roomTypes.map((rt) => ({
+      id: rt.id,
+      name: rt.name,
+      pricePerMonth: rt.pricePerMonth,
+      available: rt.available,
+      total: rt.total,
+      sizeM2: rt.sizeM2 ?? 12,
+    })),
+  };
+}
 
 export async function generateStaticParams() {
   const props = getVerifiedProperties();
@@ -21,7 +57,14 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const p = getPropertyBySlug(slug);
+  let p: Property | null = null;
+  try {
+    const dbProp = await getProperty(slug);
+    if (dbProp) p = toUiProperty(dbProp);
+  } catch {
+    p = getPropertyBySlug(slug) ?? null;
+  }
+  if (!p) p = getPropertyBySlug(slug) ?? null;
   if (!p) return { title: "Not Found" };
   return {
     title: `${p.name} — ${p.district}, ${p.city}`,
@@ -37,7 +80,14 @@ export default async function DetailPage({
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const t = await getTranslations();
-  const p = getPropertyBySlug(slug);
+  let p: Property | null = null;
+  try {
+    const dbProp = await getProperty(slug);
+    if (dbProp) p = toUiProperty(dbProp);
+  } catch {
+    p = getPropertyBySlug(slug) ?? null;
+  }
+  if (!p) p = getPropertyBySlug(slug) ?? null;
 
   if (!p) notFound();
 
@@ -89,24 +139,27 @@ export default async function DetailPage({
           <div className="space-y-12">
             {/* Header */}
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className={cn(
-                  "inline-flex items-center gap-1.5 border border-nk-border px-3 py-1 text-xs",
-                  p.verified ? "text-nk-accent" : "text-nk-text-muted"
-                )}>
-                  {p.verified && (
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M20 6 9 17l-5-5" />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 border border-nk-border px-3 py-1 text-xs",
+                    p.verified ? "text-nk-accent" : "text-nk-text-muted"
+                  )}>
+                    {p.verified && (
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    )}
+                    {t("detail.verified")}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-sm text-nk-text-muted">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-nk-star" aria-hidden="true">
+                      <path d="M12 2l2.9 6.26L21.5 9.27l-5 4.87L17.8 21 12 17.77 6.2 21l1.3-6.86-5-4.87 6.6-1.01L12 2z" />
                     </svg>
-                  )}
-                  {t("detail.verified")}
-                </span>
-                <span className="inline-flex items-center gap-1 text-sm text-nk-text-muted">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-nk-star" aria-hidden="true">
-                    <path d="M12 2l2.9 6.26L21.5 9.27l-5 4.87L17.8 21 12 17.77 6.2 21l1.3-6.86-5-4.87 6.6-1.01L12 2z" />
-                  </svg>
-                  <span className="text-nk-star">{p.rating.toFixed(1)}</span> ({p.reviewCount} {t("detail.reviews")})
-                </span>
+                    <span className="text-nk-star">{p.rating.toFixed(1)}</span> ({p.reviewCount} {t("detail.reviews")})
+                  </span>
+                </div>
+                <FavoriteButton propertySlug={p.slug} propertyId={p.id} showText size="sm" />
               </div>
 
               <h1 className="text-4xl font-light tracking-tight text-nk-text md:text-5xl">

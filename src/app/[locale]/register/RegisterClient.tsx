@@ -7,6 +7,8 @@ import { useSearchParams } from "next/navigation";
 import Logo from "@/components/Logo";
 import GoogleButton from "@/components/GoogleButton";
 import { useSession } from "@/components/SessionProvider";
+import { AlertCircle, CheckCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 /* ============================================================
    Alur pendaftaran owner terinspirasi Mamikos: phone-first.
@@ -37,18 +39,27 @@ function BackButton({ onClick, label }: { onClick: () => void; label: string }) 
   );
 }
 
-export default function RegisterClient() {
+export default function RegisterClient({
+  defaultRole,
+}: {
+  defaultRole?: "seeker" | "owner";
+} = {}) {
   return (
     <Suspense fallback={null}>
-      <RegisterInner />
+      <RegisterInner defaultRole={defaultRole} />
     </Suspense>
   );
 }
 
-function RegisterInner() {
+function RegisterInner({
+  defaultRole,
+}: {
+  defaultRole?: "seeker" | "owner";
+}) {
   const t = useTranslations("daftar");
   const searchParams = useSearchParams();
-  const role: "seeker" | "owner" = searchParams.get("role") === "owner" ? "owner" : "seeker";
+  const role: "seeker" | "owner" =
+    defaultRole ?? (searchParams.get("role") === "owner" ? "owner" : "seeker");
 
   return (
     <div className="min-h-[calc(100dvh-4rem)] bg-nk-bg px-6 py-16">
@@ -61,7 +72,7 @@ function RegisterInner() {
 
         <p className="mt-6 text-center text-sm text-nk-text-muted">
           {t("haveAccount")}{" "}
-          <Link href={`/login?role=${role}`} className="font-medium text-nk-accent transition-colors hover:opacity-80">
+          <Link href="/login" className="font-medium text-nk-accent transition-colors hover:opacity-80">
             {t("login")}
           </Link>
         </p>
@@ -694,9 +705,10 @@ function SeekerForm() {
           </label>
 
           {feedback && (
-            <p role="status" className={feedback.kind === "error" ? "text-sm text-red-700" : "text-sm text-green-700"}>
-              {feedback.message}
-            </p>
+            <Alert variant={feedback.kind === "error" ? "destructive" : "success"} className="py-2.5">
+              {feedback.kind === "error" ? <AlertCircle className="size-4" /> : <CheckCircle className="size-4" />}
+              <AlertDescription>{feedback.message}</AlertDescription>
+            </Alert>
           )}
 
           <button

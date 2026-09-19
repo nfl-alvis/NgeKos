@@ -29,7 +29,7 @@ export default function MitraClient({ steps, why }: { steps: Step[]; why: Step[]
               {t("subtitle")}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button href="/login?role=owner">{t("cta")}</Button>
+              <Button href="/register/owner">{t("cta")}</Button>
               <Button href="/owner" variant="outline">{t("ctaSecondary")}</Button>
             </div>
           </div>
@@ -86,7 +86,7 @@ export default function MitraClient({ steps, why }: { steps: Step[]; why: Step[]
               {t("statsListing")}: <span className="font-mono">{t("statsListingValue")}</span>
             </p>
           </div>
-          <Button href="/login?role=owner" size="lg">{t("cta")}</Button>
+          <Button href="/register/owner" size="lg">{t("cta")}</Button>
         </div>
       </section>
     </div>

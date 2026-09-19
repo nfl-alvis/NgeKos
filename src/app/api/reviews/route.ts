@@ -10,6 +10,6 @@ export const GET = withApi(async (request: Request) => {
 });
 
 export const POST = withApi(async (request: Request) => {
-  const { profile } = await requireUser(["SEEKER"]);
+  const { profile } = await requireUser();
   return successResponse(await createReview(profile, await parseJson(request, reviewCreateSchema)), { status: 201 });
 });
