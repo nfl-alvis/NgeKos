@@ -139,6 +139,27 @@ function RegisterInner({
         throw new Error(data?.error?.message ?? "Pendaftaran gagal");
       }
 
+      // If Supabase does not require confirmation (already active)
+      if (!data.data?.requiresEmailConfirmation) {
+        setFeedback({
+          kind: "success",
+          message: "Pendaftaran berhasil! Mengalihkan...",
+        });
+        try {
+          await refresh();
+        } catch {
+          // ignore
+        }
+        setTimeout(() => {
+          if (role === "owner") {
+            router.push(`/${locale}/owner/properties/new`);
+          } else {
+            router.push(`/${locale}/dashboard`);
+          }
+        }, 800);
+        return;
+      }
+
       // Successful registration, advance to OTP verification
       setStep("otp");
       setResendTimer(60);
