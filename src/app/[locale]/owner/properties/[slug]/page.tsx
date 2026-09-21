@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
@@ -29,12 +29,22 @@ import {
   AlertCircle,
   Building2,
   Check,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
   DoorOpen,
   Edit2,
+  ExternalLink,
+  Image as ImageIcon,
+  Layers,
   Loader2,
+  MapPin,
   Plus,
   Save,
+  Settings,
   ShieldCheck,
+  Users,
+  Wrench,
 } from "lucide-react";
 
 interface ExtendedRoomUnit extends RoomUnit {
@@ -43,11 +53,40 @@ interface ExtendedRoomUnit extends RoomUnit {
   floor?: string | null;
 }
 
-const roomStatusColor: Record<RoomUnit["status"], { badge: "green" | "gray" | "red" | "yellow"; cls: string }> = {
-  kosong: { badge: "green", cls: "border-[#BFDCC5] bg-[#E9F4EC]" },
-  terisi: { badge: "gray", cls: "border-nk-border bg-nk-section" },
-  maintenance: { badge: "red", cls: "border-[#EBC4C0] bg-[#FAEAE8] border-dashed" },
-  dipesan: { badge: "yellow", cls: "border-[#EAD9A8] bg-[#FBF3DC]" },
+const roomStatusMeta: Record<
+  RoomUnit["status"],
+  { badge: "green" | "gray" | "red" | "yellow"; cls: string; dot: string; label: string }
+> = {
+  kosong: {
+    badge: "green",
+    cls: "border-[#BFDCC5] bg-[#E9F4EC]/60 hover:bg-[#E9F4EC]",
+    dot: "bg-emerald-500",
+    label: "Kosong (Tersedia)",
+  },
+  terisi: {
+    badge: "gray",
+    cls: "border-nk-border bg-nk-surface hover:bg-nk-warm/70",
+    dot: "bg-zinc-400",
+    label: "Terisi",
+  },
+  maintenance: {
+    badge: "red",
+    cls: "border-[#EBC4C0] bg-[#FAEAE8]/70 hover:bg-[#FAEAE8] border-dashed",
+    dot: "bg-rose-500",
+    label: "Perbaikan",
+  },
+  dipesan: {
+    badge: "yellow",
+    cls: "border-[#EAD9A8] bg-[#FBF3DC]/70 hover:bg-[#FBF3DC]",
+    dot: "bg-amber-500",
+    label: "Sedang Dipesan",
+  },
+};
+
+const genderMap: Record<Gender, { label: string; cls: string }> = {
+  mixed: { label: "Campuran", cls: "border-nk-border bg-nk-section text-nk-text" },
+  male: { label: "Khusus Putra", cls: "border-blue-200 bg-blue-50 text-blue-800" },
+  female: { label: "Khusus Putri", cls: "border-pink-200 bg-pink-50 text-pink-800" },
 };
 
 export default function OwnerPropertyDetailPage() {
@@ -60,11 +99,14 @@ export default function OwnerPropertyDetailPage() {
   );
   const [loading, setLoading] = useState(!property);
   const [tab, setTab] = useState<"rooms" | "photos" | "settings">("rooms");
-  const [openType, setOpenType] = useState<string | null>(null);
+  const [openType, setOpenType] = useState<string | null>(
+    property?.roomTypes?.[0]?.id ?? null
+  );
   const [rooms, setRooms] = useState<Record<string, ExtendedRoomUnit[]>>(
     property ? { [property.slug]: roomUnits[property.slug] ?? [] } : {}
   );
   const [menuRoom, setMenuRoom] = useState<string | null>(null);
+  const [unitFilters, setUnitFilters] = useState<Record<string, string>>({});
 
   // Dialog State: Tambah Tipe Kamar
   const [addTypeOpen, setAddTypeOpen] = useState(false);
@@ -159,6 +201,9 @@ export default function OwnerPropertyDetailPage() {
           };
           setProperty(mapped);
 
+          // Buka tipe kamar pertama secara default bila belum terbuka
+          setOpenType((prev) => prev ?? mapped.roomTypes[0]?.id ?? null);
+
           // Inisialisasi Settings form
           setSettingsName(mapped.name);
           setSettingsTagline(mapped.tagline ?? "");
@@ -169,7 +214,9 @@ export default function OwnerPropertyDetailPage() {
           setSettingsPostal(found.postalCode ?? "");
           setSettingsGender(mapped.gender);
           setSettingsDeposit(mapped.depositAmount ? String(mapped.depositAmount) : "");
-          setSettingsCampusDistance(mapped.distanceToCampusM ? String(mapped.distanceToCampusM) : "");
+          setSettingsCampusDistance(
+            mapped.distanceToCampusM ? String(mapped.distanceToCampusM) : ""
+          );
           setSettingsFacilities(mapped.facilities);
 
           // Populate units dengan ID riil jika tersedia
@@ -234,7 +281,9 @@ export default function OwnerPropertyDetailPage() {
         <div className="py-24 text-center">
           <AlertCircle className="mx-auto size-8 text-destructive mb-2" />
           <h2 className="text-base font-medium text-nk-text">Properti Tidak Ditemukan</h2>
-          <p className="mt-1 text-xs text-nk-text-muted">Properti yang Anda cari tidak tersedia atau telah dihapus.</p>
+          <p className="mt-1 text-xs text-nk-text-muted">
+            Properti yang Anda cari tidak tersedia atau telah dihapus.
+          </p>
           <Link
             href="/owner/properties"
             className="mt-4 inline-block rounded-md bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse"
@@ -247,6 +296,13 @@ export default function OwnerPropertyDetailPage() {
   }
 
   const units = rooms[property.slug] ?? [];
+  const totalUnitsCount = units.length;
+  const vacantUnitsCount = units.filter((u) => u.status === "kosong").length;
+  const occupiedUnitsCount = units.filter((u) => u.status === "terisi").length;
+  const maintenanceUnitsCount = units.filter((u) => u.status === "maintenance").length;
+  const reservedUnitsCount = units.filter((u) => u.status === "dipesan").length;
+  const occupancyPercentage =
+    totalUnitsCount > 0 ? Math.round((occupiedUnitsCount / totalUnitsCount) * 100) : 0;
 
   /** Update Status Unit Kamar (Persisted ke DB) */
   const setRoomStatus = async (roomItem: ExtendedRoomUnit, status: RoomUnit["status"]) => {
@@ -277,12 +333,16 @@ export default function OwnerPropertyDetailPage() {
 
         if (!res.ok) {
           const err = await res.json().catch(() => null);
-          throw new Error(err?.error?.message || "Gagal memperbarui status unit di server.");
+          throw new Error(
+            err?.error?.message || "Gagal memperbarui status unit di server."
+          );
         }
       } catch (err: unknown) {
         // Rollback
         setRooms((prev) => ({ ...prev, [property.slug]: prevUnits }));
-        setActionError(err instanceof Error ? err.message : "Gagal memperbarui status unit.");
+        setActionError(
+          err instanceof Error ? err.message : "Gagal memperbarui status unit."
+        );
       }
     }
   };
@@ -319,7 +379,9 @@ export default function OwnerPropertyDetailPage() {
       setNewTypeDesc("");
       await refreshProperty();
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Terjadi kesalahan saat menambah tipe kamar.");
+      setActionError(
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menambah tipe kamar."
+      );
     } finally {
       setSubmittingType(false);
     }
@@ -333,15 +395,18 @@ export default function OwnerPropertyDetailPage() {
     setActionError(null);
 
     try {
-      const res = await fetch(`/api/properties/${property.id}/room-types/${editingType.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editingType.name.trim(),
-          pricePerMonth: Number(editingType.pricePerMonth),
-          sizeM2: editingType.sizeM2 ? Number(editingType.sizeM2) : undefined,
-        }),
-      });
+      const res = await fetch(
+        `/api/properties/${property.id}/room-types/${editingType.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: editingType.name.trim(),
+            pricePerMonth: Number(editingType.pricePerMonth),
+            sizeM2: editingType.sizeM2 ? Number(editingType.sizeM2) : undefined,
+          }),
+        }
+      );
 
       const json = await res.json();
       if (!res.ok || !json.success) {
@@ -352,7 +417,9 @@ export default function OwnerPropertyDetailPage() {
       setEditingType(null);
       await refreshProperty();
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Terjadi kesalahan saat mengedit tipe kamar.");
+      setActionError(
+        err instanceof Error ? err.message : "Terjadi kesalahan saat mengedit tipe kamar."
+      );
     } finally {
       setSubmittingEditType(false);
     }
@@ -386,7 +453,9 @@ export default function OwnerPropertyDetailPage() {
       setNewUnitFloor("1");
       await refreshProperty();
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Terjadi kesalahan saat menambah unit kamar.");
+      setActionError(
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menambah unit kamar."
+      );
     } finally {
       setSubmittingUnit(false);
     }
@@ -413,157 +482,362 @@ export default function OwnerPropertyDetailPage() {
           postalCode: settingsPostal.trim() || undefined,
           gender: settingsGender.toUpperCase(),
           depositAmount: settingsDeposit ? Number(settingsDeposit) : undefined,
-          distanceToCampusM: settingsCampusDistance ? Number(settingsCampusDistance) : undefined,
+          distanceToCampusM: settingsCampusDistance
+            ? Number(settingsCampusDistance)
+            : undefined,
           facilities: settingsFacilities,
         }),
       });
 
       const json = await res.json();
       if (!res.ok || !json.success) {
-        throw new Error(json?.error?.message || "Gagal menyimpan pengaturan properti.");
+        throw new Error(
+          json?.error?.message || "Gagal menyimpan pengaturan properti."
+        );
       }
 
       setSettingsSuccess(true);
       setTimeout(() => setSettingsSuccess(false), 4000);
       await refreshProperty();
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan pengaturan.");
+      setActionError(
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan pengaturan."
+      );
     } finally {
       setSavingSettings(false);
     }
   };
 
   const tabs = [
-    { id: "rooms" as const, label: t("tabRooms") },
-    { id: "photos" as const, label: t("tabPhotos") },
-    { id: "settings" as const, label: t("tabSettings") },
+    { id: "rooms" as const, label: t("tabRooms"), icon: DoorOpen, count: property.roomTypes.length },
+    { id: "photos" as const, label: t("tabPhotos"), icon: ImageIcon },
+    { id: "settings" as const, label: t("tabSettings"), icon: Settings },
   ];
-
-  const statusLabel: Record<RoomUnit["status"], string> = {
-    kosong: t("roomKosong"),
-    terisi: t("roomTerisi"),
-    maintenance: t("roomMaintenance"),
-    dipesan: t("roomDipesan"),
-  };
 
   return (
     <DashboardShell role="owner">
       {/* Alert Error jika ada aksi yang gagal */}
       {actionError && (
-        <Alert variant="destructive" className="mb-4">
+        <Alert variant="destructive" className="mb-6 shadow-sm">
           <AlertCircle className="size-4" />
           <AlertTitle>Terjadi Kesalahan</AlertTitle>
           <AlertDescription className="text-xs">{actionError}</AlertDescription>
         </Alert>
       )}
 
-      {/* breadcrumb */}
-      <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-sm text-nk-text-muted">
-        <Link href="/owner/properties" className="transition-colors hover:text-nk-text">
+      {/* Breadcrumb Modern */}
+      <nav
+        aria-label="Breadcrumb"
+        className="mb-5 flex items-center gap-2 text-xs text-nk-text-muted"
+      >
+        <Link
+          href="/owner"
+          className="transition-colors hover:text-nk-text"
+        >
+          Dashboard
+        </Link>
+        <span aria-hidden="true">/</span>
+        <Link
+          href="/owner/properties"
+          className="transition-colors hover:text-nk-text"
+        >
           {t("breadcrumb")}
         </Link>
         <span aria-hidden="true">/</span>
-        <span className="text-nk-text">{property.name}</span>
+        <span className="font-medium text-nk-text truncate max-w-[200px] sm:max-w-none">
+          {property.name}
+        </span>
       </nav>
 
-      {/* header info properti */}
-      <section className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <img
-          src={getKosImage(property.slug || property.imageSeed, "main")}
-          alt={property.name}
-          className="h-16 w-24 shrink-0 rounded-md object-cover"
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-medium tracking-tight text-nk-text">{property.name}</h1>
-            {property.verificationStatus === "verified" && (
-              <StatusBadge color="green">{propsT("verified")}</StatusBadge>
-            )}
-            {property.verificationStatus === "pending" && (
-              <StatusBadge color="yellow">{propsT("pending")}</StatusBadge>
-            )}
-            {property.verificationStatus === "rejected" && (
-              <StatusBadge color="red">{propsT("rejected")}</StatusBadge>
-            )}
+      {/* Header Info Properti Card */}
+      <section className="mb-6 rounded-2xl border border-nk-border bg-nk-surface p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center min-w-0">
+            <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-nk-border shadow-inner">
+              <img
+                src={getKosImage(property.slug || property.imageSeed, "main")}
+                alt={property.name}
+                className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight text-nk-text sm:text-2xl">
+                  {property.name}
+                </h1>
+                {property.verificationStatus === "verified" && (
+                  <StatusBadge color="green" className="gap-1">
+                    <ShieldCheck className="size-3" />
+                    <span>{propsT("verified")}</span>
+                  </StatusBadge>
+                )}
+                {property.verificationStatus === "pending" && (
+                  <StatusBadge color="yellow" className="gap-1">
+                    <Clock className="size-3" />
+                    <span>{propsT("pending")}</span>
+                  </StatusBadge>
+                )}
+                {property.verificationStatus === "rejected" && (
+                  <StatusBadge color="red" className="gap-1">
+                    <AlertCircle className="size-3" />
+                    <span>{propsT("rejected")}</span>
+                  </StatusBadge>
+                )}
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium",
+                    genderMap[property.gender]?.cls ?? genderMap.mixed.cls
+                  )}
+                >
+                  {genderMap[property.gender]?.label ?? "Campuran"}
+                </span>
+              </div>
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-nk-text-muted">
+                <MapPin className="size-3.5 shrink-0 text-nk-accent" />
+                <span className="truncate">
+                  {property.address}, {property.district}, {property.city}
+                </span>
+              </p>
+              {property.tagline && (
+                <p className="mt-1 text-xs italic text-nk-text-muted/90">
+                  &ldquo;{property.tagline}&rdquo;
+                </p>
+              )}
+            </div>
           </div>
-          <p className="mt-0.5 truncate text-sm text-nk-text-muted">{property.address}</p>
+
+          {/* Action Buttons in Header */}
+          <div className="flex flex-wrap items-center gap-2 sm:self-start lg:self-center">
+            <Link
+              href={`/properties/${property.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-nk-border bg-nk-surface px-3.5 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99]"
+            >
+              <ExternalLink className="size-3.5 text-nk-text-muted" />
+              <span>Lihat Listing Publik</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setTab("settings")}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-nk-border bg-nk-surface px-3.5 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99]"
+            >
+              <Settings className="size-3.5 text-nk-text-muted" />
+              <span>{t("edit")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddTypeOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+            >
+              <Plus className="size-3.5" />
+              <span>{t("addRoomType")}</span>
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setTab("settings")}
-          className="w-fit rounded-lg border border-nk-border px-4 py-2.5 text-sm font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99]"
-        >
-          {t("edit")}
-        </button>
+
+        {/* Quick KPI Stat Cards */}
+        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-nk-border pt-5 sm:grid-cols-4">
+          <div className="rounded-xl border border-nk-border bg-nk-section/50 p-3.5 transition-colors hover:bg-nk-section">
+            <div className="flex items-center justify-between text-xs text-nk-text-muted">
+              <span>Total Kamar</span>
+              <DoorOpen className="size-4 text-nk-text-muted" />
+            </div>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tracking-tight text-nk-text">
+                {totalUnitsCount}
+              </span>
+              <span className="text-xs text-nk-text-muted">unit</span>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-[#BFDCC5] bg-[#E9F4EC]/40 p-3.5 transition-colors hover:bg-[#E9F4EC]/60">
+            <div className="flex items-center justify-between text-xs text-[#2F6B3C]">
+              <span>Kamar Kosong</span>
+              <span className="flex size-2 rounded-full bg-emerald-500" />
+            </div>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tracking-tight text-[#1E4B28]">
+                {vacantUnitsCount}
+              </span>
+              <span className="text-xs text-[#2F6B3C]">tersedia</span>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-nk-border bg-nk-section/50 p-3.5 transition-colors hover:bg-nk-section">
+            <div className="flex items-center justify-between text-xs text-nk-text-muted">
+              <span>Kamar Terisi</span>
+              <Users className="size-4 text-nk-text-muted" />
+            </div>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tracking-tight text-nk-text">
+                {occupiedUnitsCount}
+              </span>
+              <span className="text-xs text-nk-text-muted">terisi</span>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-nk-border bg-nk-section/50 p-3.5 transition-colors hover:bg-nk-section">
+            <div className="flex items-center justify-between text-xs text-nk-text-muted">
+              <span>Tingkat Okupansi</span>
+              <span className="text-xs font-semibold text-nk-text">
+                {occupancyPercentage}%
+              </span>
+            </div>
+            <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-nk-warm">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-500",
+                  occupancyPercentage >= 75
+                    ? "bg-emerald-600"
+                    : occupancyPercentage >= 40
+                      ? "bg-nk-accent"
+                      : "bg-amber-500"
+                )}
+                style={{ width: `${occupancyPercentage}%` }}
+              />
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* tabs */}
+      {/* Tabs Modern Navigation */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList className="mb-6 flex h-auto w-fit gap-1 rounded-none border-b border-nk-border bg-transparent p-0">
-          {tabs.map((tab2) => (
-            <TabsTrigger
-              key={tab2.id}
-              value={tab2.id}
-              className="-mb-px rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-normal text-nk-text-muted shadow-none transition-colors data-[state=active]:border-nk-accent data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:text-nk-text data-[state=active]:shadow-none"
-            >
-              {tab2.label}
-            </TabsTrigger>
-          ))}
+        <TabsList className="mb-6 flex h-auto w-full max-w-lg gap-2 rounded-xl border border-nk-border bg-nk-surface p-1.5 shadow-sm">
+          {tabs.map((tabItem) => {
+            const Icon = tabItem.icon;
+            return (
+              <TabsTrigger
+                key={tabItem.id}
+                value={tabItem.id}
+                className="flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium text-nk-text-muted transition-all data-[state=active]:bg-nk-accent data-[state=active]:text-nk-text-inverse data-[state=active]:shadow"
+              >
+                <Icon className="size-3.5" />
+                <span>{tabItem.label}</span>
+                {tabItem.count !== undefined && (
+                  <span className="rounded-full bg-nk-section px-1.5 py-0.2 text-[10px] data-[state=active]:bg-white/20">
+                    {tabItem.count}
+                  </span>
+                )}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
       </Tabs>
 
       {/* TAB: Tipe Kamar & Unit */}
       {tab === "rooms" && (
-        <div>
-          <div className="mb-4 flex justify-end">
-            <button
-              type="button"
-              onClick={() => setAddTypeOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-nk-accent px-4 py-2 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
-            >
-              <Plus className="size-4" />
-              <span>{t("addRoomType")}</span>
-            </button>
+        <div className="space-y-6">
+          {/* Action Bar & Status Legend */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-nk-border bg-nk-surface p-4 shadow-sm">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-nk-text-muted">
+              <span className="font-medium text-nk-text">Status Kamar:</span>
+              <div className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-emerald-500" />
+                <span>Kosong ({vacantUnitsCount})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-zinc-400" />
+                <span>Terisi ({occupiedUnitsCount})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-amber-500" />
+                <span>Dipesan ({reservedUnitsCount})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-rose-500" />
+                <span>Maintenance ({maintenanceUnitsCount})</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenType(
+                    openType === null
+                      ? property.roomTypes[0]?.id ?? null
+                      : null
+                  )
+                }
+                className="rounded-lg border border-nk-border px-3 py-1.5 text-xs text-nk-text transition-colors hover:bg-nk-warm"
+              >
+                {openType === null ? "Buka Tipe Kamar" : "Tutup Semua"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddTypeOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-nk-accent px-3.5 py-1.5 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+              >
+                <Plus className="size-3.5" />
+                <span>{t("addRoomType")}</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3">
+          {/* List of Room Types */}
+          <div className="flex flex-col gap-4">
             {property.roomTypes.map((rt) => {
               const currentUnits = units.filter(
                 (u) => !u.roomTypeId || u.roomTypeId === rt.id
               );
+              const isOpen = openType === rt.id;
+              const rtVacant = currentUnits.filter((u) => u.status === "kosong").length;
+              const rtOccupied = currentUnits.filter((u) => u.status === "terisi").length;
+              const rtMaint = currentUnits.filter((u) => u.status === "maintenance").length;
+              const activeFilter = unitFilters[rt.id] || "all";
+
+              const filteredUnits =
+                activeFilter === "all"
+                  ? currentUnits
+                  : currentUnits.filter((u) => u.status === activeFilter);
 
               return (
-                <div key={rt.id} className="rounded-lg border border-nk-border bg-nk-surface">
-                  {/* header tipe */}
-                  <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                <div
+                  key={rt.id}
+                  className="overflow-hidden rounded-xl border border-nk-border bg-nk-surface shadow-sm transition-all"
+                >
+                  {/* Header Tipe Kamar */}
+                  <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between bg-nk-surface border-b border-nk-border/60">
                     <button
                       type="button"
-                      onClick={() => setOpenType(openType === rt.id ? null : rt.id)}
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                      aria-expanded={openType === rt.id}
+                      onClick={() => setOpenType(isOpen ? null : rt.id)}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left group"
+                      aria-expanded={isOpen}
                     >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className={cn("shrink-0 text-nk-text-muted transition-transform", openType === rt.id && "rotate-90")}
-                        aria-hidden="true"
-                      >
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-nk-text">{rt.name}</span>
-                        <span className="block text-xs text-nk-text-muted">
-                          {formatIDR(rt.pricePerMonth)}{t("perMonth")} · {rt.sizeM2 ?? 12} m² · {rt.available}/{rt.total} {t("roomKosong").toLowerCase()}
-                        </span>
-                      </span>
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-nk-warm text-nk-text transition-colors group-hover:bg-nk-accent group-hover:text-nk-text-inverse">
+                        <ChevronDown
+                          className={cn(
+                            "size-4 transition-transform duration-200",
+                            isOpen && "rotate-180"
+                          )}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-semibold text-nk-text sm:text-base">
+                            {rt.name}
+                          </span>
+                          <span className="rounded-full bg-nk-section px-2 py-0.5 text-[11px] font-medium text-nk-text-muted">
+                            {rt.sizeM2 ?? 12} m²
+                          </span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-nk-text-muted">
+                          <span className="font-semibold text-nk-accent">
+                            {formatIDR(rt.pricePerMonth)}
+                            <span className="font-normal text-nk-text-muted">
+                              {t("perMonth")}
+                            </span>
+                          </span>
+                          <span>·</span>
+                          <span>
+                            {rtVacant} kosong · {rtOccupied} terisi · {currentUnits.length} total unit
+                          </span>
+                        </div>
+                      </div>
                     </button>
-                    <div className="flex gap-2 sm:ml-auto">
+
+                    <div className="flex items-center gap-2 sm:ml-auto">
                       <button
                         type="button"
                         onClick={() => {
@@ -575,9 +849,10 @@ export default function OwnerPropertyDetailPage() {
                           });
                           setEditTypeOpen(true);
                         }}
-                        className="rounded-md border border-nk-border px-3 py-1.5 text-xs text-nk-text transition-colors hover:bg-nk-warm"
+                        className="inline-flex items-center gap-1 rounded-lg border border-nk-border px-3 py-1.5 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm"
                       >
-                        Edit
+                        <Edit2 className="size-3" />
+                        <span>Edit Tipe</span>
                       </button>
                       <button
                         type="button"
@@ -585,7 +860,7 @@ export default function OwnerPropertyDetailPage() {
                           setTargetRoomTypeId(rt.id);
                           setAddUnitOpen(true);
                         }}
-                        className="inline-flex items-center gap-1 rounded-md border border-nk-border px-3 py-1.5 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm"
+                        className="inline-flex items-center gap-1 rounded-lg bg-nk-warm px-3 py-1.5 text-xs font-medium text-nk-text transition-colors hover:bg-nk-accent hover:text-nk-text-inverse"
                       >
                         <Plus className="size-3" />
                         <span>{t("addRoom")}</span>
@@ -593,55 +868,161 @@ export default function OwnerPropertyDetailPage() {
                     </div>
                   </div>
 
-                  {/* isi expand: grid kartu kamar */}
-                  {openType === rt.id && (
-                    <div className="border-t border-nk-border p-4">
-                      {currentUnits.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-                          {currentUnits.map((room) => {
-                            const c = roomStatusColor[room.status];
+                  {/* Isi Expand: Filter dan Grid Unit Kamar */}
+                  {isOpen && (
+                    <div className="p-4 sm:p-5 bg-nk-section/20">
+                      {/* Filter Pills per Room Type */}
+                      {currentUnits.length > 0 && (
+                        <div className="mb-4 flex flex-wrap items-center gap-1.5 text-xs">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setUnitFilters((prev) => ({ ...prev, [rt.id]: "all" }))
+                            }
+                            className={cn(
+                              "rounded-lg px-2.5 py-1 transition-colors",
+                              activeFilter === "all"
+                                ? "bg-nk-accent text-nk-text-inverse font-medium"
+                                : "border border-nk-border bg-nk-surface text-nk-text-muted hover:text-nk-text"
+                            )}
+                          >
+                            Semua ({currentUnits.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setUnitFilters((prev) => ({ ...prev, [rt.id]: "kosong" }))
+                            }
+                            className={cn(
+                              "rounded-lg px-2.5 py-1 transition-colors",
+                              activeFilter === "kosong"
+                                ? "bg-emerald-600 text-white font-medium"
+                                : "border border-nk-border bg-nk-surface text-nk-text-muted hover:text-nk-text"
+                            )}
+                          >
+                            Kosong ({rtVacant})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setUnitFilters((prev) => ({ ...prev, [rt.id]: "terisi" }))
+                            }
+                            className={cn(
+                              "rounded-lg px-2.5 py-1 transition-colors",
+                              activeFilter === "terisi"
+                                ? "bg-zinc-700 text-white font-medium"
+                                : "border border-nk-border bg-nk-surface text-nk-text-muted hover:text-nk-text"
+                            )}
+                          >
+                            Terisi ({rtOccupied})
+                          </button>
+                          {rtMaint > 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setUnitFilters((prev) => ({
+                                  ...prev,
+                                  [rt.id]: "maintenance",
+                                }))
+                              }
+                              className={cn(
+                                "rounded-lg px-2.5 py-1 transition-colors",
+                                activeFilter === "maintenance"
+                                  ? "bg-rose-600 text-white font-medium"
+                                  : "border border-nk-border bg-nk-surface text-nk-text-muted hover:text-nk-text"
+                              )}
+                            >
+                              Perbaikan ({rtMaint})
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {filteredUnits.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
+                          {filteredUnits.map((room) => {
+                            const meta = roomStatusMeta[room.status];
                             return (
                               <div key={room.number} className="relative">
                                 <button
                                   type="button"
-                                  onClick={() => setMenuRoom(menuRoom === room.number ? null : room.number)}
+                                  onClick={() =>
+                                    setMenuRoom(
+                                      menuRoom === room.number ? null : room.number
+                                    )
+                                  }
                                   className={cn(
-                                    "flex w-full flex-col items-start gap-1 rounded-md border p-2.5 text-left transition-colors hover:brightness-[0.98] active:scale-[0.98]",
-                                    c.cls
+                                    "flex w-full flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-all hover:shadow-sm active:scale-[0.98]",
+                                    meta.cls
                                   )}
                                 >
-                                  <span className="font-mono text-sm font-medium tabular-nums text-nk-text">
-                                    {room.number}
-                                  </span>
-                                  <StatusBadge color={c.badge} className="!px-1.5 !py-0 text-[10px]">
-                                    {statusLabel[room.status]}
-                                  </StatusBadge>
+                                  <div className="flex w-full items-center justify-between">
+                                    <span className="font-mono text-sm font-bold tabular-nums text-nk-text">
+                                      {room.number}
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        "size-2 rounded-full",
+                                        meta.dot
+                                      )}
+                                    />
+                                  </div>
+                                  <div className="flex w-full items-center justify-between text-[11px]">
+                                    <span className="text-nk-text-muted">
+                                      {room.floor ? `Lt. ${room.floor}` : "Lt. 1"}
+                                    </span>
+                                    <StatusBadge
+                                      color={meta.badge}
+                                      className="!px-1.5 !py-0 text-[10px]"
+                                    >
+                                      {meta.label}
+                                    </StatusBadge>
+                                  </div>
                                 </button>
-                                {/* dropdown aksi cepat status */}
+
+                                {/* Dropdown Aksi Cepat Status */}
                                 {menuRoom === room.number && (
                                   <>
-                                    <div className="fixed inset-0 z-30" onClick={() => setMenuRoom(null)} aria-hidden="true" />
-                                    <div className="absolute left-0 top-full z-40 mt-1 w-48 overflow-hidden rounded-md border border-nk-border bg-nk-surface py-1 shadow-xl">
+                                    <div
+                                      className="fixed inset-0 z-30"
+                                      onClick={() => setMenuRoom(null)}
+                                      aria-hidden="true"
+                                    />
+                                    <div className="absolute left-0 top-full z-40 mt-1 w-52 overflow-hidden rounded-xl border border-nk-border bg-nk-surface py-1.5 shadow-xl animate-in fade-in-50 zoom-in-95">
+                                      <div className="px-3 py-1 text-[11px] font-semibold text-nk-text-muted border-b border-nk-border/60 mb-1">
+                                        Ubah Status: Kamar {room.number}
+                                      </div>
                                       <button
                                         type="button"
                                         onClick={() => setRoomStatus(room, "kosong")}
-                                        className="block w-full px-3 py-2 text-left text-xs text-nk-text transition-colors hover:bg-nk-warm"
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-nk-text transition-colors hover:bg-nk-warm"
                                       >
-                                        {t("setKosong")}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setRoomStatus(room, "maintenance")}
-                                        className="block w-full px-3 py-2 text-left text-xs text-nk-text transition-colors hover:bg-nk-warm"
-                                      >
-                                        {t("setMaintenance")}
+                                        <span className="size-2 rounded-full bg-emerald-500" />
+                                        <span>Tandai Kosong (Tersedia)</span>
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => setRoomStatus(room, "terisi")}
-                                        className="block w-full px-3 py-2 text-left text-xs text-nk-text transition-colors hover:bg-nk-warm"
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-nk-text transition-colors hover:bg-nk-warm"
                                       >
-                                        Tandai Terisi
+                                        <span className="size-2 rounded-full bg-zinc-400" />
+                                        <span>Tandai Terisi</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setRoomStatus(room, "dipesan")}
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-nk-text transition-colors hover:bg-nk-warm"
+                                      >
+                                        <span className="size-2 rounded-full bg-amber-500" />
+                                        <span>Tandai Sedang Dipesan</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setRoomStatus(room, "maintenance")}
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-nk-text transition-colors hover:bg-nk-warm"
+                                      >
+                                        <span className="size-2 rounded-full bg-rose-500" />
+                                        <span>Tandai Perbaikan (Maintenance)</span>
                                       </button>
                                     </div>
                                   </>
@@ -651,8 +1032,25 @@ export default function OwnerPropertyDetailPage() {
                           })}
                         </div>
                       ) : (
-                        <div className="py-6 text-center text-xs text-nk-text-muted">
-                          Belum ada unit kamar pada tipe ini. Klik &ldquo;{t("addRoom")}&rdquo; di atas untuk menambahkan nomor kamar.
+                        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-nk-border/80 p-8 text-center bg-nk-surface/50">
+                          <DoorOpen className="size-8 text-nk-text-muted/60 mb-2" />
+                          <h4 className="text-xs font-semibold text-nk-text">
+                            Belum ada unit kamar pada tipe ini
+                          </h4>
+                          <p className="mt-1 text-xs text-nk-text-muted max-w-sm">
+                            Tambahkan nomor kamar untuk mulai mengelola ketersediaan dan sewa.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTargetRoomTypeId(rt.id);
+                              setAddUnitOpen(true);
+                            }}
+                            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-nk-accent px-3 py-1.5 text-xs font-medium text-nk-text-inverse hover:opacity-90"
+                          >
+                            <Plus className="size-3" />
+                            <span>{t("addRoom")}</span>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -671,9 +1069,9 @@ export default function OwnerPropertyDetailPage() {
 
       {/* TAB: Pengaturan Properti */}
       {tab === "settings" && (
-        <div className="max-w-3xl rounded-xl border border-nk-border bg-nk-surface p-6 sm:p-8">
+        <div className="max-w-3xl rounded-2xl border border-nk-border bg-nk-surface p-6 sm:p-8 shadow-sm">
           <div className="border-b border-nk-border pb-4 mb-6">
-            <h2 className="text-lg font-semibold text-nk-text">Pengaturan Properti</h2>
+            <h2 className="text-lg font-bold text-nk-text">Pengaturan Properti</h2>
             <p className="text-xs text-nk-text-muted mt-0.5">
               Ubah informasi dasar, alamat, fasilitas, dan ketentuan sewa properti kos Anda.
             </p>
@@ -999,7 +1397,12 @@ export default function OwnerPropertyDetailPage() {
                     id="edit-type-price"
                     type="number"
                     value={editingType.pricePerMonth}
-                    onChange={(e) => setEditingType({ ...editingType, pricePerMonth: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setEditingType({
+                        ...editingType,
+                        pricePerMonth: Number(e.target.value),
+                      })
+                    }
                     required
                     className="mt-1"
                   />
@@ -1010,7 +1413,8 @@ export default function OwnerPropertyDetailPage() {
                     id="edit-type-size"
                     type="number"
                     value={editingType.sizeM2}
-                    onChange={(e) => setEditingType({ ...editingType, sizeM2: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setEditingType({ ...editingType, sizeM2: Number(e.target.value) })}
                     className="mt-1"
                   />
                 </div>
