@@ -48,3 +48,8 @@ next-env.d.ts
 /.codex/
 docs/diagram/__pycache__/
 graphify-out/
+ngekos-*.json*
+*.docx*
+*Zone.Identifier*
+contoh_prd_dump.txt
+grafikarsa_prd_dump.txt
