@@ -45,8 +45,18 @@ function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
   };
 }
 
-function filterAndSort(list: Property[], filters: FilterState): Property[] {
+function filterAndSort(list: Property[], filters: FilterState, q?: string): Property[] {
+  const query = q?.trim().toLowerCase();
   const result = list.filter((p) => {
+    if (query) {
+      const match =
+        p.name.toLowerCase().includes(query) ||
+        p.city.toLowerCase().includes(query) ||
+        p.district.toLowerCase().includes(query) ||
+        p.address.toLowerCase().includes(query) ||
+        (p.tagline && p.tagline.toLowerCase().includes(query));
+      if (!match) return false;
+    }
     if (filters.kota && p.city !== filters.kota) return false;
     if (filters.maxPrice > 0 && p.minPrice > filters.maxPrice) return false;
     if (filters.gender && p.gender !== filters.gender) return false;
@@ -119,11 +129,14 @@ export default async function ListPage({
       filtered = dbResult.items.map(toUiProperty);
     } else if (!sp.q && !sp.kota && !sp.max && !sp.fas && !sp.gender) {
       filtered = getVerifiedProperties();
+    } else {
+      const all = getVerifiedProperties();
+      filtered = filterAndSort(all, filterState, sp.q);
     }
   } catch (e) {
     console.error("Failed to load properties from database, falling back to static seed:", e);
     const all = getVerifiedProperties();
-    filtered = filterAndSort(all, filterState);
+    filtered = filterAndSort(all, filterState, sp.q);
   }
 
   return (

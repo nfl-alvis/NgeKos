@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Download } from "lucide-react";
 import {
@@ -17,15 +18,46 @@ import { useTenantOps } from "@/lib/tenantOpsStore";
 import { formatIDR } from "@/lib/utils";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
-
-const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
-const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
+import { useTenantSession } from "@/hooks/useTenantSession";
 
 /** Riwayat pembayaran sewa - metode, tanggal bayar, nominal, status lunas. */
 export default function TenantPaymentsPage() {
   const t = useTranslations("tenantPages.payments");
   const locale = useLocale();
   const ops = useTenantOps();
+  const { tenant } = useTenantSession();
+  const [bills, setBills] = useState<(typeof invoices)>(
+    invoices.filter((i) => i.tenantName === tenant.name || i.tenantName === "I Made Sudiarta")
+  );
+
+  useEffect(() => {
+    fetch("/api/invoices")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const mapped = json.data.map((item: any) => ({
+            id: item.code || item.id,
+            tenantName: item.tenant?.fullName || item.tenantName || tenant.name,
+            period: item.period || "Periode Berjalan",
+            amount: Number(item.amountSnapshot || item.amount || tenant.monthlyRent),
+            status: (item.status === "PAID" ? "lunas" : "belum-lunas") as
+              | "lunas"
+              | "belum-lunas",
+            dueDate:
+              typeof item.dueDate === "string"
+                ? item.dueDate.slice(0, 10)
+                : "2026-09-20",
+            paidAt: item.paidAt
+              ? typeof item.paidAt === "string"
+                ? item.paidAt.slice(0, 10)
+                : undefined
+              : undefined,
+          }));
+          setBills(mapped);
+        }
+      })
+      .catch(() => {});
+  }, [tenant.name, tenant.monthlyRent]);
 
   const fmt = (iso: string) =>
     new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
@@ -35,8 +67,7 @@ export default function TenantPaymentsPage() {
       timeZone: "UTC",
     });
 
-  const rows = invoices
-    .filter((i) => i.tenantName === DEMO_TENANT.name)
+  const rows = bills
     .map((i) => ({ ...i, status: ops.paidInvoiceIds.includes(i.id) ? "lunas" : i.status }))
     .sort((a, b) => (b.paidAt ?? b.dueDate).localeCompare(a.paidAt ?? a.dueDate));
 
@@ -91,7 +122,7 @@ export default function TenantPaymentsPage() {
 
       <DashSection
         title={t("historyTitle")}
-        right={<span className="text-xs text-nk-text-muted">{PROPERTY.name}</span>}
+        right={<span className="text-xs text-nk-text-muted">{tenant.propertyName}</span>}
         bodyClass="p-0"
       >
         <div className="overflow-x-auto">

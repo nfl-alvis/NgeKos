@@ -9,7 +9,7 @@ export default function DashboardBookingsPage() {
   const t = useTranslations("userDash");
   return (
     <UserDashboardShell title={t("bookingsTitle")}>
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="mx-auto w-full max-w-5xl">
         <BookingList />
       </div>
     </UserDashboardShell>

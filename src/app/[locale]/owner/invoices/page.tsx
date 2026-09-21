@@ -18,6 +18,9 @@ export default function OwnerInvoicesPage() {
   const [rows, setRows] = useState<Invoice[]>(seedInvoices);
   const [createOpen, setCreateOpen] = useState(false);
   const [newInv, setNewInv] = useState({ tenant: "", period: "", amount: "" });
+  const [tenantList, setTenantList] = useState<Array<{ id: string; name: string; agreementId?: string; monthlyPrice?: number }>>(
+    tenants.map((tn) => ({ id: tn.id, name: tn.name, monthlyPrice: tn.monthlyRent }))
+  );
 
   useEffect(() => {
     fetch("/api/invoices")
@@ -35,7 +38,30 @@ export default function OwnerInvoicesPage() {
                 ? item.dueDate.slice(0, 10)
                 : "2026-09-20",
           }));
-          setRows(mapped);
+          const existingIds = new Set(mapped.map((m: any) => m.id));
+          const merged = [...mapped, ...seedInvoices.filter((s) => !existingIds.has(s.id))];
+          setRows(merged);
+        }
+      })
+      .catch(() => {});
+
+    fetch("/api/bookings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          const activeBookings = json.data.filter((b: any) => b.status === "ACTIVE");
+          if (activeBookings.length > 0) {
+            const mapped = activeBookings.map((b: any) => ({
+              id: b.id,
+              name: b.applicant?.fullName || b.applicantName || "Penyewa",
+              agreementId: b.agreement?.id || b.id,
+              monthlyPrice: Number(b.monthlyPriceSnapshot || 0),
+            }));
+            const existingTenantIds = new Set(mapped.map((m: any) => m.id));
+            const initialTenants = tenants.map((tn) => ({ id: tn.id, name: tn.name, monthlyPrice: tn.monthlyRent }));
+            const merged = [...mapped, ...initialTenants.filter((t) => !existingTenantIds.has(t.id))];
+            setTenantList(merged);
+          }
         }
       })
       .catch(() => {});
@@ -50,8 +76,18 @@ export default function OwnerInvoicesPage() {
   const unpaidThisMonth = rows.filter((r) => r.status !== "lunas").length;
   const arrears = tenants.filter((tn) => tn.paymentStatus === "menunggak").length;
 
-  const markPaid = (id: string) =>
+  const markPaid = async (id: string) => {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: "lunas" as const } : r)));
+    try {
+      await fetch(`/api/invoices/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "PAID" }),
+      });
+    } catch {
+      // fallback
+    }
+  };
 
   const tabs = [
     { id: "all" as const, label: t("filterAll") },
@@ -206,11 +242,18 @@ export default function OwnerInvoicesPage() {
             <select
               id="inv-tenant"
               value={newInv.tenant}
-              onChange={(e) => setNewInv((v) => ({ ...v, tenant: e.target.value }))}
+              onChange={(e) => {
+                const selected = tenantList.find((tn) => tn.name === e.target.value);
+                setNewInv((v) => ({
+                  ...v,
+                  tenant: e.target.value,
+                  amount: selected?.monthlyPrice ? String(selected.monthlyPrice) : v.amount,
+                }));
+              }}
               className="rounded-lg border border-nk-border bg-nk-surface px-3 py-2.5 text-sm text-nk-text outline-none focus:border-nk-accent"
             >
               <option value="">-</option>
-              {tenants.map((tn) => (
+              {tenantList.map((tn) => (
                 <option key={tn.id} value={tn.name}>
                   {tn.name}
                 </option>
@@ -245,20 +288,49 @@ export default function OwnerInvoicesPage() {
           <button
             type="button"
             disabled={!newInv.tenant || !newInv.period || !newInv.amount}
-            onClick={() => {
+            onClick={async () => {
+              const selected = tenantList.find((tn) => tn.name === newInv.tenant);
+              const newInvoiceId = `INV-${String(rows.length + 1).padStart(4, "0")}`;
+              const periodParts = newInv.period.split("-");
+              const year = Number(periodParts[0]);
+              const month = Number(periodParts[1]);
+              const pStart = `${year}-${String(month).padStart(2, "0")}-01`;
+              const lastDay = new Date(year, month, 0).getDate();
+              const pEnd = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+              const dDate = `${year}-${String(month).padStart(2, "0")}-20`;
+
               setRows((prev) => [
                 {
-                  id: `INV-${String(prev.length + 1).padStart(4, "0")}`,
+                  id: newInvoiceId,
                   tenantName: newInv.tenant,
                   period: newInv.period,
                   amount: Number(newInv.amount),
                   status: "belum-lunas",
-                  dueDate: "20/" + newInv.period.slice(5) + "/" + newInv.period.slice(0, 4),
+                  dueDate: dDate,
                 },
                 ...prev,
               ]);
               setNewInv({ tenant: "", period: "", amount: "" });
               setCreateOpen(false);
+
+              if (selected?.agreementId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selected.agreementId)) {
+                try {
+                  await fetch("/api/invoices", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      agreementId: selected.agreementId,
+                      periodStart: pStart,
+                      periodEnd: pEnd,
+                      dueDate: dDate,
+                      amount: Number(newInv.amount),
+                      notes: `Tagihan periode ${newInv.period}`,
+                    }),
+                  });
+                } catch {
+                  // fallback
+                }
+              }
             }}
             className="rounded-lg bg-nk-accent px-5 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
           >

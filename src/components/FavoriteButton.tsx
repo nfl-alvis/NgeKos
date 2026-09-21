@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Heart } from "lucide-react";
 import { useSession } from "@/components/SessionProvider";
 import { toggleFavorite as toggleStoreFavorite, useUserOps } from "@/lib/userOpsStore";
@@ -78,10 +78,10 @@ export default function FavoriteButton({
         onClick={handleClick}
         aria-label={isFav ? "Hapus dari favorit" : "Simpan ke favorit"}
         className={cn(
-          "inline-flex items-center justify-center gap-1.5 rounded-full transition-all duration-200 active:scale-95",
+          "inline-flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95",
           showText
-            ? "border border-nk-border bg-nk-surface px-3.5 py-1.5 text-xs font-medium text-nk-text hover:border-nk-accent hover:text-nk-accent"
-            : "size-9 bg-white/90 text-nk-text shadow-sm backdrop-blur-sm hover:bg-white hover:text-red-500",
+            ? "rounded-none border border-nk-border bg-nk-surface px-3.5 py-1.5 text-xs font-medium text-nk-text hover:border-nk-accent hover:text-nk-accent"
+            : "rounded-full size-9 bg-white/90 text-nk-text shadow-sm backdrop-blur-sm hover:bg-white hover:text-red-500",
           isFav && !showText && "text-red-500 hover:text-red-600",
           isFav && showText && "border-red-200 bg-red-50 text-red-600 hover:border-red-300",
           className

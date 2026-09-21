@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowRight, CalendarCheck, CreditCard, Heart, Star } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -32,17 +33,39 @@ export default function UserDashboardPage() {
   const activity = useUserActivity();
 
   const firstName = (user?.name ?? "Budi Santoso").split(" ")[0];
-  const openBookings = bookings.filter(
-    (b) => b.status === "pending" || b.status === "approved-awaiting-payment"
-  ).length;
+  const [totalBookings, setTotalBookings] = useState(bookings.length);
+  const [openBookings, setOpenBookings] = useState(
+    bookings.filter((b) => b.status === "pending" || b.status === "approved-awaiting-payment").length
+  );
+
+  useEffect(() => {
+    fetch("/api/bookings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const raw = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json?.data?.items)
+          ? json.data.items
+          : null;
+        if (raw) {
+          setTotalBookings(raw.length);
+          const open = raw.filter((b: any) =>
+            ["PENDING", "APPROVED_AWAITING_PAYMENT"].includes(b.status)
+          ).length;
+          setOpenBookings(open);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const pendingPay = ops.payments.filter((p) => p.status === "pending").length;
-  const hasAnyBooking = bookings.length > 0;
+  const hasAnyBooking = totalBookings > 0;
 
   const stats = [
     {
       key: "bookings",
       icon: CalendarCheck,
-      value: String(bookings.length),
+      value: String(totalBookings),
       sub: t("statBookingsSub", { count: openBookings }),
       tint: "bg-[#E8EFF8]",
       iconTint: "bg-[#D3E0F0] text-[#33517C]",

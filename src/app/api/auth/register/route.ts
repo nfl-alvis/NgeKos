@@ -27,8 +27,13 @@ export const POST = withApi(async (request: Request) => {
   });
 
   if (error) {
+    console.error("Supabase auth.signUp error:", error);
     const duplicate = /already|registered|exists/i.test(error.message);
-    throw new ApiError(duplicate ? 409 : 400, duplicate ? "EMAIL_EXISTS" : "SIGNUP_FAILED", duplicate ? "Email sudah terdaftar" : "Pendaftaran gagal");
+    throw new ApiError(
+      duplicate ? 409 : 400,
+      duplicate ? "EMAIL_EXISTS" : "SIGNUP_FAILED",
+      duplicate ? "Email sudah terdaftar" : (error.message || "Pendaftaran gagal")
+    );
   }
 
   return successResponse(

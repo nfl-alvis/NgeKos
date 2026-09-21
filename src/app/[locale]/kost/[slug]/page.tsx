@@ -10,7 +10,10 @@ import FacilityIcon from "@/components/FacilityIcon";
 import BookingSidebarActions from "@/components/BookingSidebarActions";
 import { BookingFlowProvider } from "@/components/BookingFlowProvider";
 import FavoriteButton from "@/components/FavoriteButton";
+import PropertyReviewsSection from "@/components/PropertyReviewsSection";
+import ReportPropertyModal from "@/components/ReportPropertyModal";
 import { getProperty, propertyDto } from "@/server/property-service";
+import { getKosImage } from "@/lib/kosImages";
 import type { Property, Gender, Facility } from "@/lib/data/types";
 
 function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
@@ -111,7 +114,7 @@ export default async function DetailPage({
         <div className="grid grid-cols-1 gap-[1px] bg-nk-border lg:grid-cols-[2fr_1fr]">
           <div className="overflow-hidden bg-nk-section">
             <img
-              src={`https://picsum.photos/seed/${p.imageSeed}-main/1200/750`}
+              src={getKosImage(p.slug || p.imageSeed, "main")}
               alt={p.name}
               className="aspect-[16/10] w-full object-cover lg:aspect-auto lg:h-full"
             />
@@ -119,15 +122,15 @@ export default async function DetailPage({
           <div className="grid grid-cols-2 gap-[1px] bg-nk-border lg:grid-cols-1">
             <div className="overflow-hidden bg-nk-section">
               <img
-                src={`https://picsum.photos/seed/${p.imageSeed}-b/600/400`}
+                src={getKosImage(p.slug || p.imageSeed, "b")}
                 alt={`${p.name} - interior`}
                 className="aspect-[3/2] w-full object-cover"
               />
             </div>
             <div className="overflow-hidden bg-nk-section">
               <img
-                src={`https://picsum.photos/seed/${p.imageSeed}-c/600/400`}
-                alt={`${p.name} - lingkungan`}
+                src={getKosImage(p.slug || p.imageSeed, "c")}
+                alt={`${p.name} - fasilitas`}
                 className="aspect-[3/2] w-full object-cover"
               />
             </div>
@@ -162,7 +165,7 @@ export default async function DetailPage({
                 <FavoriteButton propertySlug={p.slug} propertyId={p.id} showText size="sm" />
               </div>
 
-              <h1 className="text-4xl font-light tracking-tight text-nk-text md:text-5xl">
+              <h1 className="text-3xl font-semibold tracking-tight text-nk-text md:text-4xl">
                 {p.name}
               </h1>
               <p className="text-sm text-nk-text-muted">{p.tagline}</p>
@@ -189,7 +192,7 @@ export default async function DetailPage({
 
             {/* Description */}
             <div className="space-y-4">
-              <h2 className="text-xl font-light tracking-tight text-nk-text">
+              <h2 className="text-xl font-medium tracking-tight text-nk-text">
                 {t("detail.description")}
               </h2>
               <p className="max-w-2xl text-base leading-relaxed text-nk-text-muted">
@@ -199,7 +202,7 @@ export default async function DetailPage({
 
             {/* Facilities */}
             <div className="space-y-4">
-              <h2 className="text-xl font-light tracking-tight text-nk-text">
+              <h2 className="text-xl font-medium tracking-tight text-nk-text">
                 {t("detail.facilities")}
               </h2>
               <div className="flex flex-wrap gap-2">
@@ -217,7 +220,7 @@ export default async function DetailPage({
 
             {/* Room Types */}
             <div className="space-y-4">
-              <h2 className="text-xl font-light tracking-tight text-nk-text">
+              <h2 className="text-xl font-medium tracking-tight text-nk-text">
                 {t("detail.roomTypes")}
               </h2>
               <div className="grid sm:grid-cols-2">
@@ -247,7 +250,7 @@ export default async function DetailPage({
                           : t("detail.full")}
                       </span>
                     </div>
-                    {rt.available > 0 && (
+                    {rt.available > 0 ? (
                       <BookingCta
                         propertyName={p.name}
                         dpAmount={p.dpAmount}
@@ -257,6 +260,15 @@ export default async function DetailPage({
                       >
                         {t("detail.pickRoom")}
                       </BookingCta>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        aria-disabled="true"
+                        className="mt-4 inline-flex w-full items-center justify-center border border-nk-border bg-nk-section px-4 py-2.5 text-xs font-medium text-nk-text-muted cursor-not-allowed opacity-60"
+                      >
+                        {t("detail.pickRoom")}
+                      </button>
                     )}
                   </div>
                 ))}
@@ -265,12 +277,23 @@ export default async function DetailPage({
 
             {/* Deposit */}
             <div className="space-y-4">
-              <h2 className="text-xl font-light tracking-tight text-nk-text">
+              <h2 className="text-xl font-medium tracking-tight text-nk-text">
                 {t("detail.deposit")}
               </h2>
               <p className="max-w-2xl text-base leading-relaxed text-nk-text-muted">
                 {p.depositInfo}
               </p>
+            </div>
+
+            {/* Reviews & Ratings */}
+            <div className="pt-4 border-t border-nk-border">
+              <PropertyReviewsSection
+                propertyId={p.id}
+                propertySlug={p.slug}
+                propertyName={p.name}
+                initialRating={p.rating}
+                initialReviewCount={p.reviewCount}
+              />
             </div>
           </div>
 
@@ -279,7 +302,7 @@ export default async function DetailPage({
             <div className="border border-nk-dark-border bg-nk-section p-6">
               <div className="space-y-5">
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl font-light tracking-tight text-nk-text">
+                  <span className="text-3xl font-semibold tracking-tight text-nk-text">
                     {formatIDR(p.minPrice)}
                   </span>
                   <span className="text-sm text-nk-text-muted">{t("detail.perMonth")}</span>
@@ -307,14 +330,26 @@ export default async function DetailPage({
                     dpAmount={p.dpAmount ?? 0}
                     rooms={p.roomTypes.filter((r) => r.available > 0)}
                   />
-                  <button
+                  <a
+                    href="https://wa.me/6281234567890"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="inline-flex w-full items-center justify-center gap-2 border border-nk-border bg-nk-bg px-6 py-3.5 text-sm text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                     </svg>
                     {t("detail.call")}
-                  </button>
+                  </a>
+
+                  {/* Report Kos button */}
+                  <div className="flex items-center justify-center pt-2 border-t border-nk-border/60">
+                    <ReportPropertyModal
+                      propertyId={p.id}
+                      propertySlug={p.slug}
+                      propertyName={p.name}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

@@ -7,14 +7,49 @@ import { OWNER_PROFILE } from "@/lib/data/entities";
 
 export default function OwnerSettingsPage() {
   const t = useTranslations("owner.settings");
+  const [name, setName] = useState(OWNER_PROFILE.name);
+  const [email, setEmail] = useState(OWNER_PROFILE.email);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [lang, setLang] = useState("id");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data) {
+          if (json.data.fullName) setName(json.data.fullName);
+          if (json.data.email) setEmail(json.data.email);
+          if (json.data.avatarUrl) setAvatarUrl(json.data.avatarUrl);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!saved) return;
     const id = setTimeout(() => setSaved(false), 2500);
     return () => clearTimeout(id);
   }, [saved]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          locale: lang as "id" | "en",
+        }),
+      });
+      setSaved(true);
+    } catch {
+      // fallback
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <DashboardShell role="owner">
@@ -26,9 +61,17 @@ export default function OwnerSettingsPage() {
         <div className="flex flex-col gap-5">
           {/* foto */}
           <div className="flex items-center gap-4">
-            <span className="flex size-14 items-center justify-center rounded-full bg-nk-accent text-lg font-medium text-nk-text-inverse">
-              {OWNER_PROFILE.name.trim().charAt(0)}
-            </span>
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={name}
+                className="size-14 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex size-14 items-center justify-center rounded-full bg-nk-accent text-lg font-medium text-nk-text-inverse">
+                {name.trim().charAt(0).toUpperCase()}
+              </span>
+            )}
             <div>
               <p className="text-sm font-medium text-nk-text">{t("photo")}</p>
               <p className="text-xs text-nk-text-muted">{t("googleNote")}</p>
@@ -44,7 +87,7 @@ export default function OwnerSettingsPage() {
               id="owner-name"
               type="text"
               readOnly
-              value={OWNER_PROFILE.name}
+              value={name}
               className="cursor-not-allowed rounded-lg border border-nk-border bg-nk-section px-4 py-2.5 text-sm text-nk-text-muted"
             />
           </div>
@@ -58,7 +101,7 @@ export default function OwnerSettingsPage() {
               id="owner-email"
               type="email"
               readOnly
-              value={OWNER_PROFILE.email}
+              value={email}
               className="cursor-not-allowed rounded-lg border border-nk-border bg-nk-section px-4 py-2.5 text-sm text-nk-text-muted"
             />
           </div>
@@ -81,10 +124,11 @@ export default function OwnerSettingsPage() {
 
           <button
             type="button"
-            onClick={() => setSaved(true)}
-            className="w-fit rounded-lg bg-nk-accent px-6 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+            disabled={saving}
+            onClick={handleSave}
+            className="w-fit rounded-lg bg-nk-accent px-6 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
           >
-            {t("save")}
+            {saving ? "Menyimpan..." : t("save")}
           </button>
         </div>
       </div>

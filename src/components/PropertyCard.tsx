@@ -5,6 +5,8 @@ import type { Property } from "@/lib/data/types";
 import { formatIDR, formatDistance } from "@/lib/utils";
 import FavoriteButton from "@/components/FavoriteButton";
 
+import { getKosImage } from "@/lib/kosImages";
+
 const GENDER_LABEL: Record<Property["gender"], "genderMixed" | "genderMale" | "genderFemale"> = {
   mixed: "genderMixed",
   male: "genderMale",
@@ -22,7 +24,7 @@ export default async function PropertyCard({ property }: { property: Property })
     >
       <div className="relative mb-6 aspect-[16/9] w-full overflow-hidden bg-nk-section">
         <Image
-          src={`https://picsum.photos/seed/${property.imageSeed}/800/450`}
+          src={getKosImage(property.slug || property.imageSeed, "main")}
           alt={property.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

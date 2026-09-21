@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { getOwnerProperties, subscriptionState } from "@/lib/data/entities";
 import CreatePropertyDialog from "@/components/owner/CreatePropertyDialog";
 import type { Property } from "@/lib/data/types";
+import { getKosImage } from "@/lib/kosImages";
 
 export default function OwnerPropertiesPage() {
   const t = useTranslations("owner.properties");
@@ -56,7 +57,9 @@ export default function OwnerPropertiesPage() {
               sizeM2: rt.sizeM2 ?? 12,
             })),
           }));
-          setProps(mapped);
+          const existingSlugs = new Set(mapped.map((m) => m.slug));
+          const merged = [...mapped, ...getOwnerProperties().filter((p) => !existingSlugs.has(p.slug))];
+          setProps(merged);
         }
       } catch {
         // fallback to initial props
@@ -170,7 +173,7 @@ export default function OwnerPropertiesPage() {
             <article key={p.slug} className="overflow-hidden rounded-lg border border-nk-border bg-nk-surface">
               <div className="relative">
                 <img
-                  src={`https://picsum.photos/seed/${p.imageSeed}/640/360`}
+                  src={getKosImage(p.slug || p.imageSeed, "main")}
                   alt={p.name}
                   className="aspect-[16/9] w-full object-cover"
                 />

@@ -39,14 +39,22 @@ const STATUS_CHART_TOKENS: Record<"occupied" | "available" | "reserved" | "repai
   repair: "--chart-5",
 };
 
-export default function OwnerDashboardInsights() {
+export default function OwnerDashboardInsights({
+  pendingBookingsCount,
+}: {
+  pendingBookingsCount?: number;
+} = {}) {
   const t = useTranslations("owner.insights");
   const locale = useLocale();
   const properties = getOwnerProperties();
   const unpaid = invoices.filter((invoice) => invoice.status === "belum-lunas")
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.id.localeCompare(b.id));
+  const pendingCount =
+    pendingBookingsCount !== undefined
+      ? pendingBookingsCount
+      : ownerBookings.filter((booking) => booking.status === "pending").length;
   const actions = [
-    { label: "bookings", count: ownerBookings.filter((booking) => booking.status === "pending").length, href: "/owner/bookings", icon: CalendarClock },
+    { label: "bookings", count: pendingCount, href: "/owner/bookings", icon: CalendarClock },
     { label: "messages", count: conversations.reduce((sum, conversation) => sum + conversation.unread, 0), href: "/owner/messages", icon: MessageSquare },
     { label: "maintenance", count: properties.flatMap((property) => roomUnits[property.slug] ?? []).filter((room) => room.status === "maintenance").length, href: "/owner/properties", icon: Wrench },
   ] as const;

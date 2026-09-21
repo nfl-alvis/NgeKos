@@ -1,0 +1,715 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  SEEKER
+  OWNER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+  DELETED
+}
+
+enum AdminRole {
+  SUPER
+  VERIFIER
+  FINANCE
+  SUPPORT
+}
+
+enum PropertyGender {
+  MIXED
+  MALE
+  FEMALE
+}
+
+enum PropertyStatus {
+  DRAFT
+  PENDING
+  VERIFIED
+  REJECTED
+  INACTIVE
+}
+
+enum RoomStatus {
+  AVAILABLE
+  RESERVED
+  OCCUPIED
+  MAINTENANCE
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED_AWAITING_PAYMENT
+  ACTIVE
+  REJECTED
+  EXPIRED
+  CANCELLED
+  COMPLETED
+}
+
+enum AgreementStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH
+  MANUAL
+}
+
+enum ComplaintCategory {
+  FACILITY
+  CLEANLINESS
+  SECURITY
+  PAYMENT
+  OTHER
+}
+
+enum ComplaintStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+  FLAGGED
+}
+
+enum NotificationType {
+  BOOKING
+  PAYMENT
+  SUBSCRIPTION
+  COMPLAINT
+  ANNOUNCEMENT
+  SYSTEM
+}
+
+enum VerificationDecision {
+  APPROVED
+  REJECTED
+}
+
+enum ReportTarget {
+  PROPERTY
+  USER
+  REVIEW
+  CONTENT
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Profile {
+  id                     String     @id @db.Uuid
+  email                  String     @unique
+  fullName               String     @map("full_name")
+  phone                  String?    @unique
+  avatarUrl              String?    @map("avatar_url")
+  birthPlace             String?    @map("birth_place")
+  occupation             String?
+  role                   UserRole   @default(SEEKER)
+  adminRole              AdminRole? @map("admin_role")
+  status                 UserStatus @default(ACTIVE)
+  locale                 String     @default("id") @db.VarChar(5)
+  emailNotifications     Boolean    @default(true) @map("email_notifications")
+  pushNotifications      Boolean    @default(true) @map("push_notifications")
+  marketingNotifications Boolean    @default(false) @map("marketing_notifications")
+  lastSeenAt             DateTime?  @map("last_seen_at") @db.Timestamptz(3)
+  createdAt              DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt              DateTime?  @map("deleted_at") @db.Timestamptz(3)
+
+  properties             Property[]             @relation("OwnerProperties")
+  bookings               Booking[]              @relation("ApplicantBookings")
+  favorites              Favorite[]
+  agreements             RentalAgreement[]      @relation("TenantAgreements")
+  invoices               Invoice[]              @relation("TenantInvoices")
+  reviews                Review[]
+  complaints             Complaint[]            @relation("TenantComplaints")
+  notifications          Notification[]
+  announcementReads      AnnouncementRead[]
+  announcements          Announcement[]         @relation("AnnouncementAuthor")
+  conversationsAsOwner   Conversation[]         @relation("ConversationOwner")
+  conversationsAsContact Conversation[]         @relation("ConversationContact")
+  messages               Message[]              @relation("MessageSender")
+  verificationDecisions  PropertyVerification[] @relation("VerificationAdmin")
+  reports                Report[]               @relation("ReportAuthor")
+  auditLogs              AuditLog[]             @relation("AuditActor")
+  recordedPayments       Payment[]              @relation("PaymentRecorder")
+  complaintUpdates       ComplaintHistory[]     @relation("ComplaintUpdater")
+
+  @@index([role, status])
+  @@map("profiles")
+}
+
+model Property {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerId           String         @map("owner_id") @db.Uuid
+  slug              String         @unique
+  name              String
+  tagline           String?
+  description       String
+  city              String
+  district          String
+  address           String
+  postalCode        String?        @map("postal_code")
+  latitude          Decimal?       @db.Decimal(10, 7)
+  longitude         Decimal?       @db.Decimal(10, 7)
+  gender            PropertyGender
+  status            PropertyStatus @default(DRAFT)
+  rejectionNote     String?        @map("rejection_note")
+  depositAmount     Decimal?       @map("deposit_amount") @db.Decimal(14, 0)
+  minMonthlyPrice   Decimal        @default(0) @map("min_monthly_price") @db.Decimal(14, 0)
+  distanceToCampusM Int?           @map("distance_to_campus_m")
+  maxRooms          Int?           @map("max_rooms")
+  averageRating     Decimal        @default(0) @map("average_rating") @db.Decimal(2, 1)
+  reviewCount       Int            @default(0) @map("review_count")
+  publishedAt       DateTime?      @map("published_at") @db.Timestamptz(3)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt         DateTime?      @map("deleted_at") @db.Timestamptz(3)
+
+  owner         Profile                @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Restrict)
+  images        PropertyImage[]
+  facilities    PropertyFacility[]
+  roomTypes     RoomType[]
+  roomUnits     RoomUnit[]
+  bookings      Booking[]
+  favorites     Favorite[]
+  agreements    RentalAgreement[]
+  invoices      Invoice[]
+  reviews       Review[]
+  complaints    Complaint[]
+  announcements Announcement[]
+  conversations Conversation[]
+  verifications PropertyVerification[]
+
+  @@index([ownerId, status])
+  @@index([status, city, district])
+  @@index([latitude, longitude])
+  @@map("properties")
+}
+
+model PropertyImage {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId  String   @map("property_id") @db.Uuid
+  storagePath String   @map("storage_path")
+  altText     String?  @map("alt_text")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isCover     Boolean  @default(false) @map("is_cover")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, storagePath])
+  @@index([propertyId, sortOrder])
+  @@map("property_images")
+}
+
+model Facility {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key       String   @unique
+  nameId    String   @map("name_id")
+  nameEn    String   @map("name_en")
+  icon      String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  properties PropertyFacility[]
+
+  @@map("facilities")
+}
+
+model PropertyFacility {
+  propertyId String @map("property_id") @db.Uuid
+  facilityId String @map("facility_id") @db.Uuid
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+
+  @@id([propertyId, facilityId])
+  @@index([facilityId])
+  @@map("property_facilities")
+}
+
+model RoomType {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId    String    @map("property_id") @db.Uuid
+  name          String
+  description   String?
+  pricePerMonth Decimal   @map("price_per_month") @db.Decimal(14, 0)
+  sizeM2        Decimal?  @map("size_m2") @db.Decimal(6, 2)
+  capacity      Int       @default(1)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  property Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  units    RoomUnit[]
+  bookings Booking[]
+
+  @@unique([propertyId, name])
+  @@index([propertyId, pricePerMonth])
+  @@map("room_types")
+}
+
+model RoomUnit {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId  String     @map("property_id") @db.Uuid
+  roomTypeId  String     @map("room_type_id") @db.Uuid
+  number      String
+  floor       String?
+  orientation String?
+  status      RoomStatus @default(AVAILABLE)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime?  @map("deleted_at") @db.Timestamptz(3)
+
+  property   Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  roomType   RoomType          @relation(fields: [roomTypeId], references: [id], onDelete: Restrict)
+  bookings   Booking[]
+  agreements RentalAgreement[]
+
+  @@unique([propertyId, number])
+  @@index([propertyId, status])
+  @@index([roomTypeId, status])
+  @@map("room_units")
+}
+
+model Favorite {
+  profileId  String   @map("profile_id") @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  profile  Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, propertyId])
+  @@index([propertyId])
+  @@map("favorites")
+}
+
+model Booking {
+  id                   String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                 String        @unique
+  applicantId          String        @map("applicant_id") @db.Uuid
+  propertyId           String        @map("property_id") @db.Uuid
+  roomTypeId           String        @map("room_type_id") @db.Uuid
+  roomUnitId           String?       @map("room_unit_id") @db.Uuid
+  startDate            DateTime      @map("start_date") @db.Date
+  durationMonths       Int           @map("duration_months")
+  note                 String?
+  status               BookingStatus @default(PENDING)
+  statusNote           String?       @map("status_note")
+  monthlyPriceSnapshot Decimal       @map("monthly_price_snapshot") @db.Decimal(14, 0)
+  depositSnapshot      Decimal?      @map("deposit_snapshot") @db.Decimal(14, 0)
+  paymentDeadline      DateTime?     @map("payment_deadline") @db.Timestamptz(3)
+  approvedAt           DateTime?     @map("approved_at") @db.Timestamptz(3)
+  rejectedAt           DateTime?     @map("rejected_at") @db.Timestamptz(3)
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  cancelledAt          DateTime?     @map("cancelled_at") @db.Timestamptz(3)
+
+  applicant Profile                @relation("ApplicantBookings", fields: [applicantId], references: [id], onDelete: Restrict)
+  property  Property               @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  roomType  RoomType               @relation(fields: [roomTypeId], references: [id], onDelete: Restrict)
+  roomUnit  RoomUnit?              @relation(fields: [roomUnitId], references: [id], onDelete: Restrict)
+  history   BookingStatusHistory[]
+  agreement RentalAgreement?
+
+  @@index([applicantId, status, createdAt])
+  @@index([propertyId, status, createdAt])
+  @@index([roomUnitId, status])
+  @@map("bookings")
+}
+
+model BookingStatusHistory {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId String        @map("booking_id") @db.Uuid
+  status    BookingStatus
+  note      String?
+  actorId   String?       @map("actor_id") @db.Uuid
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+  @@map("booking_status_history")
+}
+
+model RentalAgreement {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId     String?         @unique @map("booking_id") @db.Uuid
+  tenantId      String          @map("tenant_id") @db.Uuid
+  propertyId    String          @map("property_id") @db.Uuid
+  roomUnitId    String          @map("room_unit_id") @db.Uuid
+  startDate     DateTime        @map("start_date") @db.Date
+  endDate       DateTime        @map("end_date") @db.Date
+  monthlyRent   Decimal         @map("monthly_rent") @db.Decimal(14, 0)
+  depositAmount Decimal?        @map("deposit_amount") @db.Decimal(14, 0)
+  terms         String?
+  status        AgreementStatus @default(DRAFT)
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  terminatedAt  DateTime?       @map("terminated_at") @db.Timestamptz(3)
+
+  booking    Booking?    @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  tenant     Profile     @relation("TenantAgreements", fields: [tenantId], references: [id], onDelete: Restrict)
+  property   Property    @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  roomUnit   RoomUnit    @relation(fields: [roomUnitId], references: [id], onDelete: Restrict)
+  invoices   Invoice[]
+  review     Review?
+  complaints Complaint[]
+
+  @@index([tenantId, status])
+  @@index([propertyId, status])
+  @@index([roomUnitId, status])
+  @@map("rental_agreements")
+}
+
+model Invoice {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String        @unique
+  agreementId String        @map("agreement_id") @db.Uuid
+  tenantId    String        @map("tenant_id") @db.Uuid
+  propertyId  String        @map("property_id") @db.Uuid
+  periodStart DateTime      @map("period_start") @db.Date
+  periodEnd   DateTime      @map("period_end") @db.Date
+  dueDate     DateTime      @map("due_date") @db.Date
+  amount      Decimal       @db.Decimal(14, 0)
+  status      InvoiceStatus @default(DRAFT)
+  notes       String?
+  issuedAt    DateTime?     @map("issued_at") @db.Timestamptz(3)
+  paidAt      DateTime?     @map("paid_at") @db.Timestamptz(3)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  agreement RentalAgreement @relation(fields: [agreementId], references: [id], onDelete: Restrict)
+  tenant    Profile         @relation("TenantInvoices", fields: [tenantId], references: [id], onDelete: Restrict)
+  property  Property        @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  payments  Payment[]
+
+  @@unique([agreementId, periodStart])
+  @@index([tenantId, status, dueDate])
+  @@index([propertyId, status, dueDate])
+  @@map("invoices")
+}
+
+model Payment {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId    String        @map("invoice_id") @db.Uuid
+  recordedById String?       @map("recorded_by_id") @db.Uuid
+  method       PaymentMethod
+  status       PaymentStatus @default(PENDING)
+  amount       Decimal       @db.Decimal(14, 0)
+  reference    String?
+  proofPath    String?       @map("proof_path")
+  note         String?
+  paidAt       DateTime?     @map("paid_at") @db.Timestamptz(3)
+  verifiedAt   DateTime?     @map("verified_at") @db.Timestamptz(3)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  recordedBy Profile? @relation("PaymentRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId, status])
+  @@index([reference])
+  @@map("payments")
+}
+
+model Review {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agreementId String       @unique @map("agreement_id") @db.Uuid
+  propertyId  String       @map("property_id") @db.Uuid
+  authorId    String       @map("author_id") @db.Uuid
+  rating      Int
+  body        String
+  status      ReviewStatus @default(PUBLISHED)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime?    @map("deleted_at") @db.Timestamptz(3)
+
+  agreement RentalAgreement @relation(fields: [agreementId], references: [id], onDelete: Restrict)
+  property  Property        @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  author    Profile         @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([propertyId, status, createdAt])
+  @@index([authorId, createdAt])
+  @@map("reviews")
+}
+
+model Complaint {
+  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String            @unique
+  agreementId String            @map("agreement_id") @db.Uuid
+  propertyId  String            @map("property_id") @db.Uuid
+  tenantId    String            @map("tenant_id") @db.Uuid
+  category    ComplaintCategory
+  title       String
+  description String
+  status      ComplaintStatus   @default(OPEN)
+  ownerNote   String?           @map("owner_note")
+  resolvedAt  DateTime?         @map("resolved_at") @db.Timestamptz(3)
+  closedAt    DateTime?         @map("closed_at") @db.Timestamptz(3)
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  agreement RentalAgreement    @relation(fields: [agreementId], references: [id], onDelete: Restrict)
+  property  Property           @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  tenant    Profile            @relation("TenantComplaints", fields: [tenantId], references: [id], onDelete: Restrict)
+  history   ComplaintHistory[]
+
+  @@index([tenantId, status, createdAt])
+  @@index([propertyId, status, createdAt])
+  @@map("complaints")
+}
+
+model ComplaintHistory {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  complaintId String          @map("complaint_id") @db.Uuid
+  status      ComplaintStatus
+  note        String?
+  updatedById String          @map("updated_by_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  complaint Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  updatedBy Profile   @relation("ComplaintUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+
+  @@index([complaintId, createdAt])
+  @@map("complaint_history")
+}
+
+model Announcement {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId  String    @map("property_id") @db.Uuid
+  authorId    String    @map("author_id") @db.Uuid
+  title       String
+  body        String
+  publishedAt DateTime  @default(now()) @map("published_at") @db.Timestamptz(3)
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  property Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  author   Profile            @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  reads    AnnouncementRead[]
+
+  @@index([propertyId, publishedAt])
+  @@map("announcements")
+}
+
+model AnnouncementRead {
+  announcementId String   @map("announcement_id") @db.Uuid
+  profileId      String   @map("profile_id") @db.Uuid
+  readAt         DateTime @default(now()) @map("read_at") @db.Timestamptz(3)
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  profile      Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, profileId])
+  @@index([profileId])
+  @@map("announcement_reads")
+}
+
+model Notification {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId String           @map("profile_id") @db.Uuid
+  type      NotificationType
+  title     String
+  body      String
+  linkUrl   String?          @map("link_url")
+  readAt    DateTime?        @map("read_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, readAt, createdAt])
+  @@map("notifications")
+}
+
+model Conversation {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerId    String    @map("owner_id") @db.Uuid
+  contactId  String    @map("contact_id") @db.Uuid
+  propertyId String?   @map("property_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  owner    Profile   @relation("ConversationOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  contact  Profile   @relation("ConversationContact", fields: [contactId], references: [id], onDelete: Restrict)
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@unique([ownerId, contactId, propertyId])
+  @@index([ownerId, updatedAt])
+  @@index([contactId, updatedAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  senderId       String    @map("sender_id") @db.Uuid
+  body           String
+  readAt         DateTime? @map("read_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       Profile      @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model PropertyVerification {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId      String                @map("property_id") @db.Uuid
+  submittedAt     DateTime              @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  decidedAt       DateTime?             @map("decided_at") @db.Timestamptz(3)
+  decidedById     String?               @map("decided_by_id") @db.Uuid
+  decision        VerificationDecision?
+  rejectionReason String?               @map("rejection_reason")
+  evidence        Json?
+
+  property  Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  decidedBy Profile? @relation("VerificationAdmin", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([decision, submittedAt])
+  @@index([propertyId, submittedAt])
+  @@map("property_verifications")
+}
+
+model Report {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reporterId String       @map("reporter_id") @db.Uuid
+  targetType ReportTarget @map("target_type")
+  targetId   String       @map("target_id") @db.Uuid
+  reason     String
+  details    String?
+  status     ReportStatus @default(OPEN)
+  resolution String?
+  resolvedAt DateTime?    @map("resolved_at") @db.Timestamptz(3)
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  reporter Profile @relation("ReportAuthor", fields: [reporterId], references: [id], onDelete: Restrict)
+
+  @@index([status, targetType, createdAt])
+  @@index([targetType, targetId])
+  @@map("reports")
+}
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  ipAddress  String?  @map("ip_address") @db.Inet
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  actor Profile? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model BlogPost {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug        String     @unique
+  titleId     String     @map("title_id")
+  titleEn     String     @map("title_en")
+  excerptId   String     @map("excerpt_id")
+  excerptEn   String     @map("excerpt_en")
+  contentId   String     @map("content_id")
+  contentEn   String     @map("content_en")
+  category    String
+  coverPath   String?    @map("cover_path")
+  status      PostStatus @default(DRAFT)
+  publishedAt DateTime?  @map("published_at") @db.Timestamptz(3)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([status, publishedAt])
+  @@index([category, status])
+  @@map("blog_posts")
+}
+
+model FaqEntry {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  questionId String   @map("question_id")
+  questionEn String   @map("question_en")
+  answerId   String   @map("answer_id")
+  answerEn   String   @map("answer_en")
+  category   String
+  sortOrder  Int      @default(0) @map("sort_order")
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([active, category, sortOrder])
+  @@map("faq_entries")
+}
+
+model PopularCity {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug      String   @unique
+  name      String
+  imagePath String?  @map("image_path")
+  sortOrder Int      @default(0) @map("sort_order")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([active, sortOrder])
+  @@map("popular_cities")
+}

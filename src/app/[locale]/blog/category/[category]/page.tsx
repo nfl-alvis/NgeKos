@@ -3,6 +3,7 @@ import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { getBlogImage } from "@/lib/kosImages";
 
 type Props = { params: Promise<{ locale: string; category: string }> };
 
@@ -40,7 +41,7 @@ export default async function BlogCategoryPage({ params }: Props) {
           <article key={slug} className={i % 2 === 1 ? "sm:mt-10" : ""}>
             <Link href={`/blog/${slug}`} className="group block overflow-hidden rounded-lg">
               <img
-                src={`https://picsum.photos/seed/blog-${slug}/640/360`}
+                src={getBlogImage(slug)}
                 alt=""
                 className="aspect-[16/9] w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   CheckCircle2,
@@ -43,6 +43,7 @@ import VerificationDetailDialog from "@/components/VerificationDetailDialog";
 import { useSession } from "@/components/SessionProvider";
 import { ADMIN_PROFILE } from "@/lib/data/entities";
 import type { AdminReviewEntry } from "@/lib/data/types";
+import { getKosImage } from "@/lib/kosImages";
 import {
   ageInDays,
   formatReviewDate,
@@ -101,11 +102,40 @@ export default function AdminVerificationPage() {
   const { user } = useSession();
   const adminName =
     user?.role === "admin" && user.name ? user.name : ADMIN_PROFILE.name;
-  const { queue, history } = useAdminReviewData();
+  const { queue: initialQueue, history } = useAdminReviewData();
+  const [queue, setQueue] = useState<AdminReviewEntry[]>(initialQueue);
   const [review, setReview] = useState<AdminReviewEntry | null>(null);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"oldest" | "newest">("oldest");
   const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/verifications")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const mapped: AdminReviewEntry[] = json.data.map((row: any) => ({
+            id: row.id,
+            propertyId: row.property?.id || "",
+            propertyName: row.property?.name || "Kost",
+            propertySlug: row.property?.slug || "",
+            ownerName: row.property?.owner?.fullName || "Pemilik",
+            ownerEmail: row.property?.owner?.email || "-",
+            city: row.property?.city || "",
+            district: row.property?.district || "",
+            address: row.property?.address || "",
+            roomCount: Array.isArray(row.property?.roomTypes)
+              ? row.property.roomTypes.reduce((acc: number, rt: any) => acc + (rt.total || 0), 0) || row.property.roomTypes.length
+              : 0,
+            minPrice: Number(row.property?.minMonthlyPrice || 0),
+            submittedAt: typeof row.submittedAt === "string" ? row.submittedAt : new Date(row.submittedAt).toISOString().slice(0, 10),
+            images: Array.isArray(row.property?.images) ? row.property.images.map((img: any) => img.url) : [],
+          }));
+          setQueue(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const decidedToday = history.filter((h) => {
     const d = h.decidedAt ?? "";
@@ -134,12 +164,27 @@ export default function AdminVerificationPage() {
 
   const initialOf = (name: string) => name.trim().charAt(0).toUpperCase();
 
-  const decide = (decision: "approved" | "rejected", reason?: string) => {
+  const decide = async (decision: "approved" | "rejected", reason?: string) => {
     if (!review) return;
-    recordDecision(review, decision, adminName, reason);
-    setToast(t("decidedToast", { decision: t(`decided${decision === "approved" ? "Approved" : "Rejected"}`), name: review.propertyName }));
+    const currentReview = review;
+    recordDecision(currentReview, decision, adminName, reason);
+    setQueue((prev) => prev.filter((p) => p.id !== currentReview.id));
+    setToast(t("decidedToast", { decision: t(`decided${decision === "approved" ? "Approved" : "Rejected"}`), name: currentReview.propertyName }));
     setReview(null);
     window.setTimeout(() => setToast(null), 5000);
+
+    try {
+      await fetch(`/api/admin/verifications/${currentReview.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          decision: decision === "approved" ? "APPROVED" : "REJECTED",
+          ...(decision === "rejected" ? { reason: reason || "Data properti tidak memenuhi syarat verifikasi." } : {}),
+        }),
+      });
+    } catch {
+      // fallback
+    }
   };
 
   return (
@@ -246,7 +291,7 @@ export default function AdminVerificationPage() {
                             <div className="flex items-center gap-2.5">
                               <Avatar size="sm">
                                 <AvatarImage
-                                  src={`https://picsum.photos/seed/${p.propertySlug}/64/64`}
+                                  src={getKosImage(p.propertySlug, "main")}
                                   alt=""
                                 />
                                 <AvatarFallback className="bg-nk-warm text-nk-text">

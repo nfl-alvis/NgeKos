@@ -15,6 +15,7 @@ import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
+  InputOTPSeparator,
 } from "@/components/ui/input-otp";
 
 const fieldClass =
@@ -179,7 +180,7 @@ function RegisterInner({
   // Handle OTP Verification
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otp.length !== 6 || pending) return;
+    if (otp.length !== 8 || pending) return;
 
     setPending(true);
     setFeedback(null);
@@ -519,7 +520,7 @@ function RegisterInner({
                   Verifikasi Email Anda
                 </h1>
                 <p className="mt-2 text-sm leading-relaxed text-nk-text-muted">
-                  Kami telah mengirimkan 6 digit kode verifikasi OTP ke{" "}
+                  Kami telah mengirimkan 8 digit kode verifikasi OTP ke{" "}
                   <span className="font-semibold text-nk-text">{email}</span>. Silakan masukkan
                   kode di bawah ini.
                 </p>
@@ -541,25 +542,30 @@ function RegisterInner({
                 <form onSubmit={handleVerifyOtp} className="mt-6 flex flex-col items-center gap-6">
                   <div className="flex justify-center">
                     <InputOTP
-                      maxLength={6}
+                      maxLength={8}
                       value={otp}
                       onChange={(val) => setOtp(val)}
                       disabled={pending}
                     >
                       <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
+                        <InputOTPSlot index={0} className="size-9 sm:size-11" />
+                        <InputOTPSlot index={1} className="size-9 sm:size-11" />
+                        <InputOTPSlot index={2} className="size-9 sm:size-11" />
+                        <InputOTPSlot index={3} className="size-9 sm:size-11" />
+                      </InputOTPGroup>
+                      <InputOTPSeparator />
+                      <InputOTPGroup>
+                        <InputOTPSlot index={4} className="size-9 sm:size-11" />
+                        <InputOTPSlot index={5} className="size-9 sm:size-11" />
+                        <InputOTPSlot index={6} className="size-9 sm:size-11" />
+                        <InputOTPSlot index={7} className="size-9 sm:size-11" />
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
 
                   <button
                     type="submit"
-                    disabled={otp.length !== 6 || pending}
+                    disabled={otp.length !== 8 || pending}
                     className={primaryCta}
                   >
                     {pending ? (

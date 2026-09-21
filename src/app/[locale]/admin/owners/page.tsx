@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Ban, CheckCircle2, Clock, Search, UserCog } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -46,29 +46,70 @@ export default function AdminOwnersPage() {
   const ops = useAdminOps();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [ownersList, setOwnersList] = useState<any[]>(ownerAccounts);
+
+  useEffect(() => {
+    fetch("/api/admin/users")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          const owners = json.data
+            .filter((u: any) => u.role === "OWNER")
+            .map((u: any) => ({
+              id: u.id,
+              name: u.fullName || u.email.split("@")[0],
+              email: u.email,
+              phone: u.phone || "-",
+              city: "Indonesia",
+              propertyCount: u._count?.properties ?? 0,
+              status: u.status === "ACTIVE" ? "aktif" : u.status === "SUSPENDED" ? "ditangguhkan" : "menunggu",
+              joinedAt: typeof u.createdAt === "string" ? u.createdAt.slice(0, 10) : "2026-09-01",
+            }));
+          if (owners.length > 0) {
+            setOwnersList(owners);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return ownerAccounts
+    return ownersList
       .map((o) => ({ o, st: ownerStatus(ops, o.id, o.status) }))
       .filter((r) => (filter === "all" ? true : r.st === filter))
       .filter((r) =>
         q ? `${r.o.name} ${r.o.email} ${r.o.city}`.toLowerCase().includes(q) : true
       );
-  }, [ops, search, filter]);
+  }, [ops, search, filter, ownersList]);
 
   const counts = useMemo(() => {
-    const all = ownerAccounts.map((o) => ownerStatus(ops, o.id, o.status));
+    const all = ownersList.map((o) => ownerStatus(ops, o.id, o.status));
     return {
       aktif: all.filter((s) => s === "aktif").length,
       ditangguhkan: all.filter((s) => s === "ditangguhkan").length,
       menunggu: all.filter((s) => s === "menunggu").length,
     };
-  }, [ops]);
+  }, [ops, ownersList]);
 
-  const toggle = (id: string, name: string, next: "suspend" | "reactivate") => {
+  const toggle = async (id: string, name: string, next: "suspend" | "reactivate") => {
     recordOp(id, next, user?.email, name);
     show(next === "suspend" ? t("toastSuspended", { name }) : t("toastReactivated", { name }));
+    setOwnersList((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, status: next === "suspend" ? "ditangguhkan" : "aktif" } : o))
+    );
+
+    try {
+      await fetch(`/api/admin/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: next === "suspend" ? "SUSPENDED" : "ACTIVE",
+        }),
+      });
+    } catch {
+      // fallback
+    }
   };
 
   return (

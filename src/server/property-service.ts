@@ -17,7 +17,7 @@ const propertyInclude = {
   roomTypes: {
     where: { deletedAt: null },
     orderBy: { pricePerMonth: "asc" as const },
-    include: { units: { where: { deletedAt: null }, select: { status: true } } },
+    include: { units: { where: { deletedAt: null }, select: { id: true, number: true, floor: true, status: true, roomTypeId: true } } },
   },
 } satisfies Prisma.PropertyInclude;
 
@@ -62,6 +62,13 @@ export function propertyDto(property: PropertyRecord) {
       capacity: roomType.capacity,
       total: roomType.units.length,
       available: roomType.units.filter((unit) => unit.status === "AVAILABLE").length,
+      units: roomType.units.map((unit) => ({
+        id: unit.id,
+        number: unit.number,
+        floor: unit.floor,
+        status: unit.status,
+        roomTypeId: unit.roomTypeId,
+      })),
     })),
   };
 }

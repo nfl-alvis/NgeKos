@@ -14,6 +14,7 @@ import { FACILITY_META } from "@/lib/data/facilities";
 import type { AdminReviewEntry } from "@/lib/data/types";
 import { ageInDays, formatReviewDate } from "@/lib/adminReviewStore";
 import { formatDistance, formatIDR } from "@/lib/utils";
+import { getKosImage } from "@/lib/kosImages";
 
 const GENDER_KEYS = {
   mixed: "genderMixed",
@@ -71,7 +72,7 @@ export default function VerificationDetailDialog({
             {/* snapshot properti: gambar + identitas */}
             <div className="flex items-start gap-4">
               <Image
-                src={`https://picsum.photos/seed/${entry.propertySlug}/160/120`}
+                src={getKosImage(entry.propertySlug, "main")}
                 alt={entry.propertyName}
                 width={160}
                 height={120}

@@ -13,9 +13,9 @@ import { pushActivity } from "@/lib/userActivityStore";
 import { formatIDR } from "@/lib/utils";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
+import { useTenantSession } from "@/hooks/useTenantSession";
+import { getKosImage } from "@/lib/kosImages";
 
-const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
-const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
 const DEMO_TODAY = new Date("2026-09-03");
 const NEXT_DUE = "2026-10-05";
 
@@ -24,8 +24,10 @@ export default function TenantBillsPage() {
   const t = useTranslations("tenantPages.bills");
   const locale = useLocale();
   const ops = useTenantOps();
+  const { tenant } = useTenantSession();
+  const property = getPropertyBySlug(tenant.propertySlug);
   const [bills, setBills] = useState<(typeof invoices)>(
-    invoices.filter((i) => i.tenantName === DEMO_TENANT.name)
+    invoices.filter((i) => i.tenantName === tenant.name || i.tenantName === "I Made Sudiarta")
   );
 
   useEffect(() => {
@@ -35,9 +37,9 @@ export default function TenantBillsPage() {
         if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
           const mapped = json.data.map((item: any) => ({
             id: item.code || item.id,
-            tenantName: item.tenant?.fullName || item.tenantName || "Penyewa",
+            tenantName: item.tenant?.fullName || item.tenantName || tenant.name,
             period: item.period || "Periode Berjalan",
-            amount: Number(item.amountSnapshot || item.amount || 0),
+            amount: Number(item.amountSnapshot || item.amount || tenant.monthlyRent),
             status: (item.status === "PAID" ? "lunas" : "belum-lunas") as
               | "lunas"
               | "belum-lunas",
@@ -50,7 +52,7 @@ export default function TenantBillsPage() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [tenant.name, tenant.monthlyRent]);
 
   const my = bills.sort((a: any, b: any) => b.dueDate.localeCompare(a.dueDate));
   const isPaid = (id: string, status: string) => status === "lunas" || ops.paidInvoiceIds.includes(id);
@@ -58,11 +60,11 @@ export default function TenantBillsPage() {
   // tagihan periode berikutnya (belum terbit di seed) - disintesis utk demo
   const nextBill: (typeof invoices)[number] = {
     id: "INV-2610-01",
-    tenantName: DEMO_TENANT.name,
+    tenantName: tenant.name,
+    amount: tenant.monthlyRent,
     period: locale === "id" ? "Oktober 2026" : "October 2026",
-    amount: DEMO_TENANT.monthlyRent,
-    status: "belum-lunas" as const,
     dueDate: NEXT_DUE,
+    status: "belum-lunas",
   };
   const rows = [nextBill, ...my].sort((a, b) => b.dueDate.localeCompare(a.dueDate));
   const nextDue = rows.find((i) => !isPaid(i.id, i.status)) ?? null;
@@ -115,7 +117,7 @@ export default function TenantBillsPage() {
                         type: "payment",
                         titleId: `Pembayaran sewa ${nextDue.period} berhasil`,
                         titleEn: `${nextDue.period} rent payment successful`,
-                        subject: PROPERTY.name,
+                        subject: tenant.propertyName,
                         at: new Date(DEMO_TODAY).toISOString(),
                       });
                     }}
@@ -157,7 +159,7 @@ export default function TenantBillsPage() {
               return (
                 <div key={inv.id} className="flex items-center gap-3 px-4 py-3.5">
                   <Image
-                    src={`https://picsum.photos/seed/${PROPERTY.imageSeed}/96/96`}
+                    src={getKosImage(tenant.property.slug || tenant.property.imageSeed, "main")}
                     alt=""
                     width={40}
                     height={40}

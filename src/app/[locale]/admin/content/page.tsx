@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Ban, CalendarDays, Eye, EyeOff, FileText, HelpCircle, Image as ImageIcon, MapPin } from "lucide-react";
 import Link from "next/link";
@@ -11,13 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import AdminPageShell, { AdminSection } from "@/components/admin/AdminPageShell";
+import AdminPageShell, { AdminSection, useAdminToast } from "@/components/admin/AdminPageShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatReviewDate } from "@/lib/adminReviewStore";
 import {
   contentBanners,
   faqGroups,
-  popularCities,
+  popularCities as staticCities,
   policyDocs,
 } from "@/lib/data/adminData";
 
@@ -25,10 +26,22 @@ import {
 export default function AdminContentPage() {
   const t = useTranslations("admin.content");
   const locale = useLocale();
-  const bannerColor: Record<string, "green" | "yellow" | "gray"> = {
-    tayang: "green",
-    jadwal: "yellow",
-    habis: "gray",
+  const { show } = useAdminToast();
+  const [cities, setCities] = useState(staticCities);
+
+  const toggleCityStatus = (name: string) => {
+    setCities((prev) =>
+      prev.map((c) => {
+        if (c.name !== name) return c;
+        const newStatus = c.status === "tayang" ? "disembunyikan" : "tayang";
+        show(
+          newStatus === "tayang"
+            ? `${c.name} kini ditayangkan di halaman utama`
+            : `${c.name} kini disembunyikan dari halaman utama`
+        );
+        return { ...c, status: newStatus as "tayang" | "disembunyikan" };
+      })
+    );
   };
 
   return (
@@ -47,7 +60,7 @@ export default function AdminContentPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {popularCities.map((c) => (
+              {cities.map((c) => (
                 <TableRow key={c.name} className="border-b border-nk-border last:border-b-0">
                   <TableCell className="px-4 py-3">
                     <span className="flex items-center gap-2 font-medium text-nk-text">
@@ -58,11 +71,18 @@ export default function AdminContentPage() {
                   <TableCell className="px-4 py-3 tabular-nums text-nk-text">{c.propertyCount}</TableCell>
                   <TableCell className="px-4 py-3 tabular-nums text-nk-text">{c.seekerCount.toLocaleString(locale === "id" ? "id-ID" : "en-GB")}</TableCell>
                   <TableCell className="px-4 py-3">
-                    {c.status === "tayang" ? (
-                      <StatusBadge color="green"><span className="flex items-center gap-1"><Eye className="size-3" aria-hidden="true" />{t("cityShown")}</span></StatusBadge>
-                    ) : (
-                      <StatusBadge color="gray"><span className="flex items-center gap-1"><EyeOff className="size-3" aria-hidden="true" />{t("cityHidden")}</span></StatusBadge>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => toggleCityStatus(c.name)}
+                      className="cursor-pointer transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-nk-accent"
+                      title={c.status === "tayang" ? "Klik untuk sembunyikan" : "Klik untuk tayangkan"}
+                    >
+                      {c.status === "tayang" ? (
+                        <StatusBadge color="green"><span className="flex items-center gap-1"><Eye className="size-3" aria-hidden="true" />{t("cityShown")}</span></StatusBadge>
+                      ) : (
+                        <StatusBadge color="gray"><span className="flex items-center gap-1"><EyeOff className="size-3" aria-hidden="true" />{t("cityHidden")}</span></StatusBadge>
+                      )}
+                    </button>
                   </TableCell>
                 </TableRow>
               ))}

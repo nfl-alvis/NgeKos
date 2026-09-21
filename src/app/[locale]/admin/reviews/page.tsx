@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Eye, EyeOff, Flag, ShieldQuestion, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,28 +20,69 @@ export default function AdminReviewsPage() {
   const { user } = useSession();
   const ops = useAdminOps();
   const [onlyFlagged, setOnlyFlagged] = useState(false);
+  const [dbReviews, setDbReviews] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/reviews")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const mapped = json.data.map((r: any) => ({
+            id: r.id,
+            authorName: r.authorName,
+            rating: r.rating,
+            propertyName: r.propertyName,
+            at: typeof r.createdAt === "string" ? r.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+            flagged: r.flagged,
+            bodyId: r.body,
+            bodyEn: r.body,
+            status: r.status,
+          }));
+          setDbReviews(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const allReviews = dbReviews.length > 0 ? dbReviews : adminReviewItems;
 
   const rows = useMemo(() => {
-    return adminReviewItems
+    return allReviews
       .map((r) => {
         const last = latestActionFor(ops, r.id);
-        const hidden = last === "hide";
+        const hidden = last === "hide" || r.status === "HIDDEN";
         return { r, hidden };
       })
       .filter((x) => (onlyFlagged ? x.r.flagged : true));
-  }, [ops, onlyFlagged]);
+  }, [allReviews, ops, onlyFlagged]);
 
-  const flaggedOpen = adminReviewItems.filter(
-    (r) => r.flagged && latestActionFor(ops, r.id) !== "hide"
+  const flaggedOpen = allReviews.filter(
+    (r) => r.flagged && latestActionFor(ops, r.id) !== "hide" && r.status !== "HIDDEN"
   ).length;
 
-  const act = (id: string, property: string, next: "hide" | "show") => {
+  const act = async (id: string, property: string, next: "hide" | "show") => {
     recordOp(id, next, user?.email, property);
     show(next === "hide" ? t("toastHidden", { id }) : t("toastShown", { id }));
+
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      try {
+        await fetch(`/api/admin/reviews/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: next === "hide" ? "HIDDEN" : "PUBLISHED",
+          }),
+        });
+      } catch {
+        // fallback
+      }
+    }
   };
 
   const avg =
-    adminReviewItems.reduce((a, r) => a + r.rating, 0) / adminReviewItems.length;
+    allReviews.length > 0
+      ? allReviews.reduce((a, r) => a + r.rating, 0) / allReviews.length
+      : 5;
 
   return (
     <AdminPageShell title={t("title")}>

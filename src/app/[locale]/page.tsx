@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import SearchBar from "@/components/SearchBar";
 import PropertyCard from "@/components/PropertyCard";
 import { getVerifiedProperties } from "@/lib/data/properties";
+import { getCityImage, getCampusImage } from "@/lib/kosImages";
 
 export async function generateMetadata({
   params,
@@ -159,7 +160,7 @@ export default async function HomePage({
             >
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-[2000ms] ease-out group-hover:scale-105"
-                style={{ backgroundImage: `url(https://picsum.photos/seed/${cat.seed}/800/1000)` }}
+                style={{ backgroundImage: `url(${getCityImage(cat.label)})` }}
               />
               <div className="absolute inset-x-0 top-0 h-[60%] bg-gradient-to-b from-nk-bg via-nk-bg/80 to-transparent" />
               <div className="relative z-10 flex h-[38vh] flex-col p-6 lg:h-full lg:p-8 lg:pt-12">
@@ -211,7 +212,7 @@ export default async function HomePage({
                 className="group relative block overflow-hidden rounded-lg"
               >
                 <Image
-                  src={`https://picsum.photos/seed/${campus.seed}/640/480`}
+                  src={getCampusImage(campus.name)}
                   alt={`Kos sekitar ${campus.name} ${campus.city}`}
                   width={640}
                   height={480}
@@ -286,7 +287,7 @@ export default async function HomePage({
           {/* Row 1 · Right: image */}
           <div className="overflow-hidden bg-nk-warm">
             <Image
-              src={`https://picsum.photos/seed/${WHY_ICONS[0].seed}/900/680`}
+              src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80"
               alt={t("why.agent")}
               width={900}
               height={680}
@@ -297,7 +298,7 @@ export default async function HomePage({
           {/* Row 2 · Left: image */}
           <div className="overflow-hidden bg-nk-warm">
             <Image
-              src={`https://picsum.photos/seed/${WHY_ICONS[1].seed}/900/680`}
+              src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=900&q=80"
               alt={t("why.favorite")}
               width={900}
               height={680}

@@ -35,12 +35,12 @@ export default function LoginForm({
   const { login, loginWithGoogle } = useSession();
   const i18nRouter = useI18nRouter();
 
-  useEffect(() => {
-    if (initialError) {
-      setError(initialError);
-      setIsInfoAlert(isAlertInfo);
-    }
-  }, [initialError, isAlertInfo]);
+  const [prevInitialError, setPrevInitialError] = useState(initialError);
+  if (initialError !== prevInitialError) {
+    setPrevInitialError(initialError);
+    setError(initialError ?? null);
+    setIsInfoAlert(isAlertInfo);
+  }
 
   const finishLogin = (signedInRole: "seeker" | "owner" | "admin") => {
     onDone?.();

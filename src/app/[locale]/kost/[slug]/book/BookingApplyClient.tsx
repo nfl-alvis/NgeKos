@@ -11,6 +11,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { useSession } from "@/components/SessionProvider";
+import { getKosImage } from "@/lib/kosImages";
 
 /**
  * Halaman "Ajukan Booking" bergaya Mamikos (/room/.../booking):
@@ -316,7 +317,7 @@ function BookingForm({
           <div className="rounded-lg border border-nk-border bg-nk-surface">
             <div className="flex items-start gap-3 border-b border-nk-border p-4">
               <img
-                src={`https://picsum.photos/seed/${property.imageSeed}/120/96`}
+                src={getKosImage(property.slug || property.imageSeed, "main")}
                 alt={property.name}
                 className="h-14 w-20 shrink-0 rounded-md object-cover"
                 loading="lazy"

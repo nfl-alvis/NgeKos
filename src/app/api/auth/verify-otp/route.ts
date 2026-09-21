@@ -15,11 +15,12 @@ export const POST = withApi(async (request: Request) => {
   const input = await parseJson(request, verifyOtpSchema);
   const supabase = await createClient();
 
-  let { data, error } = await supabase.auth.verifyOtp({
+  const { data: initialData, error } = await supabase.auth.verifyOtp({
     email: input.email,
     token: input.token,
     type: "signup",
   });
+  let data = initialData;
 
   if (error || !data.user) {
     const fallback = await supabase.auth.verifyOtp({

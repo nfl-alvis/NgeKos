@@ -6,13 +6,13 @@ import { ArrowRight, Car, ShieldCheck, UtensilsCrossed, WashingMachine } from "l
 import { Link } from "@/i18n/navigation";
 import { StatusBadge } from "@/components/StatusBadge";
 import FacilityIcon from "@/components/FacilityIcon";
-import { getPropertyBySlug } from "@/lib/data/properties";
 import { FACILITY_META } from "@/lib/data/facilities";
 import { commonRooms, tenantRoomInfo } from "@/lib/data/userData";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
+import { useTenantSession } from "@/hooks/useTenantSession";
 
-const PROPERTY = getPropertyBySlug("kost-griya-cemara-dago")!;
+import { getKosImage } from "@/lib/kosImages";
 
 const COMMON_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   kitchen: UtensilsCrossed,
@@ -25,6 +25,8 @@ const COMMON_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
 export default function TenantRoomPage() {
   const t = useTranslations("tenantPages.room");
   const locale = useLocale();
+  const { tenant } = useTenantSession();
+  const property = tenant.property;
 
   return (
     <UserDashboardShell role="tenant" title={t("title")}>
@@ -33,28 +35,28 @@ export default function TenantRoomPage() {
           <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#FBF3DC]">
             <div className="flex items-center justify-between px-4 pb-1 pt-3">
               <h2 className="text-sm font-semibold text-nk-text">
-                {t("header", { room: tenantRoomInfo.roomNumber })}
+                {t("header", { room: tenant.roomNumber })}
               </h2>
               <StatusBadge color="green">{t("occupied")}</StatusBadge>
             </div>
             <div className="flex flex-1 flex-col gap-4 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10 sm:flex-row">
               <Image
-                src={`https://picsum.photos/seed/${PROPERTY.imageSeed}-room/400/400`}
-                alt=""
+                src={getKosImage(property.slug || property.imageSeed, "room")}
+                alt={property.name}
                 width={140}
                 height={140}
                 className="size-28 shrink-0 self-start rounded-lg object-cover sm:size-36"
               />
               <dl className="grid flex-1 grid-cols-2 content-start gap-x-6 gap-y-3 text-sm">
                 <dt className="text-nk-text-muted">{t("fProperty")}</dt>
-                <dd className="text-right font-medium text-nk-text">{PROPERTY.name}</dd>
+                <dd className="text-right font-medium text-nk-text">{property.name}</dd>
                 <dt className="text-nk-text-muted">{t("fFloor")}</dt>
-                <dd className="text-right font-medium tabular-nums text-nk-text">{t("floorValue", { floor: tenantRoomInfo.floor })}</dd>
+                <dd className="text-right font-medium tabular-nums text-nk-text">{t("floorValue", { floor: tenant.floor })}</dd>
                 <dt className="text-nk-text-muted">{t("fType")}</dt>
-                <dd className="text-right font-medium text-nk-text">{tenantRoomInfo.type}</dd>
+                <dd className="text-right font-medium text-nk-text">{tenant.roomType}</dd>
                 <dt className="text-nk-text-muted">{t("fSize")}</dt>
                 <dd className="text-right font-medium tabular-nums text-nk-text">
-                  {tenantRoomInfo.sizeM2} m² · {tenantRoomInfo.aspect}
+                  {tenant.sizeM2} m² · {tenantRoomInfo.aspect}
                 </dd>
                 <dt className="text-nk-text-muted">{t("fOrientation")}</dt>
                 <dd className="text-right font-medium text-nk-text">

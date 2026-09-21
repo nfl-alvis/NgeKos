@@ -43,6 +43,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { formatIDR } from "@/lib/utils";
 import { recordOp, propertyStatus, useAdminOps } from "@/lib/adminOpsStore";
 import { useSession } from "@/components/SessionProvider";
+import { getKosImage } from "@/lib/kosImages";
 import { properties } from "@/lib/data/properties";
 import type { Property } from "@/lib/data/types";
 
@@ -129,21 +130,46 @@ export default function AdminPropertiesPage() {
     };
   }, [ops, propertiesList]);
 
-  const toggle = (p: Property, next: "enable" | "disable") => {
+  const toggle = async (p: Property, next: "enable" | "disable") => {
     recordOp(p.slug, next, user?.email);
     show(next === "disable" ? t("toastDisabled", { name: p.name }) : t("toastEnabled", { name: p.name }));
+    setPropertiesList((prev) =>
+      prev.map((item) => (item.id === p.id ? { ...item, active: next === "enable", verified: next === "enable" } : item))
+    );
+
+    try {
+      await fetch(`/api/properties/${p.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: next === "disable" ? "INACTIVE" : "VERIFIED",
+        }),
+      });
+    } catch {
+      // fallback
+    }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleting || reason.trim().length < 10) {
       setReasonError(true);
       return;
     }
-    recordOp(deleting.slug, "delete", user?.email, reason.trim());
-    show(t("toastDeleted", { name: deleting.name }));
+    const target = deleting;
+    recordOp(target.slug, "delete", user?.email, reason.trim());
+    show(t("toastDeleted", { name: target.name }));
+    setPropertiesList((prev) => prev.filter((item) => item.id !== target.id));
     setDeleting(null);
     setReason("");
     setReasonError(false);
+
+    try {
+      await fetch(`/api/properties/${target.id}`, {
+        method: "DELETE",
+      });
+    } catch {
+      // fallback
+    }
   };
 
   return (
@@ -202,7 +228,7 @@ export default function AdminPropertiesPage() {
                     <TableCell className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <Image
-                          src={`https://picsum.photos/seed/${p.imageSeed}/80/80`}
+                          src={getKosImage(p.slug || p.imageSeed, "main")}
                           alt=""
                           width={32}
                           height={32}

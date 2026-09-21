@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -10,10 +10,11 @@ import ConditionalNavbar from "@/components/ConditionalNavbar";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import { SessionProvider } from "@/components/SessionProvider";
 
-const sans = Inter({
+const sans = localFont({
+  src: "../../fonts/Inter-VariableFont.woff2",
   variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+  weight: "100 900",
 });
 
 export function generateStaticParams() {
@@ -44,7 +45,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} className={`${sans.variable}`}>
-      <body className="grain min-h-dvh flex flex-col bg-nk-bg text-nk-text antialiased selection:bg-nk-accent selection:text-white">
+      <body className={`${sans.className} ${sans.variable} grain min-h-dvh flex flex-col bg-nk-bg text-nk-text antialiased selection:bg-nk-accent selection:text-white`}>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[99] focus:rounded-md focus:bg-nk-accent focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white">
           {(messages as unknown as { common?: { skip?: string } })?.common?.skip || "Skip to content"}
         </a>

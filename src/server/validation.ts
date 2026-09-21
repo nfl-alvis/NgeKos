@@ -34,7 +34,10 @@ export const propertyCreateSchema = z
 export const propertyUpdateSchema = propertyCreateSchema
   .omit({ facilities: true })
   .partial()
-  .extend({ facilities: z.array(z.string().trim().min(1).max(64)).max(50).optional() })
+  .extend({
+    facilities: z.array(z.string().trim().min(1).max(64)).max(50).optional(),
+    status: z.enum(["DRAFT", "PENDING", "VERIFIED", "REJECTED", "INACTIVE"]).optional(),
+  })
   .strict()
   .refine((value) => Object.keys(value).length > 0, { message: "No fields to update" });
 

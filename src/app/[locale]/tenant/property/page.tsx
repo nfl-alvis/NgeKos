@@ -11,23 +11,25 @@ import { getPropertyBySlug } from "@/lib/data/properties";
 import { FACILITY_META } from "@/lib/data/facilities";
 import { nearbyAreas, ownerContact } from "@/lib/data/userData";
 import { formatIDR } from "@/lib/utils";
+import type { Facility } from "@/lib/data/types";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
+import { useTenantSession } from "@/hooks/useTenantSession";
+import { getKosImage } from "@/lib/kosImages";
 
-const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
-const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
-
-/** Kos Saya - properti yang sedang dihuni + info owner + kontak. */
+/** Kos Saya - profil lengkap properti yang sedang dihuni. */
 export default function TenantPropertyPage() {
   const t = useTranslations("tenantPages.property");
   const locale = useLocale();
+  const { tenant } = useTenantSession();
+  const property = tenant.property;
 
-  const facts = [
-    { k: t("fAddress"), v: PROPERTY.address, icon: MapPin },
-    { k: t("fOwner"), v: ownerContact.name, icon: User },
-    { k: t("fRoom"), v: `${t("roomValue", { room: DEMO_TENANT.roomNumber })} · ${t("typeValue")}`, icon: null },
-    { k: t("fRent"), v: `${formatIDR(DEMO_TENANT.monthlyRent)} ${t("perMonth")}`, icon: null },
-  ] as const;
+  const rows = [
+    { k: t("fAddress"), v: property.address, icon: MapPin },
+    { k: t("fOwner"), v: ownerContact.name, icon: null },
+    { k: t("fRoom"), v: t("roomValue", { room: tenant.roomNumber }), icon: null },
+    { k: t("fRent"), v: `${formatIDR(tenant.monthlyRent)} ${t("perMonth")}`, icon: null },
+  ];
 
   return (
     <UserDashboardShell role="tenant" title={t("title")}>
@@ -40,23 +42,23 @@ export default function TenantPropertyPage() {
             </div>
             <div className="flex flex-1 flex-col gap-4 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10 sm:flex-row">
               <Image
-                src={`https://picsum.photos/seed/${PROPERTY.imageSeed}/400/400`}
-                alt={PROPERTY.name}
+                src={getKosImage(property.slug || property.imageSeed, "main")}
+                alt={property.name}
                 width={140}
                 height={140}
                 className="size-24 shrink-0 self-start rounded-lg object-cover sm:size-32"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-base font-semibold text-nk-text">{PROPERTY.name}</p>
-                <p className="mt-1 text-xs text-nk-text-muted">{PROPERTY.tagline}</p>
+                <p className="text-base font-semibold text-nk-text">{property.name}</p>
+                <p className="mt-1 text-xs text-nk-text-muted">{property.tagline}</p>
                 <p className="mt-2 flex items-center gap-1 text-sm">
                   <Star className="size-4 fill-nk-star text-nk-star" aria-hidden="true" />
-                  <span className="font-medium text-nk-star tabular-nums">{PROPERTY.rating.toFixed(1)}</span>
-                  <span className="text-nk-text-muted">({PROPERTY.reviewCount})</span>
+                  <span className="font-medium text-nk-star tabular-nums">{property.rating.toFixed(1)}</span>
+                  <span className="text-nk-text-muted">({property.reviewCount})</span>
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Link
-                    href={`/kost/${PROPERTY.slug}`}
+                    href={`/kost/${property.slug}`}
                     className="inline-flex items-center gap-1.5 border border-nk-border bg-nk-surface px-3.5 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
                   >
                     {t("publicPage")}
@@ -75,7 +77,7 @@ export default function TenantPropertyPage() {
 
           <DashSection title={t("facts")} bodyClass="divide-y divide-nk-border">
             <dl className="flex flex-col">
-              {facts.map((f) => (
+              {rows.map((f) => (
                 <div key={f.k} className="flex items-start justify-between gap-4 px-4 py-3.5">
                   <dt className="flex items-center gap-2 text-sm text-nk-text-muted">
                     {f.icon && <f.icon className="size-4 shrink-0" aria-hidden="true" />}
@@ -88,15 +90,18 @@ export default function TenantPropertyPage() {
           </DashSection>
 
           <DashSection title={t("facilitiesTitle")} bodyClass="flex flex-wrap gap-2 p-4">
-            {PROPERTY.facilities.map((f) => (
-              <span
-                key={f}
-                className="flex items-center gap-1.5 rounded-md border border-nk-border bg-nk-section px-2.5 py-1 text-xs text-nk-text"
-              >
-                <FacilityIcon facility={f} />
-                {(locale === "id" ? FACILITY_META[f].labelId : FACILITY_META[f].labelEn)}
-              </span>
-            ))}
+            {((property.facilities || []) as Facility[]).map((f) => {
+              const meta = FACILITY_META[f];
+              return (
+                <span
+                  key={f}
+                  className="flex items-center gap-1.5 rounded-md border border-nk-border bg-nk-section px-2.5 py-1 text-xs text-nk-text"
+                >
+                  <FacilityIcon facility={f} />
+                  {locale === "id" ? meta?.labelId ?? f : meta?.labelEn ?? f}
+                </span>
+              );
+            })}
           </DashSection>
         </div>
 

@@ -7,6 +7,7 @@ import { z } from "zod";
 
 const chargeSchema = z.object({
   bookingId: z.string().min(1, "Booking ID wajib diisi"),
+  returnUrl: z.string().optional(),
 });
 
 export const POST = withApi(async (request: Request) => {
@@ -137,6 +138,11 @@ export const POST = withApi(async (request: Request) => {
         quantity: 1,
       },
     ],
+    callbacks: input.returnUrl
+      ? {
+          finish: input.returnUrl,
+        }
+      : undefined,
   });
 
   return successResponse({

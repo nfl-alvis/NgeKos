@@ -10,11 +10,14 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { bookings } from "@/lib/data/entities";
+import type { Booking, BookingStatus } from "@/lib/data/types";
 import { getPropertyBySlug, properties } from "@/lib/data/properties";
 import { DEMO_USER_NAME, reviewableSlugs, tenantRoomInfo, type UserReview } from "@/lib/data/userData";
 import { markPaymentPaid, saveReview, toggleFavorite, useUserOps } from "@/lib/userOpsStore";
+import { useTenantSession } from "@/hooks/useTenantSession";
 import { cn, formatIDR } from "@/lib/utils";
 import { DashSection } from "@/components/dashboard/DashSection";
+import { getKosImage } from "@/lib/kosImages";
 
 /** tanggal jatuh tempo bayar = createdAt + payDeadlineMin (dibaca dari booking) */
 function payDeadline(b: (typeof bookings)[number]) {
@@ -30,7 +33,56 @@ export function ActiveBookingPanel({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const ops = useUserOps();
 
-  const open = bookings
+  const [items, setItems] = useState<Booking[]>(bookings);
+
+  useEffect(() => {
+    fetch("/api/bookings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const raw = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json?.data?.items)
+          ? json.data.items
+          : null;
+        if (raw) {
+          const statusMap: Record<string, BookingStatus> = {
+            PENDING: "pending",
+            APPROVED_AWAITING_PAYMENT: "approved-awaiting-payment",
+            ACTIVE: "active",
+            REJECTED: "rejected",
+            EXPIRED: "expired",
+            CANCELLED: "cancelled",
+            COMPLETED: "active",
+          };
+          const mapped: Booking[] = raw.map((b: any) => ({
+            id: b.code || b.id,
+            propertySlug: b.property?.slug || b.propertyId || "",
+            propertyName: b.property?.name || "Kost",
+            city: b.property?.city || "",
+            roomType: b.roomType?.name || "Kamar",
+            roomId: b.roomUnitId || b.roomTypeId || "",
+            roomNumber: b.roomUnit?.number || "-",
+            startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "",
+            status: statusMap[b.status] || "pending",
+            applicantName: b.applicant?.fullName || "",
+            applicantPhone: b.applicant?.phone || "",
+            applicantEmail: b.applicant?.email || "",
+            createdAt: typeof b.createdAt === "string" ? b.createdAt : new Date().toISOString(),
+            payDeadlineMin: 1440,
+            usesDp: Boolean(b.depositSnapshot),
+            monthlyPrice: Number(b.monthlyPriceSnapshot || b.roomType?.pricePerMonth || 0),
+            timeline: [],
+            payments: [],
+          }));
+          const existingIds = new Set(mapped.map((d) => d.id));
+          const merged = [...mapped, ...bookings.filter((b) => !existingIds.has(b.id))];
+          setItems(merged);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const open = items
     .filter((b) => b.status === "pending" || b.status === "approved-awaiting-payment")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const list = compact ? open.slice(0, 2) : open;
@@ -74,7 +126,7 @@ export function ActiveBookingPanel({ compact = false }: { compact?: boolean }) {
           <article key={b.id} className="flex flex-col gap-4 p-4">
             <div className="flex items-start gap-3">
               <Image
-                src={`https://picsum.photos/seed/${b.propertySlug}/96/96`}
+                src={getKosImage(b.propertySlug, "main")}
                 alt=""
                 width={48}
                 height={48}
@@ -162,10 +214,33 @@ const PAY_COLOR = {
 export function PaymentsPanel({ limit }: { limit?: number }) {
   const t = useTranslations("userDash.payments");
   const locale = useLocale();
+  const router = useRouter();
   const ops = useUserOps();
+  const [dbPayments, setDbPayments] = useState<typeof ops.payments>([]);
 
-  const rows = limit ? ops.payments.slice(0, limit) : ops.payments;
-  const pending = ops.payments.find((p) => p.status === "pending");
+  useEffect(() => {
+    fetch("/api/invoices")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const mapped = json.data.map((inv: any) => ({
+            id: inv.id,
+            bookingId: inv.code || inv.id,
+            propertyName: inv.property?.name || inv.propertyName || "Kost",
+            amount: Number(inv.amount || inv.amountSnapshot || 0),
+            status: (inv.status === "PAID" ? "paid" : "pending") as "paid" | "pending",
+            at: typeof inv.dueDate === "string" ? inv.dueDate : new Date().toISOString(),
+          }));
+          setDbPayments(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const existingPaymentIds = new Set(dbPayments.map((p) => p.id));
+  const combined = [...dbPayments, ...ops.payments.filter((p) => !existingPaymentIds.has(p.id))];
+  const rows = limit ? combined.slice(0, limit) : combined;
+  const pending = combined.find((p) => p.status === "pending");
 
   return (
     <DashSection
@@ -203,7 +278,7 @@ export function PaymentsPanel({ limit }: { limit?: number }) {
             {p.status === "pending" && (
               <button
                 type="button"
-                onClick={() => markPaymentPaid(p.id, p.propertyName)}
+                onClick={() => router.push(`/dashboard/bookings/${p.bookingId}/pay`)}
                 className="text-xs font-medium text-nk-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
               >
                 {t("payNow")}
@@ -280,7 +355,7 @@ export function FavoritesPanel({ limit, full = false }: { limit?: number; full?:
           {items.map((p) => (
             <article key={p.slug} className="flex flex-col overflow-hidden rounded-lg border border-nk-border bg-nk-surface">
               <Link href={`/kost/${p.slug}`} className="relative block aspect-[16/9] bg-nk-section">
-                <Image src={`https://picsum.photos/seed/${p.imageSeed}/640/360`} alt={p.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover" />
+                <Image src={getKosImage(p.slug || p.imageSeed, "main")} alt={p.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover" />
               </Link>
               <div className="flex flex-1 flex-col gap-1 p-3">
                 <p className="truncate text-sm font-medium text-nk-text">{p.name}</p>
@@ -307,7 +382,7 @@ export function FavoritesPanel({ limit, full = false }: { limit?: number; full?:
         items.map((p) => (
           <div key={p.slug} className="flex items-center gap-3 p-4">
             <Image
-              src={`https://picsum.photos/seed/${p.imageSeed}/96/96`}
+              src={getKosImage(p.slug || p.imageSeed, "main")}
               alt=""
               width={44}
               height={44}
@@ -344,7 +419,7 @@ export function FavoritesPanel({ limit, full = false }: { limit?: number; full?:
 
 export function ActiveKostCard() {
   const t = useTranslations("userDash.activeKost");
-  const property = getPropertyBySlug("kost-griya-cemara-dago")!;
+  const { tenant } = useTenantSession();
 
   return (
     <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#E9F4EC]">
@@ -354,18 +429,18 @@ export function ActiveKostCard() {
       </div>
       <div className="flex flex-1 flex-col gap-4 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10 sm:flex-row sm:items-center">
         <Image
-          src={`https://picsum.photos/seed/${property.imageSeed}/160/160`}
+          src={getKosImage(tenant.propertySlug, "main")}
           alt=""
           width={64}
           height={64}
           className="size-16 shrink-0 rounded-lg object-cover"
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-semibold text-nk-text">{property.name}</p>
+          <p className="truncate text-base font-semibold text-nk-text">{tenant.propertyName}</p>
           <p className="mt-0.5 text-xs text-nk-text-muted">
-            {t("room", { room: tenantRoomInfo.roomNumber })} · {tenantRoomInfo.type}
+            {t("room", { room: tenant.roomNumber })} · {tenant.roomType}
           </p>
-          <p className="mt-1 text-xs text-nk-text-muted">{property.address}</p>
+          <p className="mt-1 text-xs text-nk-text-muted">{tenant.propertyAddress}</p>
         </div>
         <Link
           href="/tenant/dashboard"
@@ -608,7 +683,7 @@ export function RecommendationsPanel() {
       {list.map((p) => (
         <div key={p.slug} className="flex items-center gap-3 p-4">
           <Image
-            src={`https://picsum.photos/seed/${p.imageSeed}/96/96`}
+            src={getKosImage(p.slug || p.imageSeed, "main")}
             alt=""
             width={44}
             height={44}

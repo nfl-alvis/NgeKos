@@ -69,6 +69,7 @@ export type BookingStatus =
 
 export interface Booking {
   id: string;
+  code?: string;
   propertySlug: string;
   propertyName: string;
   city: string;

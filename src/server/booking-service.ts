@@ -99,7 +99,10 @@ export async function transitionBooking(
   input: { status: "APPROVED_AWAITING_PAYMENT"; roomUnitId?: string; note?: string } | { status: "REJECTED" | "CANCELLED"; note?: string },
 ) {
   return prisma.$transaction(async (tx) => {
-    const booking = await tx.booking.findUnique({ where: { id }, include: { property: { select: { ownerId: true } } } });
+    const booking = await tx.booking.findFirst({
+      where: { OR: [{ id }, { code: id }] },
+      include: { property: { select: { ownerId: true } } },
+    });
     if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking tidak ditemukan");
     const ownsProperty = booking.property.ownerId === profile.id;
     const ownsBooking = booking.applicantId === profile.id;
@@ -131,7 +134,7 @@ export async function transitionBooking(
     }
 
     const updated = await tx.booking.update({
-      where: { id },
+      where: { id: booking.id },
       data: {
         status: input.status,
         roomUnitId,

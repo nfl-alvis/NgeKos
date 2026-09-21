@@ -34,3 +34,16 @@ export const PATCH = withApi(async (request: Request) => {
   const profile = await prisma.profile.update({ where: { id: auth.profile.id }, data: input });
   return successResponse(profileDto(profile));
 });
+
+export const DELETE = withApi(async () => {
+  const auth = await requireUser();
+  await prisma.profile.update({
+    where: { id: auth.profile.id },
+    data: {
+      deletedAt: new Date(),
+      status: "DELETED",
+    },
+  });
+  return new Response(null, { status: 204 });
+});
+

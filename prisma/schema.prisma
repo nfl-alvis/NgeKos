@@ -86,6 +86,20 @@ enum PaymentMethod {
   BANK_TRANSFER
   CASH
   MANUAL
+  MIDTRANS
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  GRACE_PERIOD
+  EXPIRED
+  CANCELLED
+}
+
+enum PromoType {
+  PERCENTAGE
+  FIXED_AMOUNT
 }
 
 enum ComplaintCategory {
@@ -181,6 +195,7 @@ model Profile {
   auditLogs              AuditLog[]             @relation("AuditActor")
   recordedPayments       Payment[]              @relation("PaymentRecorder")
   complaintUpdates       ComplaintHistory[]     @relation("ComplaintUpdater")
+  subscriptions          Subscription[]         @relation("OwnerSubscriptions")
 
   @@index([role, status])
   @@map("profiles")
@@ -359,6 +374,7 @@ model Booking {
   roomUnit  RoomUnit?              @relation(fields: [roomUnitId], references: [id], onDelete: Restrict)
   history   BookingStatusHistory[]
   agreement RentalAgreement?
+  payments  Payment[]
 
   @@index([applicantId, status, createdAt])
   @@index([propertyId, status, createdAt])
@@ -439,25 +455,33 @@ model Invoice {
 }
 
 model Payment {
-  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  invoiceId    String        @map("invoice_id") @db.Uuid
-  recordedById String?       @map("recorded_by_id") @db.Uuid
-  method       PaymentMethod
-  status       PaymentStatus @default(PENDING)
-  amount       Decimal       @db.Decimal(14, 0)
-  reference    String?
-  proofPath    String?       @map("proof_path")
-  note         String?
-  paidAt       DateTime?     @map("paid_at") @db.Timestamptz(3)
-  verifiedAt   DateTime?     @map("verified_at") @db.Timestamptz(3)
-  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId       String?       @map("invoice_id") @db.Uuid
+  bookingId       String?       @map("booking_id") @db.Uuid
+  recordedById    String?       @map("recorded_by_id") @db.Uuid
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  amount          Decimal       @db.Decimal(14, 0)
+  reference       String?
+  snapToken       String?       @map("snap_token")
+  midtransOrderId String?       @unique @map("midtrans_order_id")
+  paymentType     String?       @map("payment_type")
+  proofPath       String?       @map("proof_path")
+  note            String?
+  paidAt          DateTime?     @map("paid_at") @db.Timestamptz(3)
+  settlementAt    DateTime?     @map("settlement_at") @db.Timestamptz(3)
+  verifiedAt      DateTime?     @map("verified_at") @db.Timestamptz(3)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  invoice    Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  booking    Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   recordedBy Profile? @relation("PaymentRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
 
   @@index([invoiceId, status])
+  @@index([bookingId, status])
   @@index([reference])
+  @@index([midtransOrderId])
   @@map("payments")
 }
 
@@ -712,4 +736,63 @@ model PopularCity {
 
   @@index([active, sortOrder])
   @@map("popular_cities")
+}
+
+model SubscriptionPlan {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code              String         @unique
+  name              String
+  description       String?
+  priceMonthly      Decimal        @map("price_monthly") @db.Decimal(14, 0)
+  maxProperties     Int            @map("max_properties")
+  maxRooms          Int            @map("max_rooms")
+  advancedAnalytics Boolean        @default(false) @map("advanced_analytics")
+  active            Boolean        @default(true)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  subscriptions     Subscription[]
+
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerId            String             @map("owner_id") @db.Uuid
+  planId             String             @map("plan_id") @db.Uuid
+  status             SubscriptionStatus @default(TRIAL)
+  trialEndsAt        DateTime?          @map("trial_ends_at") @db.Timestamptz(3)
+  currentPeriodStart DateTime           @default(now()) @map("current_period_start") @db.Timestamptz(3)
+  currentPeriodEnd   DateTime           @map("current_period_end") @db.Timestamptz(3)
+  gracePeriodDays    Int                @default(7) @map("grace_period_days")
+  cancelledAt        DateTime?          @map("cancelled_at") @db.Timestamptz(3)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  owner Profile          @relation("OwnerSubscriptions", fields: [ownerId], references: [id], onDelete: Restrict)
+  plan  SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([ownerId, status])
+  @@map("subscriptions")
+}
+
+model Promo {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String    @unique
+  title           String
+  description     String?
+  type            PromoType @default(PERCENTAGE)
+  discountValue   Decimal   @map("discount_value") @db.Decimal(14, 0)
+  minTransaction  Decimal?  @map("min_transaction") @db.Decimal(14, 0)
+  maxDiscount     Decimal?  @map("max_discount") @db.Decimal(14, 0)
+  startDate       DateTime  @map("start_date") @db.Timestamptz(3)
+  endDate         DateTime  @map("end_date") @db.Timestamptz(3)
+  quota           Int?
+  usedCount       Int       @default(0) @map("used_count")
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([code, active])
+  @@map("promos")
 }

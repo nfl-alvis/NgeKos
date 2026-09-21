@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import DashboardShell from "@/components/DashboardShell";
@@ -11,7 +11,7 @@ import {
   getOwnerProperties,
   invoices,
   rentalAgreements,
-  tenants,
+  tenants as seedTenants,
 } from "@/lib/data/entities";
 import type { Tenant } from "@/lib/data/types";
 import { formatIDR } from "@/lib/utils";
@@ -21,13 +21,53 @@ export default function OwnerTenantsPage() {
   const ti = useTranslations("owner.invoices");
   const router = useRouter();
 
-  const props = getOwnerProperties();
+  const [propsList, setPropsList] = useState<Array<{ slug: string; name: string }>>(getOwnerProperties());
+  const [tenantsList, setTenantsList] = useState<Tenant[]>(seedTenants);
   const [filter, setFilter] = useState<string>("all");
   const [detail, setDetail] = useState<Tenant | null>(null);
 
+  useEffect(() => {
+    fetch("/api/properties?mine=true")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const dbProps = json.data.map((p: any) => ({ slug: p.slug, name: p.name }));
+          const existingSlugs = new Set(dbProps.map((p: any) => p.slug));
+          const merged = [...dbProps, ...getOwnerProperties().filter((p) => !existingSlugs.has(p.slug))];
+          setPropsList(merged);
+        }
+      })
+      .catch(() => {});
+
+    fetch("/api/bookings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          const active = json.data.filter((b: any) => b.status === "ACTIVE");
+          if (active.length > 0) {
+            const mapped: Tenant[] = active.map((b: any) => ({
+              id: b.id,
+              name: b.applicant?.fullName || b.applicantName || "Penyewa",
+              phone: b.applicant?.phone || "-",
+              propertySlug: b.property?.slug || "",
+              propertyName: b.property?.name || "Kost",
+              roomNumber: b.roomUnit?.number || "-",
+              monthlyRent: Number(b.monthlyPriceSnapshot || 0),
+              startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "2026-09-01",
+              paymentStatus: "lunas",
+            }));
+            const existingIds = new Set(mapped.map((m) => m.id));
+            const merged = [...mapped, ...seedTenants.filter((s) => !existingIds.has(s.id))];
+            setTenantsList(merged);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const filtered = useMemo(
-    () => (filter === "all" ? tenants : tenants.filter((tn) => tn.propertySlug === filter)),
-    [filter]
+    () => (filter === "all" ? tenantsList : tenantsList.filter((tn) => tn.propertySlug === filter)),
+    [filter, tenantsList]
   );
 
   const payBadge = (status: Tenant["paymentStatus"]) => {
@@ -54,7 +94,7 @@ export default function OwnerTenantsPage() {
           className="rounded-lg border border-nk-border bg-nk-surface px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
         >
           <option value="all">{t("filterAll")}</option>
-          {props.map((p) => (
+          {propsList.map((p) => (
             <option key={p.slug} value={p.slug}>
               {p.name}
             </option>

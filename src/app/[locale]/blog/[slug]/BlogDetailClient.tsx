@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { getBlogImage } from "@/lib/kosImages";
 
 type PostMeta = { title: string; excerpt: string; author: string; date: string; category: string };
 
@@ -62,7 +63,7 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
 
         <div className="mt-8 overflow-hidden rounded-lg">
           <img
-            src={`https://picsum.photos/seed/blog-${slug}/1200/675`}
+            src={getBlogImage(slug)}
             alt=""
             className="aspect-video w-full object-cover"
           />
@@ -86,7 +87,7 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
             <Link key={s} href={`/blog/${s}`} className="group block">
               <div className="overflow-hidden rounded-lg">
                 <img
-                  src={`https://picsum.photos/seed/blog-${s}/640/400`}
+                  src={getBlogImage(s)}
                   alt=""
                   className="aspect-[8/5] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                 />

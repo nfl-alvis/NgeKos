@@ -9,10 +9,29 @@ type RoomTypeInput = z.infer<typeof roomTypeCreateSchema>;
 type RoomUnitInput = z.infer<typeof roomUnitCreateSchema>;
 
 async function ownedProperty(profile: Profile, propertyId: string) {
-  const property = await prisma.property.findFirst({ where: { id: propertyId, deletedAt: null }, select: { id: true, ownerId: true } });
+  const property = await prisma.property.findFirst({
+    where: {
+      OR: [{ id: propertyId }, { slug: propertyId }],
+      deletedAt: null,
+    },
+    select: { id: true, ownerId: true },
+  });
   if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Properti tidak ditemukan");
   if (profile.role !== "ADMIN" && property.ownerId !== profile.id) throw new ApiError(403, "FORBIDDEN", "Properti ini bukan milik Anda");
   return property;
+}
+
+export async function listRoomUnits(profile: Profile, propertyId: string) {
+  const prop = await ownedProperty(profile, propertyId);
+  return prisma.roomUnit.findMany({
+    where: { propertyId: prop.id, deletedAt: null },
+    include: {
+      roomType: {
+        select: { id: true, name: true, pricePerMonth: true, sizeM2: true },
+      },
+    },
+    orderBy: { number: "asc" },
+  });
 }
 
 async function refreshMinPrice(tx: Prisma.TransactionClient, propertyId: string) {
@@ -45,3 +64,36 @@ export async function updateRoomUnitStatus(profile: Profile, propertyId: string,
   if (unit.status === "RESERVED") throw new ApiError(409, "ROOM_IN_USE", "Status kamar yang sedang dipesan (reserved) tidak dapat diubah manual");
   return prisma.roomUnit.update({ where: { id: roomId }, data: { status } });
 }
+
+export async function updateRoomType(
+  profile: Profile,
+  propertyId: string,
+  roomTypeId: string,
+  input: Partial<RoomTypeInput>
+) {
+  await ownedProperty(profile, propertyId);
+  const existing = await prisma.roomType.findFirst({
+    where: { id: roomTypeId, propertyId, deletedAt: null },
+  });
+  if (!existing) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Tipe kamar tidak ditemukan");
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.roomType.update({
+      where: { id: roomTypeId },
+      data: {
+        ...(input.name ? { name: input.name } : {}),
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        ...(input.pricePerMonth !== undefined ? { pricePerMonth: new Prisma.Decimal(input.pricePerMonth) } : {}),
+        ...(input.sizeM2 !== undefined ? { sizeM2: input.sizeM2 ? new Prisma.Decimal(input.sizeM2) : null } : {}),
+        ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
+      },
+    });
+    await refreshMinPrice(tx, propertyId);
+    return {
+      ...updated,
+      pricePerMonth: Number(updated.pricePerMonth),
+      sizeM2: updated.sizeM2 ? Number(updated.sizeM2) : null,
+    };
+  });
+}
+

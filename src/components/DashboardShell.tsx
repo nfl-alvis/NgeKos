@@ -202,10 +202,17 @@ export default function DashboardShell({
         : role === "user"
           ? USER_ITEMS
           : TENANT_ITEMS;
-  const isActive = (href: string) =>
-    href === "/owner" || href === "/admin" || href === "/tenant/dashboard" || href === "/dashboard"
-      ? pathname === href
-      : pathname === href || pathname.startsWith(href + "/");
+
+  // Halaman aktif = item nav dengan prefix paling spesifik (mencegah tabrakan seperti /admin/verification dan /admin/verification/history)
+  const currentItem = [...items]
+    .sort((a, b) => b.href.length - a.href.length)
+    .find((i) => {
+      if (i.href === "/owner" || i.href === "/admin" || i.href === "/tenant/dashboard" || i.href === "/dashboard") {
+        return pathname === i.href;
+      }
+      return pathname === i.href || pathname.startsWith(i.href + "/");
+    });
+  const isActive = (href: string) => currentItem?.href === href;
 
   const userName =
     user?.name ??
@@ -226,10 +233,6 @@ export default function DashboardShell({
           ? navT("userPanel")
           : navT("tenantPanel");
 
-  // breadcrumb: halaman aktif = item nav dengan prefix paling spesifik
-  const currentItem = [...items]
-    .sort((a, b) => b.href.length - a.href.length)
-    .find((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
   const pageTitle = currentItem ? t(currentItem.label) : null;
 
   const handleLogout = () => {

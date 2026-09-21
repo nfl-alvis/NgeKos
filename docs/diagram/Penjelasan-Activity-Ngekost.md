@@ -1,11 +1,13 @@
-# Penjelasan Activity Diagram - Sistem Ngekost
+# Penjelasan Activity Diagram - Sistem Ngekost (Sisi Pengguna)
 
 **File drawio:** `Activity-Ngekost.drawio` (11 halaman / tab)
 **Generator:** `gen_activity_ngekost.py` - data-driven, regenerate jangan edit XML manual
-**Sumber:** PRD-Ngekost-FULL.md v3.5/v3.6, API.md v3.5, DATABASE.md v3.5, Daftar-Fitur-Gratis-vs-Premium.md, Penjelasan-Usecase-Ngekost.md
-**Format layout:** swimlane vertikal hitam-putih, konsisten dengan `gen_activity_diagrams.py` (proyek TumbuhKita)
+**Sumber:** PRD-Ngekost-FULL.md, API.md, DATABASE.md, skema database Ngekost
+**Format layout:** swimlane vertikal hitam-putih, konsisten dengan standar UML
+**Total:** 11 halaman, 189 vertex, 160 edge - semua lolos validator struktural (tanpa duplicate ID, tanpa dangling edge, tanpa node orphan).
 
-**Total:** 11 halaman, 167 node alur (start/end/action/decision) + 24 elemen swimlane = 191 vertex, 171 edge - semua lolos validator struktural (tanpa duplicate ID, tanpa dangling edge, tanpa node orphan). Kolom "Node" di tabel bawah menghitung node alur saja.
+> [!NOTE]
+> Diagram ini difokuskan secara khusus pada alur pengguna biasa (Pencari Kos / Guest dan Penyewa / Tenant). Alur persetujuan atau penolakan booking oleh pemilik kos dan verifikasi administratif oleh admin sengaja ditiadakan agar diagram merepresentasikan pengalaman interaksi pengguna seutuhnya.
 
 ---
 
@@ -13,18 +15,17 @@
 
 | # | Nama Tab | Lane | Use case / halaman terkait |
 |---|---|---|---|
-| 1 | Autentikasi Owner (Register & Login) | Owner, Sistem | `admin/login` area owner dashboard, `daftar`, `login` |
-| 2 | Autentikasi Guest (Register & Login) | Guest, Sistem, Google | `kost/[slug]/book` (CtA Booking memicu OAuth) |
-| 3 | Autentikasi Tenant (Register & Login) | Tenant, Sistem, Google | Telegram `/start` connect |
-| 4 | Cari & Filter Kost (Listing Publik) | Guest, Sistem | `kost` (listing + `LocationSearchPopup` via Geoapify) |
-| 5 | Ajukan Booking Request | Guest, Sistem | `kost/[slug]/book` wizard 3 langkah |
-| 6 | Approve Booking (Tidak Digating) | Owner, Sistem | `owner/bookings` (approve) |
-| 7 | Reject Booking (Tidak Digating) | Owner, Sistem | `owner/bookings` (reject) |
-| 8 | Bayar Booking & Retry Pembayaran | Guest, Sistem, Midtrans | `bookings/[id]/bayar` |
-| 9 | Webhook Midtrans & Konversi Guest → Tenant | Midtrans, Sistem | `api/webhooks/midtrans/booking` |
-| 10 | Tambah Property Baru (Digating) | Owner, Sistem | `owner/properties` |
-| 11 | Verifikasi Property (Admin) | Admin, Sistem | `admin/verification`, `admin/verification/history` (baru, sesuai rute v3) |
-
+| 1 | Registrasi & Verifikasi OTP Email | User, Sistem, Resend | `register`, `auth/verify-otp`, `api/auth/register`, `api/auth/verify-otp` |
+| 2 | Login Akun Pengguna | User, Sistem, Google | `login`, `api/auth/login`, `api/auth/google` |
+| 3 | Cari & Filter Kost (Listing Publik) | User, Sistem | `kost` (katalog publik, filter harga, fasilitas, lokasi) |
+| 4 | Detail Kos & Simpan Favorit | User, Sistem | `kost/[slug]`, `dashboard/favorites`, `api/me` |
+| 5 | Ajukan Booking Sewa Kost | User, Sistem | `kost/[slug]/book`, `api/bookings` |
+| 6 | Bayar Booking Sewa (Midtrans) | User, Sistem, Midtrans | `dashboard/bookings/[id]/pay`, Midtrans Snap |
+| 7 | Konfirmasi Pembayaran & Status Tenant | Midtrans, Sistem, Tenant | `api/webhooks/midtrans`, `tenant/dashboard` |
+| 8 | Bayar Tagihan Sewa Bulanan | Tenant, Sistem, Midtrans | `tenant/bills`, `api/payments/midtrans/charge` |
+| 9 | Pengaduan Keluhan Kamar | Tenant, Sistem | `tenant/complaints`, `api/tenant/complaints` |
+| 10 | Beri Ulasan dan Rating Kos | Tenant, Sistem | `kost/[slug]`, `tenant/dashboard`, `api/reviews` |
+| 11 | Laporkan Kos Bermasalah | User, Sistem | `kost/[slug]`, `api/reports` |
 
 ---
 
@@ -35,251 +36,217 @@
 | Elips hitam penuh | Initial node (mulai) |
 | Elips putih tebal | Final node (selesai) |
 | Persegi rounded | Action / activity |
-| Belah ketupat (rhombus) | Decision node, keluar dengan label `Ya` / `Tidak` |
+| Belah ketupat (rhombus) | Decision node, keluar dengan label `Ya` / `Tidak` / `[kondisi]` |
 | Garis vertikal tipis | Pembatas lane |
-| Batang hitam tebal horizontal | Fork/join node - HANYA saat alur menyentuh database |
-| Panah lewat sisi kanan | Jalur error / retry / kembali (routing samping, tiap edge punya offset sendiri agar tidak tumpang tindih) |
+| Batang hitam tebal horizontal | Fork/join node - aksi database dan pembaruan antarmuka paralel |
+| Panah lewat sisi kanan | Jalur error / retry / kembali ke langkah sebelumnya |
 
-## Aturan Layout (divalidkan terhadap referensi "Contoh Teman Saya yang sudah benar")
+## Aturan Layout
 
-Referensi dianalisis dari file `Activity Diagram-Contoh Teman Saya yang sudah benar.drawio` (15 alur, tiap alur = pasangan lane) + artikel UML (Visual Paradigm notation guide, viz-note fork-vs-decision). Aturan yang dipatuhi diagram ini:
-
-1. **Fork = 1 masuk, 2 keluar: aksi database ∥ tampilkan halaman/pesan.** Masuknya dari SATU sumber (action atau decision) - cabang decision yang saling eksklusif TIDAK BOLEH dilebur ke fork (itu artinya 'keduanya jalan bareng', ngawur). Audit 11/11 halaman: 10 fork, semuanya 1-in/2-out dengan tepat satu cabang `memasukkan data ke database`; 0 pelanggaran.
-   - Revisi: halaman 1 dulu menggabungkan decision login DAN decision register ke satu fork → login benar tak menulis DB, kini jalur login langsung ke `masuk dashboard`, hanya jalur register masuk fork. Halaman 11 dulu menggabungkan cabang approve+reject ke fork → kini decision `terverifikasi?` memilih dulu: approve → fork (DB ∥ tampilkan+notif), reject → jalur samping kembali ke antrean (pola sama dgn decision pembayaran di referensi).
-2. **Bar fork/join selalu di lane Sistem**, di bawah action, bentuk `5x160 rotation=90`.
-3. **Final node (elips putih) selalu di lane Sistem** - konsisten dengan referensi (15/15 alur); action terakhir aktor (`lihat …`) tetap di lane aktor, lalu alur pindah ke Sistem untuk berakhir.
-4. **Guard label format `[kondisi]`** sebagai edge label terpisah.
-5. Satu initial node di lane aktor (bukan Sistem), mengikuti referensi.
-6. **Setiap jalur yang berakhir di final node wajib melewati action `menampilkan …`/`memuat ulang …` di lane Sistem lebih dulu** - pola referensi 15/15: node sebelum END selalu tampilan hasil (halaman sukses, halaman data, pesan), bukan aksi aktor dan bukan join langsung. Aksi `lihat …` milik aktor diletakkan di tengah alur, bukan sebagai penutup.
-
-Semua hitam-putih, tanpa warna - aman untuk dicetak di laporan grayscale. Kalau nanti butuh penanda gating berwarna merah seperti di use case diagram, cukup ubah konstanta `ST_ACTION` di generator.
+1. **Fork = 1 masuk, 2 keluar:** Aksi penulisan ke database berjalan bersamaan dengan pembaruan status / antarmuka pengguna di lane Sistem.
+2. **Bar fork/join selalu di lane Sistem**, di bawah action, bentuk batang horizontal (`rotation=90`).
+3. **Final node (elips putih) selalu di lane Sistem**, memastikan proses penutupan tercatat di sistem.
+4. **Guard label format `[kondisi]`** sebagai label transisi yang jelas.
+5. **Initial node selalu di lane aktor pemula**, mencerminkan aksi yang diinisiasi oleh pengguna atau pihak terkait.
+6. **Setiap jalur yang berakhir di final node melewati action tampilan hasil** di lane Sistem lebih dulu.
+7. Semua hitam-putih tanpa warna agar siap dicetak pada dokumen formal laporan.
 
 ---
 
-## HALAMAN 1 - Register Owner & Trial 30 Hari
+## HALAMAN 1 - Registrasi & Verifikasi OTP Email
 
-Lane: **Owner**, **Sistem**. Endpoint: `POST /api/auth/register`.
+Lane: **User**, **Sistem**, **Resend**.
+Endpoint: `POST /api/auth/register`, `POST /api/auth/verify-otp`.
 
-| Langkah kunci | Detail dari sumber |
-|---|---|
-| Validasi input & email unik | `User.email` `@unique` (DATABASE Bab 2); gagal → 422 `VALIDATION_ERROR` |
-| Hash password | bcrypt (`User.passwordHash`), PRD Bab 7 Security |
-| Buat Subscription TRIAL | `t_uc10` Auto-Mulai Trial 30 Hari - dipicu tepat saat register, `trialEndsAt = now + 30 hari`, `gracePeriodDays` default 7 |
-
-Decision tunggal (`Input valid & email belum terdaftar?`) dengan loop kembali ke pengisian form. Trial dibuat di transaksi yang sama dengan `User` supaya tidak ada owner tanpa Subscription.
+| Langkah | Aktor / Lane | Keterangan |
+|---|---|---|
+| Buka halaman register & isi data diri | User | Mengisi nama, email, nomor handphone, dan kata sandi |
+| Submit form pendaftaran | User | Mengirim data ke server |
+| Validasi data & generate OTP 8 digit | Sistem | Memeriksa keunikan email dan membuat kode verifikasi 8 digit |
+| Kirim email berisi kode OTP 8 digit | Resend | Mengirim email transaksi melalui penyedia layanan Resend |
+| Buka email & salin kode OTP | User | Mengambil kode verifikasi dari kotak masuk email |
+| Input kode OTP 8 digit di halaman verifikasi | User | Memasukkan kode ke input form verifikasi |
+| Validasi kode OTP ke server auth | Sistem | Memeriksa kecocokan kode dan masa kedaluwarsa |
+| Decision: kode OTP valid & belum expired? | Sistem | Jika salah/kedaluwarsa, alur kembali ke input OTP. Jika valid, lanjut ke fork |
+| Fork: Update akun ACTIVE & Buat session login | Sistem | Status akun diaktifkan di database dan session JWT dibentuk |
+| Menampilkan dashboard pengguna | Sistem | Mengarahkan pengguna yang sudah terautentikasi ke dashboard |
 
 ---
 
-## HALAMAN 2 - Login Owner
+## HALAMAN 2 - Login Akun Pengguna
 
-Lane: **Owner**, **Sistem**. Endpoint: `POST /api/auth/login`.
+Lane: **User**, **Sistem**, **Google**.
+Endpoint: `POST /api/auth/login`, `GET /api/auth/google/start`, `GET /api/auth/google/callback`.
 
-Setelah JWT terbit, sistem memuat status `Subscription` untuk menampilkan banner langganan. Ini penting: melihat status subscription dan memperpanjangnya **tidak boleh dikunci** (Daftar-Fitur bagian 1) - kalau dikunci, owner `EXPIRED` tidak akan bisa membayar untuk keluar dari kondisi itu.
+| Langkah | Aktor / Lane | Keterangan |
+|---|---|---|
+| Buka halaman login | User | Mengakses halaman `/login` |
+| Menampilkan pilihan metode login | Sistem | Menyediakan form email/password dan tombol Google OAuth |
+| Decision: pilih metode? | User | Memilih antara kredensial email atau login sekali klik Google |
+| Input email & password / Klik tombol Google | User | Menjalankan aksi sesuai opsi yang dipilih |
+| Verifikasi kredensial / OAuth callback | Sistem / Google | Autentikasi hash kata sandi atau verifikasi token ID dari Google |
+| Decision: kredensial valid? | Sistem | Jika gagal, kembali ke form login dengan pesan kesalahan. Jika sukses, lanjut ke fork |
+| Fork: Buat session login & Set cookie JWT | Sistem | Menyimpan sesi pengguna dan memberikan cookie otorisasi |
+| Menampilkan halaman beranda / dashboard | Sistem | Mengarahkan pengguna ke halaman tujuan utama |
 
 ---
 
 ## HALAMAN 3 - Cari & Filter Kost (Listing Publik)
 
-Lane: **Guest**, **Sistem**. Endpoint: `GET /api/public/properties`, `GET /api/public/properties/:slug`.
+Lane: **User**, **Sistem**.
+Endpoint: `GET /api/kost`, `GET /api/properties`.
 
-| Langkah kunci | Detail |
-|---|---|
-| Tanpa login | Guest belum perlu akun sama sekali (PRD Bab 4 poin 2) |
-| Pagination wajib | `page`, `limit` default 20, maks 50 (API Stage 7) |
-| Kecualikan Room MAINTENANCE / OCCUPIED | Business rule PRD Bab 8 poin 4; `BOOKING_PENDING` juga tidak tersedia |
-| Ketersediaan real-time | Diferensiasi utama (PRD Bab 2 poin 10) - `Room.status` field tersendiri, bukan hasil verifikasi manual |
-
-Ada dua decision: `Ada hasil?` (loop ke ubah filter) dan `Buka detail kost?` (guest boleh kembali menelusuri). Halaman ini berakhir tepat sebelum klik "Booking" - lanjutannya di halaman 4.
-
----
-
-## HALAMAN 4 - Login Google (Verifikasi Identitas Guest)
-
-Lane: **Guest**, **Sistem**, **Google**. Endpoint: `GET /api/auth/google/start`, `GET /api/auth/google/callback`.
-
-Ini halaman dengan aktor eksternal pertama. Urutan sesuai Google Sign-In Policy v3.6:
-
-| Langkah | Aturan wajib |
-|---|---|
-| Bangun URL OAuth | PKCE `code_verifier` + parameter `state` disimpan sebagai cookie `HttpOnly`/`SameSite=Lax` |
-| Decision: state cocok? | Tidak cocok → 400 `OAUTH_STATE_MISMATCH` (indikasi CSRF) |
-| Tukar code | `redirect_uri` harus **persis** sama dengan yang terdaftar di Google Cloud Console, jangan dibentuk dari header `Host` |
-| Verifikasi ID token | Server-side selalu: signature terhadap JWKS Google, `iss`, `aud` = `GOOGLE_CLIENT_ID`, `exp` |
-| Decision: token valid & email_verified? | Gagal → 401 `GOOGLE_TOKEN_INVALID` atau 403 `EMAIL_NOT_VERIFIED` |
-| Upsert Guest | Kunci utama `googleSub` (claim `sub`), fallback `email` lalu backfill `googleSub` untuk akun lama |
-
-Login Google menggantikan OTP SMS/WhatsApp karena OTP berbiaya per pesan (PRD Bab 13 poin 5, sudah SELESAI). Nomor HP tetap diminta di form booking sebagai data kontak, tapi **tidak diverifikasi** dan bukan identitas.
-
----
-
-## HALAMAN 5 - Ajukan Booking Request
-
-Lane: **Verified Guest**, **Sistem**. Endpoint: `POST /api/bookings`.
-
-Tiga decision berurutan, semuanya di dalam satu `prisma.$transaction()`:
-
-| Decision | Gagal → |
-|---|---|
-| Token guest valid? | 401 `UNAUTHORIZED` |
-| Room `VACANT` & `property.isActive`? | 409 `ROOM_UNAVAILABLE` |
-| Ada booking aktif duplikat (guestId + roomId sama)? | 409 `DUPLICATE_ACTIVE_BOOKING` |
-
-Yang paling sering salah digambar orang: **`Room.status` TETAP `VACANT` di tahap ini.** Kamar baru terkunci saat owner approve (halaman 6), bukan saat guest submit. Selama `PENDING_APPROVAL`, kamar masih tampil tersedia di listing publik karena belum ada komitmen apa pun.
-
-Efek samping: `approvalDeadline = now + 24 jam`, `accessToken` digenerate lalu **disimpan hashed** (`accessTokenHash`) - raw token dikembalikan hanya sekali di response ini. Notification `NEW_BOOKING` ke owner, ActivityLog `BOOKING_CREATED` dengan `actorType = GUEST`.
-
-Cek duplikat dilakukan di application logic dalam transaction, bukan unique index, karena kombinasi status aktif ada banyak dan Prisma tidak mendukung partial unique index native.
-
----
-
-## HALAMAN 6 - Approve Booking (Tidak Digating)
-
-Lane: **Owner**, **Sistem**. Endpoint: `POST /api/owner/bookings/:id/approve`.
-
-Halaman paling penting di seluruh set ini, dan yang paling mudah salah kalau mengacu dokumen versi lama.
-
-| Langkah kunci | Detail |
-|---|---|
-| Cek ownership | `booking.property.ownerId === session.userId` → gagal 403 `OWNERSHIP_VIOLATION` |
-| **TANPA subscription gate** | Node eksplisit, bukan decision. Revisi v3.5 menghapus gating di approve - booking adalah pendapatan riil yang menunggu, memblokirnya kontraproduktif (PRD Bab 7). Status `WAITING_OWNER_SUBSCRIPTION` **dihapus total** dari `BookingStatus` |
-| Decision status | Harus masih `PENDING_APPROVAL` → gagal 409 `INVALID_BOOKING_STATE` / 410 `BOOKING_EXPIRED` |
-| `prisma.$transaction` + row-level lock | Anti double-booking wajib di level database (`SELECT ... FOR UPDATE`), bukan sekadar pengecekan status di kode |
-| Decision Room `VACANT`? | Gagal → rollback + 409 `ROOM_ALREADY_LOCKED` |
-| Transisi ganda satu transaction | `Room.status VACANT → BOOKING_PENDING` **dan** `Booking → WAITING_PAYMENT` di transaction yang **sama** - kalau dipisah, kamar bisa "nyangkut" desync (DATABASE v3.4 implementation requirement) |
-| `paymentDeadline` | `approvedAt + 30 menit`, dihitung dari **approve**, bukan dari submit. Contoh: submit 10:00, approve 10:30 → deadline 11:00 |
-
-Yang **tidak** dilakukan di sini: membuat record `Payment`. `Payment` merepresentasikan payment attempt individual dan baru dibuat saat guest memanggil `POST /payment` (halaman 8) - desain ini membuat retry natural tanpa logic "attempt pertama atau bukan".
-
-Tiga jalur error semuanya routing lewat sisi kanan dan kembali ke daftar booking.
-
----
-
-## HALAMAN 7 - Reject Booking (Tidak Digating)
-
-Lane: **Owner**, **Sistem**. Endpoint: `POST /api/owner/bookings/:id/reject`.
-
-Sama seperti approve, **tanpa** subscription gate - supaya booking tidak menggantung 24 jam tanpa owner bisa bertindak apa pun. Lebih sederhana karena tidak ada penguncian kamar: `Room.status` tetap `VACANT` (kamar memang belum pernah terkunci). Menyimpan `rejectedAt` + `rejectionReason` opsional, lalu notifikasi ke guest.
-
----
-
-## HALAMAN 8 - Bayar Booking & Retry Pembayaran
-
-Lane: **Verified Guest**, **Sistem**, **Midtrans**. Endpoint: `POST /api/bookings/:id/payment`.
-
-| Langkah kunci | Detail |
-|---|---|
-| Decision `paymentDeadline` | Lewat deadline → booking sudah `CANCELLED` oleh cron, guest tidak bisa bayar lagi |
-| Nominal server-side | `purpose = FULL_PAYMENT_UPFRONT` untuk MVP (`downPaymentPolicyType = NONE` satu-satunya yang aktif) |
-| **Payment baru per attempt** | Setiap percobaan menghasilkan record `Payment` baru dengan `midtransOrderId` unik (misal `BOOKING-{id}-ATTEMPT-2`), **bukan overwrite** yang `FAILED`. Riwayat semua attempt tersimpan |
-| Payment `FAILED` ≠ Booking `CANCELLED` | Booking **tetap** `WAITING_PAYMENT`, guest boleh retry selama masih dalam deadline |
-
-Loop retry digambar eksplisit lewat routing sisi kanan kembali ke "Klik Bayar". Perhatikan bahwa transisi status yang sesungguhnya tidak terjadi di halaman ini - frontend hanya **memulai** transaksi Midtrans. Perubahan status nyata ada di halaman 9.
-
----
-
-## HALAMAN 9 - Webhook Midtrans & Konversi Guest → Tenant
-
-Lane: **Midtrans**, **Sistem**. Endpoint: `POST /api/webhooks/midtrans/booking`.
-
-Halaman terpadat (21 node, 26 edge) karena memuat rantai validasi 5 langkah yang **wajib berurutan** (API v3.3):
-
-| # | Validasi | Gagal → |
+| Langkah | Aktor / Lane | Keterangan |
 |---|---|---|
-| 1 | Signature Midtrans valid? | Tolak, tidak ada perubahan status |
-| 2 | `orderId` cocok `Payment.midtransOrderId`? | Tolak |
-| 3 | `gross_amount` == `Payment.amount`? | Tolak - jangan percaya `transaction_status: settlement` tanpa cross-check nominal, ini menyangkut uang riil |
-| 4 | `Payment.status` masih `PENDING`? (idempotency) | Abaikan event duplikat, balas 200 OK |
-| 5 | `transaction_status` = settlement/capture? | `Payment → FAILED`, booking tetap `WAITING_PAYMENT` |
-
-**Webhook Midtrans adalah satu-satunya source of truth status pembayaran.** Tidak ada endpoint yang bisa dipanggil frontend untuk menyatakan "saya sudah bayar".
-
-Setelah lolos semua validasi, satu `prisma.$transaction()` mengerjakan:
-
-1. `Payment → PAID`, `BookingRequest → FULLY_PAID`
-2. **Identity matching**: cek apakah sudah ada Tenant/Guest dengan `googleSub` sama (fallback `email`) - cegah satu orang tercatat sebagai beberapa identitas. `phoneNumber` **tidak** dipakai sebagai kunci karena opsional & tidak diverifikasi (v3.6)
-3. Buat `Tenant` (atau pakai yang sudah ada) + `RentalAgreement`
-4. `Room.status → OCCUPIED` - di transaction yang sama, wajib
-5. Generate `Invoice` pertama, `BookingRequest → CONVERTED_TO_TENANT`
-6. Commit, ActivityLog `PAYMENT_SUCCESS` dengan `actorType = SYSTEM`
-7. Notifikasi ke owner & tenant lewat Notification Service (bukan panggil Telegram/Email API langsung)
-
-Idempotency (langkah 4) mencegah invoice ter-generate dua kali saat Midtrans retry.
+| Buka halaman listing publik | User | Mengakses `/kost` tanpa perlu login |
+| Menampilkan katalog kos terverifikasi | Sistem | Menampilkan daftar kos berstatus aktif dan lolos verifikasi |
+| Isi filter kota, harga, fasilitas, tipe | User | Memilih preferensi pencarian |
+| Query kos sesuai parameter filter | Sistem | Menjalankan pencarian dengan filter dinamis di database |
+| Decision: ada hasil cocok? | Sistem | Jika tidak ada hasil, tampilkan pesan kosong dan beri opsi ubah filter. Jika ada, tampilkan kartu kos |
+| Pilih salah satu kos yang diminati | User | Memilih kartu kos untuk melihat informasi lengkap |
+| Menampilkan halaman detail kos | Sistem | Membuka rincian kos pada rute `/kost/[slug]` |
 
 ---
 
-## HALAMAN 10 - Tambah Property Baru (Digating)
+## HALAMAN 4 - Detail Kos & Simpan Favorit
 
-Lane: **Owner**, **Sistem**. Endpoint: `POST /api/properties`.
+Lane: **User**, **Sistem**.
+Endpoint: `GET /kost/[slug]`, `POST /api/me/favorites`, `DELETE /api/me/favorites`.
 
-Satu-satunya halaman dengan subscription gate nyata - kontras langsung dengan halaman 6 dan 7. Dua decision gating berurutan di `withSubscriptionGate()`:
-
-| Decision | Gagal → |
-|---|---|
-| Status `TRIAL` / `ACTIVE` / `GRACE_PERIOD`? | 403 `SUBSCRIPTION_EXPIRED` |
-| Jumlah property < `plan.maxProperties`? | 403 `SUBSCRIPTION_EXPIRED` (limit tier tercapai) |
-
-Keduanya diarahkan ke halaman perpanjang/ganti paket, bukan dead end - owner harus selalu punya jalan keluar untuk membayar. Pola yang sama berlaku untuk `POST /api/rooms` (dicek ke `maxRooms`) dan `GET /api/dashboard/summary` (`advancedAnalyticsEnabled`).
-
----
-
-## Aturan Bisnis Kunci yang Tercermin di Diagram
-
-1. **Approve/reject booking tidak pernah digating** (PRD v3.5) - halaman 6 & 7 punya node eksplisit "TANPA subscription gate", bukan decision. Ini keputusan desain yang sengaja ditonjolkan supaya tidak salah diimplementasikan.
-2. **Gating hanya pada scaling kapasitas & analitik lanjutan** - hanya halaman 10 yang punya decision gating.
-3. **`Room.status` berubah saat approve, bukan saat submit** - halaman 5 punya node eksplisit "Room tetap VACANT", halaman 6 yang melakukan lock.
-4. **Anti double-booking = atomic transaction + row-level lock** - digambar sebagai langkah nyata di halaman 6, bukan diasumsikan aman oleh urutan kode.
-5. **Transisi `Room.status` dan `BookingRequest.status` selalu satu transaction** - halaman 6 dan 9 menggambarkannya sebagai satu node gabungan, bukan dua langkah terpisah.
-6. **Webhook Midtrans satu-satunya source of truth pembayaran** - halaman 8 (guest) hanya memulai transaksi; halaman 9 (webhook) yang mengubah status.
-7. **Payment attempt `FAILED` tidak membatalkan booking** - loop retry eksplisit di halaman 8.
-8. **Idempotency webhook** - decision langkah 4 di halaman 9.
-9. **Identity matching pakai `googleSub`, bukan nomor HP** - decision di halaman 9.
-
----
-
-## Yang Sengaja Tidak Dibuat
-
-| Alur | Alasan |
-|---|---|
-| `DP_PAID → WAITING_SETTLEMENT → FULLY_PAID` | Guardrail PRD Bab 7 & DATABASE Bab 8 melarang implementasi sampai settlement policy final (deadline pelunasan, konsekuensi lewat deadline, DP hangus/refundable). Stage 7 MVP hanya `downPaymentPolicyType = NONE`. Menggambarnya akan menjanjikan fitur yang belum boleh jalan |
-| Refund | Transisi `REFUNDED` lewat rekonsiliasi manual di luar sistem; tidak ada endpoint self-service (PRD Bab 7) |
-| Tenant portal / login penuh | Future scope, di luar Stage 1–9 (PRD Bab 13 poin 7) |
-| CRUD lurus tanpa percabangan | List tenant, mark notification read, dsb - tidak bernilai sebagai activity diagram |
-
----
-
-## Rencana Lanjutan (Tier 2 & 3, belum dibuat)
-
-**Tier 2 - sangat direkomendasikan:**
-
-| # | Alur | Aturan utama |
+| Langkah | Aktor / Lane | Keterangan |
 |---|---|---|
-| 11 | Tambah Room Baru via RoomType | Gated `maxRooms`; `POST /api/rooms` wajib `roomTypeId` sejak Stage 5 |
-| 12 | Cron: Auto-Expire Booking 24 Jam | `PENDING_APPROVAL` lewat `approvalDeadline` → `EXPIRED` + notifikasi |
-| 13 | Cron: Auto-Cancel Payment Timeout 30 Menit | `WAITING_PAYMENT` → `CANCELLED`, Room kembali `VACANT`, satu transaction |
-| 14 | Checkout / Perpanjang Subscription | Harga selalu server-side dari `planId`; checkout **tidak** mengubah `Subscription.status` |
-| 15 | Cron: Siklus Hidup Subscription | `TRIAL → ACTIVE / GRACE_PERIOD (7 hari) → EXPIRED`; `EXPIRED` bisa kembali `ACTIVE`, bukan `CANCELLED` |
-| 16 | Kirim Pesan Manual | Validasi recipient milik owner; cek `TelegramConnection = CONNECTED` → 409 `TELEGRAM_NOT_CONNECTED` |
-| 17 | Connect Akun Telegram | `connectToken` single-use, expired 10 menit, deep-link `/start` |
-
-**Tier 3 - opsional:** Generate & mark-paid Invoice, Tandai Kamar Maintenance, Hapus Property/Room + active dependency check (409 `ACTIVE_DEPENDENCY_EXISTS`), Lihat Analitik Lanjutan (gated), Cancel Subscription (tetap `ACTIVE` sampai `currentPeriodEnd`).
+| Buka halaman detail kos | User | Mengakses halaman kos spesifik |
+| Menampilkan foto, fasilitas, harga, ulasan | Sistem | Menyajikan informasi komprehensif properti |
+| Klik ikon hati (Simpan Favorit) | User | Menandai kos sebagai favorit |
+| Cek status login pengguna | Sistem | Memeriksa token otentikasi aktif |
+| Decision: sudah login? | Sistem | Jika belum login, tampilkan modal login langsung di tempat. Jika sudah, lanjut ke fork |
+| Fork: Simpan kos ke tabel favorites & Ubah ikon | Sistem | Menulis data favorit ke database dan mengubah status visual ikon |
+| Menampilkan daftar favorit di dashboard | Sistem | Memperbarui daftar favorit pengguna di `/dashboard/favorites` |
 
 ---
 
-## Keputusan Desain yang Perlu Diratifikasi
+## HALAMAN 5 - Ajukan Booking Sewa Kost
 
-1. **Gaya hitam-putih murni** dipilih agar konsisten dengan diagram TumbuhKita dan aman dicetak grayscale. Kalau ingin penanda merah untuk langkah digating (seperti use case diagram), ubah style di generator.
-2. **Halaman 3 dan 4 dipisah** meski keduanya alur guest - halaman 3 berakhir tepat sebelum klik "Booking", halaman 4 mulai dari situ. Alternatifnya digabung jadi satu halaman panjang.
-3. **Lane "Google" dan "Midtrans"** digambar sebagai lane terpisah (bukan catatan), supaya jelas langkah mana yang berada di luar kendali sistem.
-4. **Fitur pesan** (halaman 16, Tier 2) akan digambar tanpa decision subscription - asumsi kirim pesan manual gratis. Ini masih ambigu di `Daftar-Fitur-Gratis-vs-Premium.md` bagian 4 dan perlu keputusanmu.
+Lane: **User**, **Sistem**.
+Endpoint: `POST /api/bookings`.
+
+| Langkah | Aktor / Lane | Keterangan |
+|---|---|---|
+| Klik Ajukan Sewa & pilih tipe kamar | User | Memulai proses booking dari halaman detail kos |
+| Menampilkan formulir pengajuan sewa | Sistem | Menyajikan formulir pemilihan tanggal dan data penghuni |
+| Pilih tanggal mulai, durasi & lengkapi data | User | Menentukan periode sewa dan melengkapi identitas |
+| Submit pengajuan sewa kos | User | Mengirim data permohonan sewa |
+| Validasi ketersediaan kamar & data pemesan | Sistem | Memeriksa apakah kamar masih berstatus VACANT |
+| Decision: kamar tersedia? | Sistem | Jika kamar penuh, tampilkan pesan penolakan dan arahkan ke pemilihan kamar lain. Jika tersedia, lanjut ke fork |
+| Fork: Buat record Booking PENDING & Ringkasan | Sistem | Merekam data booking baru dan menampilkan rincian biaya sewa |
+| Menampilkan status booking diajukan | Sistem | Mengarahkan pengguna ke halaman status booking |
 
 ---
 
-## Cara Pakai
+## HALAMAN 6 - Bayar Booking Sewa (Midtrans)
 
-1. Buka `Activity-Ngekost.drawio` di draw.io (app.diagrams.net) atau ekstensi Draw.io di VS Code.
-2. Sepuluh tab di bawah kanvas = sepuluh halaman, bisa diekspor per halaman (PNG/PDF/SVG).
-3. Untuk merevisi: **edit tabel `PAGES` di `gen_activity_ngekost.py`**, lalu jalankan `python3 gen_activity_ngekost.py`. Jangan edit XML-nya langsung - perubahan manual akan hilang saat regenerate.
-4. Validasi struktural setelah regenerate:
-   `python3 ~/.hermes/skills/creative/drawio-diagrams/scripts/validate_drawio.py Activity-Ngekost.drawio`
+Lane: **User**, **Sistem**, **Midtrans**.
+Endpoint: `GET /dashboard/bookings/[id]/pay`, `POST /api/payments/midtrans/charge`.
 
-Format data satu halaman: `rows` adalah daftar baris, setiap baris berisi tuple `(tipe, label, indeks_lane)` dengan tipe `start` / `end` / `action` / `decision`. `edges` berisi `(key_sumber, key_tujuan, label)` dan opsional `"side"` untuk routing lewat sisi kanan. Key node otomatis `r{baris}-{kolom}`.
+| Langkah | Aktor / Lane | Keterangan |
+|---|---|---|
+| Buka halaman booking & klik Bayar Sekarang | User | Membuka rincian tagihan sewa awal |
+| Cek batas waktu bayar (payment deadline) | Sistem | Memverifikasi apakah booking belum melewati batas 24 jam |
+| Decision: masih dalam batas waktu bayar? | Sistem | Jika waktu habis, ubah status menjadi expired. Jika masih aktif, generate Snap token |
+| Buka popup Snap pembayaran | Midtrans | Memunculkan antarmuka pembayaran multi-channel Midtrans |
+| Pilih metode bayar & selesaikan transfer | User | Membayar lewat Virtual Account, QRIS, atau e-Wallet |
+| Proses status bayar | Midtrans | Mengevaluasi status pembayaran secara langsung |
+| Decision: pembayaran berhasil settlement? | Midtrans | Jika gagal, tampilkan opsi retry. Jika berhasil, kirim notifikasi pembayaran sukses |
+| Menampilkan notifikasi pembayaran diterima | Sistem | Mengonfirmasi bahwa dana telah berhasil diverifikasi |
+
+---
+
+## HALAMAN 7 - Konfirmasi Pembayaran & Status Tenant
+
+Lane: **Midtrans**, **Sistem**, **Tenant**.
+Endpoint: `POST /api/webhooks/midtrans`.
+
+| Langkah | Aktor / Lane | Keterangan |
+|---|---|---|
+| Kirim webhook notifikasi pembayaran settlement | Midtrans | Mengirim payload HTTP POST ke server Ngekost |
+| Validasi signature & nominal transaksi | Sistem | Memeriksa keabsahan signature hash Midtrans |
+| Decision: data webhook valid? | Sistem | Jika tidak valid, kembalikan response 400 Bad Request. Jika valid, lanjut ke fork |
+| Fork: Update Booking & RentalAgreement aktif | Sistem | Mengubah status booking menjadi CONFIRMED dan menerbitkan perjanjian sewa |
+| Fork: Buat akun Tenant & kunci Room OCCUPIED | Sistem | Memberikan hak akses tenant dan mengubah status kamar menjadi OCCUPIED |
+| Buka dashboard tenant (/tenant/dashboard) | Tenant | Penyewa mengakses area khusus penyewa |
+| Menampilkan data kamar, kontrak & fasilitas | Sistem | Menyajikan informasi lengkap kamar dan masa berlaku sewa |
+
+---
+
+## HALAMAN 8 - Bayar Tagihan Sewa Bulanan
+
+Lane: **Tenant**, **Sistem**, **Midtrans**.
+Endpoint: `GET /tenant/bills`, `POST /api/payments/midtrans/charge`.
+
+| Langkah | Aktor / Lane | Keterangan |
+|---|---|---|
+| Buka halaman tagihan (/tenant/bills) | Tenant | Memeriksa kewajiban pembayaran berkala |
+| Menampilkan daftar invoice belum lunas | Sistem | Menyajikan rincian invoice sewa bulan berjalan |
+| Klik tombol Bayar Tagihan | Tenant | Memilih tagihan yang hendak dibayarkan |
+| Generate Snap token & buat record Payment | Sistem | Menyiapkan sesi transaksi pembayaran pada Midtrans |
+| Tampilkan popup Midtrans Snap | Midtrans | Membuka antarmuka pemilihan kanal pembayaran |
+| Pilih metode bayar & selesaikan bayar | Tenant | Melakukan pembayaran melalui transfer bank atau dompet digital |
+| Kirim webhook notifikasi ke Sistem | Midtrans | Memberi tahu status pembayaran kepada server |
+| Validasi signature & status transaksi | Sistem | Memastikan transaksi berstatus settlement |
+| Decision: transaksi sukses settlement? | Sistem | Jika gagal/pending, beri kesempatan bayar ulang. Jika sukses, lanjut ke fork |
+| Fork: Update Invoice PAID & Kirim receipt bukti bayar | Sistem | Menandai invoice lunas dan mengirimkan bukti pembayaran |
+| Menampilkan halaman tagihan lunas | Sistem | Memperbarui daftar tagihan dengan status lunas |
+
+---
+
+## HALAMAN 9 - Pengaduan Keluhan Kamar
+
+Lane: **Tenant**, **Sistem**.
+Endpoint: `POST /api/tenant/complaints`, `GET /tenant/complaints`.
+
+| Langkah | Aktor / Lane | Keterangan |
+|---|---|---|
+| Buka menu pengaduan (/tenant/complaints) | Tenant | Membuka antarmuka laporan masalah fasilitas kamar |
+| Menampilkan form pengaduan keluhan | Sistem | Menyediakan form pemilihan kategori dan deskripsi |
+| Pilih kategori keluhan & isi judul deskripsi | Tenant | Menjelaskan kendala teknis atau keluhan kamar |
+| Submit tiket pengaduan | Tenant | Mengirim tiket ke pengelola |
+| Validasi sewa aktif & simpan tiket OPEN | Sistem | Memastikan pelapor adalah penyewa aktif dan menyimpan tiket dengan status OPEN |
+| Fork: Memasukkan data ke DB & Tampilkan konfirmasi | Sistem | Menyimpan tiket pengaduan dan memberi tahu tiket berhasil terkirim |
+| Lihat pembaruan status tiket di dashboard | Tenant | Memantau perkembangan perbaikan |
+| Menampilkan status IN_PROGRESS / RESOLVED | Sistem | Menyajikan perkembangan tindak lanjut keluhan |
+
+---
+
+## HALAMAN 10 - Beri Ulasan dan Rating Kos
+
+Lane: **Tenant**, **Sistem**.
+Endpoint: `POST /api/reviews`, `GET /kost/[slug]`.
+
+| Langkah | Aktor / Lane | Keterangan |
+|---|---|---|
+| Buka halaman sewa & klik Beri Ulasan | Tenant | Membuka form penilaian dari kamar yang disewa |
+| Menampilkan modal rating & ulasan | Sistem | Menyediakan pilihan bintang 1-5 dan kolom ulasan teks |
+| Pilih bintang 1-5 & tulis pengalaman kos | Tenant | Mengisi ulasan jujur mengenai kondisi kos dan pelayanan |
+| Submit ulasan | Tenant | Mengirimkan ulasan ke sistem |
+| Validasi status sewa & cek ulasan ganda | Sistem | Memeriksa apakah penyewa sah dan belum pernah mengulas |
+| Decision: belum pernah ulas kos ini? | Sistem | Jika sudah pernah, cegah ulasan ganda. Jika belum pernah, lanjut ke fork |
+| Fork: Simpan review & hitung rata-rata rating | Sistem | Memasukkan ulasan ke database dan memperbarui agregasi rating kos |
+| Fork: Tampilkan ulasan di listing kos | Sistem | Menampilkan testimoni di halaman publik kos |
+| Menampilkan pesan terima kasih atas ulasan | Sistem | Memberikan konfirmasi bahwa ulasan telah berhasil disimpan |
+
+---
+
+## HALAMAN 11 - Laporkan Kos Bermasalah
+
+Lane: **User**, **Sistem**.
+Endpoint: `POST /api/reports`, `GET /kost/[slug]`.
+
+| Langkah | Aktor / Lane | Keterangan |
+|---|---|---|
+| Klik tombol Laporkan Kos | User | Menemukan indikasi ketidaksesuaian atau penipuan di halaman detail kos |
+| Menampilkan modal pelaporan kos | Sistem | Menyediakan pilihan kategori pelanggaran dan deskripsi bukti |
+| Pilih alasan laporan & isi kronologi | User | Memilih jenis pelanggaran dan melampirkan keterangan |
+| Submit laporan | User | Mengirimkan laporan |
+| Validasi input & simpan status OPEN | Sistem | Memverifikasi kelengkapan form dan mencatat tiket pelaporan |
+| Fork: Memasukkan data ke database & Konfirmasi | Sistem | Menyimpan laporan ke database dan menampilkan respon instan |
+| Menampilkan notifikasi laporan akan ditinjau | Sistem | Mengonfirmasi bahwa laporan telah masuk ke antrean investigasi |

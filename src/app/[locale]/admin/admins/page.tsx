@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Shield, ShieldCheck, UserCog } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,7 +25,7 @@ import AdminPageShell, { AdminSection, useAdminToast } from "@/components/admin/
 import { StatusBadge } from "@/components/StatusBadge";
 import { useSession } from "@/components/SessionProvider";
 import { adminRoleOverride, recordOp, useAdminOps } from "@/lib/adminOpsStore";
-import { adminAccounts, type AdminRole } from "@/lib/data/adminData";
+import { adminAccounts as staticAdminAccounts, type AdminRole } from "@/lib/data/adminData";
 
 const ROLES: AdminRole[] = ["super", "verifikator", "keuangan", "dukungan"];
 
@@ -42,15 +42,52 @@ export default function AdminAdminsPage() {
   const { show } = useAdminToast();
   const { user } = useSession();
   const ops = useAdminOps();
-  const [editing, setEditing] = useState<(typeof adminAccounts)[number] | null>(null);
+  const [adminList, setAdminList] = useState(staticAdminAccounts);
+  const [editing, setEditing] = useState<(typeof staticAdminAccounts)[number] | null>(null);
   const [pendingRole, setPendingRole] = useState<AdminRole | null>(null);
 
   const myEmail = user?.email;
 
-  const save = () => {
+  useEffect(() => {
+    fetch("/api/admin/users")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const adminsFromDb = json.data.filter((u: any) => u.role === "ADMIN");
+          if (adminsFromDb.length > 0) {
+            const mapped = adminsFromDb.map((u: any, idx: number) => ({
+              id: u.id,
+              name: u.fullName || u.email.split("@")[0],
+              email: u.email,
+              role: (idx === 0 ? "super" : "verifikator") as AdminRole,
+              lastActive: u.lastSeenAt || u.createdAt || new Date().toISOString(),
+              status: (u.status === "ACTIVE" ? "aktif" : "nonaktif") as "aktif" | "nonaktif",
+            }));
+            setAdminList(mapped);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const save = async () => {
     if (!editing || !pendingRole) return;
-    recordOp(editing.email, "set-role", myEmail, t(`role${pendingRole.charAt(0).toUpperCase()}${pendingRole.slice(1)}`));
-    show(t("toastRole", { name: editing.name, role: t(`role${pendingRole.charAt(0).toUpperCase()}${pendingRole.slice(1)}`) }));
+    const roleLabel = t(`role${pendingRole.charAt(0).toUpperCase()}${pendingRole.slice(1)}`);
+    recordOp(editing.email, "set-role", myEmail, roleLabel);
+
+    if (editing.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(editing.id)) {
+      try {
+        await fetch(`/api/admin/users/${editing.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role: "ADMIN" }),
+        });
+      } catch {
+        // ops store fallback already handled
+      }
+    }
+
+    show(t("toastRole", { name: editing.name, role: roleLabel }));
     setEditing(null);
     setPendingRole(null);
   };
@@ -70,7 +107,7 @@ export default function AdminAdminsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {adminAccounts.map((a) => {
+              {adminList.map((a) => {
                 const role = adminRoleOverride(ops, a.email) ?? a.role;
                 const isMe = a.email === (myEmail ?? "bayu.pratama@ngekost.id");
                 return (

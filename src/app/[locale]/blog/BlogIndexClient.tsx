@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
+import { getBlogImage } from "@/lib/kosImages";
 
 type PostMeta = {
   title: string;
@@ -61,7 +62,7 @@ export default function BlogIndexClient() {
         <article className="mb-12 grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-center">
           <Link href={`/blog/${featured[0]}`} className="group block overflow-hidden rounded-lg">
             <img
-              src={`https://picsum.photos/seed/blog-${featured[0]}/960/540`}
+              src={getBlogImage(featured[0])}
               alt=""
               className="aspect-video w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             />
@@ -93,7 +94,7 @@ export default function BlogIndexClient() {
             <Link href={`/blog/${slug}`} className="group block">
               <div className="overflow-hidden rounded-lg">
                 <img
-                  src={`https://picsum.photos/seed/blog-${slug}/640/400`}
+                  src={getBlogImage(slug)}
                   alt=""
                   className="aspect-[8/5] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                 />

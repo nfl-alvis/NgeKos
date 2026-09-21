@@ -4,15 +4,12 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Megaphone } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
-import { tenants } from "@/lib/data/entities";
-import { getPropertyBySlug } from "@/lib/data/properties";
 import { announcements as staticAnnouncements } from "@/lib/data/userData";
 import { cn } from "@/lib/utils";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
+import { useTenantSession } from "@/hooks/useTenantSession";
 
-const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
-const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
 const NOW = new Date();
 
 interface AnnouncementItem {
@@ -29,6 +26,7 @@ interface AnnouncementItem {
 export default function TenantAnnouncementsPage() {
   const t = useTranslations("tenantPages.announcements");
   const locale = useLocale();
+  const { tenant } = useTenantSession();
   const [list, setList] = useState<AnnouncementItem[]>(staticAnnouncements);
   const [seen, setSeen] = useState<string[]>([]);
 
@@ -43,8 +41,8 @@ export default function TenantAnnouncementsPage() {
             titleEn: item.title,
             bodyId: item.body,
             bodyEn: item.body,
-            at: typeof item.publishedAt === "string" ? item.publishedAt : new Date().toISOString(),
-            read: Array.isArray(item.reads) && item.reads.length > 0,
+            at: typeof item.createdAt === "string" ? item.createdAt.slice(0, 10) : "2026-09-01",
+            read: item.isRead ?? false,
           }));
           setList(mapped);
         }
@@ -52,10 +50,15 @@ export default function TenantAnnouncementsPage() {
       .catch(() => {});
   }, []);
 
-  const handleMarkRead = (id: string) => {
-    setSeen((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  const isRead = (id: string, defRead?: boolean) => defRead || seen.includes(id);
+
+  const markRead = (id: string) => {
+    if (seen.includes(id)) return;
+    setSeen((prev) => [...prev, id]);
     fetch(`/api/announcements/${id}/read`, { method: "PATCH" }).catch(() => {});
   };
+
+  const unreadCount = list.filter((a) => !isRead(a.id, a.read)).length;
 
   const relTime = (at: string) => {
     const mins = Math.max(0, Math.floor((NOW.getTime() - new Date(at).getTime()) / 60_000));
@@ -69,7 +72,7 @@ export default function TenantAnnouncementsPage() {
     <UserDashboardShell role="tenant" title={t("title")}>
       <DashSection
         title={t("listTitle")}
-        right={<span className="text-xs text-nk-text-muted">{PROPERTY?.name || "Kos"}</span>}
+        right={<span className="text-xs text-nk-text-muted">{tenant.propertyName || "Kos"}</span>}
         bodyClass="divide-y divide-nk-border"
       >
         {list.map((a, i) => {
@@ -78,7 +81,7 @@ export default function TenantAnnouncementsPage() {
             <button
               key={a.id}
               type="button"
-              onClick={() => handleMarkRead(a.id)}
+              onClick={() => markRead(a.id)}
               className={cn(
                 "flex w-full items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-nk-warm focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-nk-accent",
                 fresh && "bg-nk-section"

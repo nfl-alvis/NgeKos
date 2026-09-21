@@ -38,21 +38,39 @@ export default function AdminNoticesPage() {
   const recipients =
     target === "owner" ? 812 : target === "seeker" ? 12_440 : 13_252;
 
-  const send = () => {
+  const send = async () => {
     if (title.trim().length < 4 || body.trim().length < 10) {
       setError(true);
       return;
     }
+    const currentTitle = title.trim();
+    const currentBody = body.trim();
+    const currentTarget = target;
+
     recordOp(
-      t("targetLabel", { target: t(targetKey(target)) }),
+      t("targetLabel", { target: t(targetKey(currentTarget)) }),
       "send",
       user?.email,
-      broadcastDetail(target, title.trim(), body.trim(), recipients)
+      broadcastDetail(currentTarget, currentTitle, currentBody, recipients)
     );
     show(t("toastSent", { count: recipients }));
     setTitle("");
     setBody("");
     setError(false);
+
+    try {
+      await fetch("/api/admin/notices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          target: currentTarget,
+          title: currentTitle,
+          body: currentBody,
+        }),
+      });
+    } catch {
+      // fallback
+    }
   };
 
   return (

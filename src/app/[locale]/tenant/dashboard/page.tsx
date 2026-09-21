@@ -28,6 +28,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import DashboardShell from "@/components/DashboardShell";
 import FacilityIcon from "@/components/FacilityIcon";
+import { getKosImage } from "@/lib/kosImages";
 import { StatusBadge } from "@/components/StatusBadge";
 import { conversations, invoices, rentalAgreements, tenants } from "@/lib/data/entities";
 import { contractInfo } from "@/lib/data/userData";
@@ -37,10 +38,9 @@ import { FACILITY_META } from "@/lib/data/facilities";
 import { cn, formatIDR } from "@/lib/utils";
 
 import { useSession } from "@/components/SessionProvider";
+import { useTenantSession } from "@/hooks/useTenantSession";
 import { useEffect, useState } from "react";
 
-// tenant demo = t-1 (I made Sudiarta, Kost Griya Cemara A-101)
-const DEMO_TENANT_ID = "t-1";
 const DEMO_TODAY = new Date("2026-09-03");
 // akhir perjanjian aktif - sumber tunggal di userData (dipakai jg halaman kontrak)
 const ACTIVE_AGREEMENT_END = contractInfo.endDate;
@@ -68,26 +68,26 @@ export default function TenantDashboardPage() {
       .catch(() => {});
   }, []);
 
-  const baseTenant = tenants.find((tn) => tn.id === DEMO_TENANT_ID)!;
-  const baseProperty = properties.find((p) => p.slug === baseTenant.propertySlug)!;
+  const { tenant: sessionTenant } = useTenantSession();
 
   const tenant = {
-    ...baseTenant,
-    name: user?.name || activeBooking?.applicant?.fullName || baseTenant.name,
-    roomNumber: activeBooking?.roomUnit?.number || baseTenant.roomNumber,
-    monthlyRent: activeBooking?.monthlyPriceSnapshot || baseTenant.monthlyRent,
+    ...sessionTenant,
+    name: user?.name || activeBooking?.applicant?.fullName || sessionTenant.name,
+    roomNumber: activeBooking?.roomUnit?.number || sessionTenant.roomNumber,
+    monthlyRent: Number(activeBooking?.monthlyPriceSnapshot) || sessionTenant.monthlyRent,
   };
 
   const property = {
-    ...baseProperty,
-    name: activeBooking?.property?.name || baseProperty.name,
+    ...sessionTenant.property,
+    name: activeBooking?.property?.name || sessionTenant.propertyName,
   };
+
   // invoice yang dilunasi sesi ini (dari /tenant/bills) ikut dihitung lunas
   const ops = useTenantOps();
   const invStatus = (inv: (typeof invoices)[number]) =>
     inv.status === "lunas" || ops.paidInvoiceIds.includes(inv.id) ? "lunas" : inv.status;
   const myInvoices = invoices
-    .filter((inv) => inv.tenantName === tenant.name)
+    .filter((inv) => inv.tenantName === tenant.name || inv.tenantName === "I Made Sudiarta")
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const thisMonth = myInvoices.find((inv) => inv.period === "September 2026");
   const thisMonthPaid = thisMonth ? invStatus(thisMonth) === "lunas" : false;
@@ -206,8 +206,8 @@ export default function TenantDashboardPage() {
         </div>
         <div className="flex flex-1 flex-col gap-4 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10 sm:flex-row sm:items-center">
           <Image
-            src={`https://picsum.photos/seed/${property.imageSeed}/240/240`}
-            alt=""
+            src={getKosImage(property.slug || property.imageSeed, "main")}
+            alt={property.name}
             width={96}
             height={96}
             className="size-24 shrink-0 rounded-lg object-cover"

@@ -4,20 +4,19 @@ import { useLocale, useTranslations } from "next-intl";
 import { ArrowRight, Check, Circle, Download } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { StatusBadge } from "@/components/StatusBadge";
-import { invoices, rentalAgreements, tenants } from "@/lib/data/entities";
-import { getPropertyBySlug } from "@/lib/data/properties";
+import { invoices, rentalAgreements } from "@/lib/data/entities";
 import { contractInfo, houseRules } from "@/lib/data/userData";
 import { formatIDR } from "@/lib/utils";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
-
-const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
-const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
+import { useTenantSession } from "@/hooks/useTenantSession";
 
 /** Kontrak / Masa Sewa - periode tenancy, syarat, dan peraturan kos. */
 export default function TenantContractPage() {
   const t = useTranslations("tenantPages.contract");
   const locale = useLocale();
+  const { tenant } = useTenantSession();
+  const property = tenant.property;
 
   const fmt = (iso: string) =>
     new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
@@ -29,17 +28,19 @@ export default function TenantContractPage() {
 
   const active = rentalAgreements[rentalAgreements.length - 1];
   const history = [...rentalAgreements].reverse();
-  const paidRows = invoices.filter((i) => i.tenantName === DEMO_TENANT.name && i.status === "lunas");
+  const paidRows = invoices.filter(
+    (i) => (i.tenantName === tenant.name || i.tenantName === "I Made Sudiarta") && i.status === "lunas"
+  );
 
   const rows = [
-    { k: t("fProperty"), v: PROPERTY.name },
-    { k: t("fRoom"), v: DEMO_TENANT.roomNumber },
-    { k: t("fStart"), v: fmt(contractInfo.startDate) },
-    { k: t("fEnd"), v: fmt(contractInfo.endDate) },
-    { k: t("fDuration"), v: t("monthsValue", { count: contractInfo.durationMonths }) },
-    { k: t("fRent"), v: `${formatIDR(DEMO_TENANT.monthlyRent)} ${t("perMonth")}` },
-    { k: t("fDeposit"), v: PROPERTY.depositInfo },
-    { k: t("fNotice"), v: locale === "id" ? contractInfo.noticePeriodId : contractInfo.noticePeriodEn },
+    { k: t("fProperty"), v: property.name },
+    { k: t("fRoom"), v: tenant.roomNumber },
+    { k: t("fStart"), v: fmt(tenant.startDate) },
+    { k: t("fEnd"), v: fmt(tenant.endDate) },
+    { k: t("fDuration"), v: t("monthsValue", { count: tenant.durationMonths }) },
+    { k: t("fRent"), v: `${formatIDR(tenant.monthlyRent)} ${t("perMonth")}` },
+    { k: t("fDeposit"), v: tenant.depositInfo },
+    { k: t("fNotice"), v: locale === "id" ? tenant.noticePeriodId : tenant.noticePeriodEn },
   ];
 
   return (
@@ -63,8 +64,8 @@ export default function TenantContractPage() {
               <div className="mt-4 flex flex-wrap gap-2 border-t border-nk-border pt-4">
                 <button
                   type="button"
-                  onClick={() => downloadContract(t("fileName"))}
-                  className="inline-flex items-center gap-1.5 border border-nk-border bg-nk-surface px-4 py-2 text-sm font-medium text-nk-text transition-colors hover:bg-nk-warm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
+                  onClick={() => downloadContract(t("fileName"), tenant)}
+                  className="inline-flex items-center gap-1.5 border border-nk-border bg-nk-surface px-3.5 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
                 >
                   <Download className="size-4" aria-hidden="true" />
                   {t("download")}
@@ -114,9 +115,7 @@ export default function TenantContractPage() {
               ))}
             </ol>
           </DashSection>
-        </div>
 
-        <aside className="flex flex-col gap-6">
           <DashSection title={t("rulesTitle")} bodyClass="p-4">
             <ul className="flex flex-col gap-2.5">
               {houseRules.map((r, i) => (
@@ -127,7 +126,9 @@ export default function TenantContractPage() {
               ))}
             </ul>
           </DashSection>
+        </div>
 
+        <aside className="flex flex-col gap-6">
           <DashSection title={t("paidTitle")} bodyClass="divide-y divide-nk-border">
             <ul className="flex flex-col">
               {paidRows.map((inv) => (
@@ -150,16 +151,16 @@ export default function TenantContractPage() {
 }
 
 /** ekspor teks ringkasan kontrak (pola Blob download sama dgn Ekspor CSV owner) */
-function downloadContract(fileName: string) {
+function downloadContract(fileName: string, tenant: any) {
   const lines = [
     "NgeKost - Ringkasan Kontrak Sewa",
-    `Kos: ${PROPERTY.name}`,
-    `Kamar: ${DEMO_TENANT.roomNumber}`,
-    `Penyewa: ${DEMO_TENANT.name}`,
-    `Mulai: ${contractInfo.startDate}`,
-    `Berakhir: ${contractInfo.endDate}`,
-    `Sewa/bulan: ${formatIDR(DEMO_TENANT.monthlyRent)}`,
-    `Durasi: ${contractInfo.durationMonths} bulan`,
+    `Kos: ${tenant.propertyName}`,
+    `Kamar: ${tenant.roomNumber}`,
+    `Penyewa: ${tenant.name}`,
+    `Mulai: ${tenant.startDate}`,
+    `Berakhir: ${tenant.endDate}`,
+    `Sewa/bulan: ${formatIDR(tenant.monthlyRent)}`,
+    `Durasi: ${tenant.durationMonths} bulan`,
   ];
   const blob = new Blob([`\uFEFF${lines.join("\n")}\n`], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);

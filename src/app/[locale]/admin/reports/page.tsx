@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CheckCheck, Flag, Search, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,10 +56,34 @@ export default function AdminReportsPage() {
   const ops = useAdminOps();
   const [search, setSearch] = useState("");
   const [type, setType] = useState<"all" | ReportType>("all");
+  const [dbReports, setDbReports] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/reports")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const mapped = json.data.map((r: any) => ({
+            id: r.id,
+            type: r.targetType === "PROPERTY" ? "properti" : r.targetType === "USER" ? "pengguna" : r.targetType === "REVIEW" ? "review" : "konten",
+            target: r.targetName || r.targetSlug || r.targetId,
+            reasonId: "Spam",
+            reasonEn: r.reason,
+            reporter: r.reporter?.fullName || r.reporter?.email || "Pengguna",
+            at: typeof r.createdAt === "string" ? r.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+            status: r.status === "OPEN" ? "baru" : r.status === "RESOLVED" ? "selesai" : "diabaikan",
+          }));
+          setDbReports(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const allReports = dbReports.length > 0 ? dbReports : userReports;
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return userReports
+    return allReports
       .map((r) => {
         const last = latestActionFor(ops, r.id);
         const st = last === "resolve" ? "selesai" : last === "dismiss" ? "diabaikan" : r.status;
@@ -67,17 +91,31 @@ export default function AdminReportsPage() {
       })
       .filter((x) => (type === "all" ? true : x.r.type === type))
       .filter((x) => (q ? `${x.r.id} ${x.r.target} ${x.r.reporter}`.toLowerCase().includes(q) : true));
-  }, [ops, search, type]);
+  }, [allReports, ops, search, type]);
 
-  const countNew = userReports.filter((r) => {
+  const countNew = allReports.filter((r) => {
     const last = latestActionFor(ops, r.id);
     const st = last === "resolve" ? "selesai" : last === "dismiss" ? "diabaikan" : r.status;
     return st === "baru";
   }).length;
 
-  const handle = (id: string, target: string, next: "resolve" | "dismiss") => {
+  const handle = async (id: string, target: string, next: "resolve" | "dismiss") => {
     recordOp(id, next, user?.email, target);
     show(next === "resolve" ? t("toastResolved", { id }) : t("toastDismissed", { id }));
+
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      try {
+        await fetch(`/api/reports/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: next === "resolve" ? "RESOLVED" : "DISMISSED",
+          }),
+        });
+      } catch {
+        // fallback
+      }
+    }
   };
 
   return (
@@ -137,7 +175,7 @@ export default function AdminReportsPage() {
                   <TableRow key={r.id} className="border-b border-nk-border last:border-b-0">
                     <TableCell className="px-4 py-3 font-mono text-xs text-nk-text-muted">{r.id}</TableCell>
                     <TableCell className="px-4 py-3">
-                      <StatusBadge color={TYPE_COLOR[r.type]}>{t(`type${r.type.charAt(0).toUpperCase()}${r.type.slice(1)}`)}</StatusBadge>
+                      <StatusBadge color={TYPE_COLOR[r.type as ReportType] ?? "gray"}>{t(`type${r.type.charAt(0).toUpperCase()}${r.type.slice(1)}`)}</StatusBadge>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-nk-text">{r.target}</TableCell>
                     <TableCell className="px-4 py-3 text-xs text-nk-text-muted">{reason}</TableCell>

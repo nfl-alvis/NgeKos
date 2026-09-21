@@ -23,12 +23,10 @@ import { COMPLAINT_COLOR, addComplaint, useTenantComplaints } from "@/lib/tenant
 import { cn } from "@/lib/utils";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
+import { useTenantSession } from "@/hooks/useTenantSession";
 
 const CATEGORIES: ComplaintCategory[] = [
   "fasilitas",
-  "air",
-  "listrik",
-  "internet",
   "kebersihan",
   "keamanan",
   "pembayaran",
@@ -37,8 +35,6 @@ const CATEGORIES: ComplaintCategory[] = [
 
 const FLOW = ["open", "acknowledged", "in_progress", "resolved", "closed"] as const;
 
-const DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
-const PROPERTY = getPropertyBySlug(DEMO_TENANT.propertySlug)!;
 const DEMO_TODAY = new Date("2026-09-03");
 
 function mapDbComplaint(c: any): Complaint {
@@ -76,6 +72,7 @@ function mapDbComplaint(c: any): Complaint {
 export default function TenantComplaintsPage() {
   const t = useTranslations("tenantPages.complaints");
   const locale = useLocale();
+  const { tenant } = useTenantSession();
   const defaultItems = useTenantComplaints();
   const [items, setItems] = useState<Complaint[]>(defaultItems);
   const [isLoading, setIsLoading] = useState(true);
@@ -149,10 +146,10 @@ export default function TenantComplaintsPage() {
         addComplaint({
           title: title.trim(),
           category: cat,
-          room: tenantRoomInfo.roomNumber,
-          reporter: DEMO_TENANT.name,
-          propertySlug: PROPERTY.slug,
-          propertyName: PROPERTY.name,
+          room: tenant.roomNumber,
+          reporter: tenant.name,
+          propertySlug: tenant.propertySlug,
+          propertyName: tenant.propertyName,
           at: DEMO_TODAY.toISOString().slice(0, 10),
         });
       }
@@ -219,7 +216,7 @@ export default function TenantComplaintsPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <h2 className="pr-8 text-lg font-medium text-nk-text">{t("dialogTitle")}</h2>
-          <p className="mt-1 text-sm text-nk-text-muted">{t("dialogSub", { property: PROPERTY.name })}</p>
+          <p className="mt-1 text-sm text-nk-text-muted">{t("dialogSub", { property: tenant.propertyName })}</p>
           <div className="mt-5 flex flex-col gap-4">
             <div>
               <Label htmlFor="cp-title" className="text-sm text-nk-text">

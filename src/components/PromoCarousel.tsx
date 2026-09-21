@@ -36,7 +36,7 @@ export default function PromoCarousel() {
             <span className="inline-flex w-fit items-center rounded-full bg-nk-accent/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-nk-accent">
               {t(`items.${key}.tag`)}
             </span>
-            <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl">
+            <h2 className="font-sans text-3xl font-medium tracking-tight md:text-4xl">
               {t(`items.${key}.title`)}
             </h2>
             <p className="text-sm leading-relaxed text-nk-dark-border">
