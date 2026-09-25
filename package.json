@@ -15,7 +15,8 @@
     "prisma:migrate": "dotenv -e .env.local -- prisma migrate dev",
     "prisma:deploy": "dotenv -e .env.local -- prisma migrate deploy",
     "prisma:seed": "tsx --env-file=.env.local prisma/seed.ts",
-    "prisma:studio": "dotenv -e .env.local -- prisma studio"
+    "prisma:studio": "dotenv -e .env.local -- prisma studio",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
