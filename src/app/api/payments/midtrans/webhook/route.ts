@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { bookingIdentifierWhere } from "@/server/booking-identifier";
 import {
   verifyMidtransNotification,
   type MidtransNotificationPayload,
@@ -33,9 +34,7 @@ export async function POST(request: Request) {
     const bookingIdentifier = match[1];
 
     const booking = await prisma.booking.findFirst({
-      where: {
-        OR: [{ code: bookingIdentifier }, { id: bookingIdentifier }],
-      },
+      where: bookingIdentifierWhere(bookingIdentifier),
       include: {
         property: true,
         roomType: true,

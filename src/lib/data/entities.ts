@@ -70,10 +70,6 @@ export const SEEKER_DEMO_ACCOUNT = {
 
 export const OWNER_PROPERTY_SLUGS = [
   "kost-griya-cemara-dago",
-  "kost-kenanga-setiabudi",
-  "kost-al-amin-wonokromo",
-  "kost-sara-theresa-cibubur", // pending verifikasi
-  "kost-zinnia-cimahi", // ditolak
 ];
 
 /* ===== booking (Halaman 6, 7, 11) ===== */
@@ -682,19 +678,6 @@ export const verificationHistory: AdminReviewEntry[] = [
     submittedAt: "2026-08-05",
     decidedAt: "2026-08-06",
     decidedBy: "Bayu Pratama",
-    decision: "approved",
-  },
-  {
-    id: "VR-026",
-    propertySlug: "kost-ratna-darmo",
-    propertyName: "Kost Ratna",
-    city: "Surabaya",
-    ownerName: "Lilis Handayani",
-    ownerEmail: "lilis.handayani@gmail.com",
-    ownerJoinedAt: "2025-09-30",
-    submittedAt: "2026-07-28",
-    decidedAt: "2026-07-30",
-    decidedBy: "Sinta Maharani",
     decision: "approved",
   },
 ];

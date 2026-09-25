@@ -495,6 +495,24 @@ export default function NewPropertyPage() {
           depositAmount: parsedDeposit,
           maxRooms: totalKamar,
           facilities: facilities.length > 0 ? facilities : ["wifi", "bed"],
+          roomTypes: [
+            {
+              name: tipeKamar.trim() || "Kamar Standar",
+              pricePerMonth: parsedMonthly,
+              sizeM2: parseInt(ukuranKamar.replace(/\D/g, "") || "12", 10) || 12,
+              total: totalKamar,
+              available: kamarKosong,
+            },
+          ],
+          images: Object.entries(photos)
+            .filter(([_, url]) => Boolean(url))
+            .map(([key, url], idx) => ({
+              url,
+              storagePath: `defaults/${key}.jpg`,
+              isCover: idx === 0 || key === "bangunanKos",
+              altText: key,
+            })),
+          autoSubmitVerification: true,
         };
 
         const res = await fetch("/api/properties", {
@@ -1714,7 +1732,7 @@ export default function NewPropertyPage() {
                 Kos Telah Ditambahkan!
               </DialogTitle>
               <DialogDescription className="mt-2 text-sm leading-relaxed text-nk-text-muted">
-                Iklan kos Anda berhasil dibuat dan kini dalam antrean verifikasi oleh tim Admin NgeKost (estimasi 1x24 jam). Anda dapat memantau status properti melalui dashboard.
+                Iklan kos Anda berhasil dibuat dan kini dalam antrean verifikasi oleh tim Admin NgeKos (estimasi 1x24 jam). Anda dapat memantau status properti melalui dashboard.
               </DialogDescription>
             </DialogHeader>
 

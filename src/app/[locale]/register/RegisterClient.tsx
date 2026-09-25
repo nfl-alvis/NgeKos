@@ -270,11 +270,11 @@ function RegisterInner({
         {/* Left Side Hero Banner - Matching Login */}
         <section
           className="relative hidden overflow-hidden rounded-lg bg-nk-warm lg:block"
-          aria-label="NgeKost Hunian Nyaman"
+          aria-label="NgeKos Hunian Nyaman"
         >
           <Image
             src="/images/about-hero-wide.jpg"
-            alt="Suasana hunian kost NgeKost"
+            alt="Suasana hunian kost NgeKos"
             fill
             priority
             className="object-cover"
@@ -284,8 +284,8 @@ function RegisterInner({
           <div className="absolute inset-x-0 bottom-0 p-10 text-white xl:p-14">
             <p className="max-w-lg text-3xl font-light leading-tight tracking-tight">
               {role === "owner"
-                ? "Kelola properti kos Anda dengan praktis dan raih calon penyewa terbaik di NgeKost."
-                : "Cari kost idamanmu atau kelola properti kos dengan praktis di NgeKost."}
+                ? "Kelola properti kos Anda dengan praktis dan raih calon penyewa terbaik di NgeKos."
+                : "Cari kost idamanmu atau kelola properti kos dengan praktis di NgeKos."}
             </p>
           </div>
         </section>
@@ -470,7 +470,7 @@ function RegisterInner({
                       >
                         Kebijakan Privasi
                       </Link>{" "}
-                      NgeKost.
+                      NgeKos.
                     </span>
                   </label>
 

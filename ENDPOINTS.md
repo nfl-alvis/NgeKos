@@ -1,4 +1,4 @@
-# Daftar Endpoint NgeKost
+# Daftar Endpoint NgeKos
 
 Dokumen ini menginventaris endpoint aplikasi berdasarkan source di `src/app`.
 
@@ -26,13 +26,13 @@ Dokumen ini menginventaris endpoint aplikasi berdasarkan source di `src/app`.
 
 ### 1. `/{locale}`
 
-Beranda NgeKost: hero pencarian, kos terverifikasi unggulan, kota/kampus populer, statistik, dan FAQ singkat.
+Beranda NgeKos: hero pencarian, kos terverifikasi unggulan, kota/kampus populer, statistik, dan FAQ singkat.
 
 Pencarian hero dapat menghasilkan query `kota`, `q`, `lat`, dan `lon`. Saat ini halaman `/kost` baru memproses `kota`; `q`, `lat`, dan `lon` belum memengaruhi hasil listing.
 
 ### 2. `/{locale}/about`
 
-Profil NgeKost, manfaat platform, fitur utama, dan CTA mencari kos atau menjadi mitra.
+Profil NgeKos, manfaat platform, fitur utama, dan CTA mencari kos atau menjadi mitra.
 
 ### 3. `/{locale}/bantuan`
 

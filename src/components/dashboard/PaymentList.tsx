@@ -364,7 +364,7 @@ export default function PaymentList() {
                     Pembayaran Lunas & Terverifikasi
                   </p>
                   <p className="mt-1">
-                    Dana telah diterima aman di sistem escrow NgeKost dan diteruskan ke pemilik kos.
+                    Dana telah diterima aman di sistem escrow NgeKos dan diteruskan ke pemilik kos.
                   </p>
                 </div>
               )}
@@ -529,7 +529,7 @@ function PaymentCardItem({
           )}
 
           <a
-            href={`https://wa.me/6281122334455?text=Halo%20Admin%20NgeKost,%20saya%20ingin%20menanyakan%20status%20transaksi%20saya%20%23${payment.id}`}
+            href={`https://wa.me/6281122334455?text=Halo%20Admin%20NgeKos,%20saya%20ingin%20menanyakan%20status%20transaksi%20saya%20%23${payment.id}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex size-7 items-center justify-center rounded-lg border border-nk-border bg-nk-surface text-nk-text-muted transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"

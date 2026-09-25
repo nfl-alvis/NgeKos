@@ -102,6 +102,7 @@ export default function CreatePropertyDialog({
         gender,
         depositAmount: depositAmount ? parseInt(depositAmount, 10) : undefined,
         facilities,
+        autoSubmitVerification: true,
       };
 
       const res = await fetch("/api/properties", {

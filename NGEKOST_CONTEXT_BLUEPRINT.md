@@ -1,11 +1,11 @@
-# Context & Blueprint Proyek NgeKost
+# Context & Blueprint Proyek NgeKos
 
 Dokumen ini berisi rangkuman lengkap arsitektur, histori keputusan, implementasi backend, konfigurasi database, autentikasi, aturan bisnis, dan panduan melanjutkan pekerjaan untuk AI Agent / Developer berikutnya (Antigravity).
 
 ---
 
 ## 1. Ringkasan Proyek
-- **Nama Aplikasi:** NgeKost
+- **Nama Aplikasi:** NgeKos
 - **Domain:** Marketplace & Manajemen Sewa Kost di Indonesia
 - **Lokasi Codebase:** `/home/spawn2pwn/Project/ngekost-v3/ngekost`
 - **Tech Stack Utama:**
@@ -48,7 +48,7 @@ Dokumen ini berisi rangkuman lengkap arsitektur, histori keputusan, implementasi
    - **Tanpa Navbar dan Tanpa Footer:** Rute `/login` dan `/register` telah dikecualikan di `src/components/ConditionalNavbar.tsx` dan `src/components/ConditionalFooter.tsx`.
    - **Split Screen (Dua Kolom):**
      - **Sisi Kiri:** Foto hunian kost (`/images/about-hero-wide.jpg` placeholder) berjarak/ber-padding dari tepi layar (`p-4 lg:p-6`), memiliki sudut membulat halus (`rounded-lg`), dan overlay teks deskripsi role.
-     - **Sisi Kanan:** Form login terpusat berisi Logo NgeKost, title role spesifik, tombol "Lanjutkan dengan Google", divider "atau", form email & password, tombol submit "Masuk", dan link ke `/register`.
+     - **Sisi Kanan:** Form login terpusat berisi Logo NgeKos, title role spesifik, tombol "Lanjutkan dengan Google", divider "atau", form email & password, tombol submit "Masuk", dan link ke `/register`.
 
 ---
 

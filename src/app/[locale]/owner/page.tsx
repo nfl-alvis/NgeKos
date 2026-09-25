@@ -402,7 +402,7 @@ export default function OwnerDashboardPage() {
             Hai, <span className="font-semibold">{displayName}</span>!
           </h1>
           <p className="mt-4 max-w-md text-base leading-relaxed text-nk-text-muted">
-            Selamat datang di NgeKost! Anda belum memiliki properti kos yang didaftarkan. Ayo mulai daftarkan iklan kos pertama Anda sekarang untuk mulai menjangkau calon penyewa.
+            Selamat datang di NgeKos! Anda belum memiliki properti kos yang didaftarkan. Ayo mulai daftarkan iklan kos pertama Anda sekarang untuk mulai menjangkau calon penyewa.
           </p>
           <div className="mt-8">
             <Link

@@ -153,7 +153,7 @@ export default function TenantContractPage() {
 /** ekspor teks ringkasan kontrak (pola Blob download sama dgn Ekspor CSV owner) */
 function downloadContract(fileName: string, tenant: any) {
   const lines = [
-    "NgeKost - Ringkasan Kontrak Sewa",
+    "NgeKos - Ringkasan Kontrak Sewa",
     `Kos: ${tenant.propertyName}`,
     `Kamar: ${tenant.roomNumber}`,
     `Penyewa: ${tenant.name}`,

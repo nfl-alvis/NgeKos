@@ -286,7 +286,7 @@ export default function DashboardSettingsPage() {
               Konfirmasi Penghapusan Akun
             </DialogTitle>
             <DialogDescription className="text-xs text-nk-text-muted mt-1 leading-relaxed">
-              Apakah Anda yakin ingin menghapus akun Anda? Seluruh data profil, riwayat pesanan, dan ulasan Anda akan dinonaktifkan dari sistem NgeKost. Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus akun Anda? Seluruh data profil, riwayat pesanan, dan ulasan Anda akan dinonaktifkan dari sistem NgeKos. Tindakan ini tidak dapat dibatalkan.
             </DialogDescription>
           </DialogHeader>
 

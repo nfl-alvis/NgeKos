@@ -10,7 +10,7 @@ export default function HelpArticleFeedback() {
     return (
       <div className="mt-8 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 text-xs font-medium text-emerald-800">
         <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-        <span>Terima kasih atas feedback Anda! Ini membantu kami terus menyempurnakan informasi di Ngekost.</span>
+        <span>Terima kasih atas feedback Anda! Ini membantu kami terus menyempurnakan informasi di NgeKos.</span>
       </div>
     );
   }

@@ -27,14 +27,14 @@ const CATEGORY_IMAGES = [
 ];
 
 const CAMPUS_TILES = [
-  { name: "UGM", city: "Yogyakarta", seed: "ngekost-kampus-ugm" },
-  { name: "UI", city: "Jakarta", seed: "ngekost-kampus-ui" },
-  { name: "ITB", city: "Bandung", seed: "ngekost-kampus-itb" },
-  { name: "ITS", city: "Surabaya", seed: "ngekost-kampus-its" },
-  { name: "UNPAD", city: "Bandung", seed: "ngekost-kampus-unpad" },
-  { name: "UNAIR", city: "Surabaya", seed: "ngekost-kampus-unair" },
-  { name: "UNDIP", city: "Semarang", seed: "ngekost-kampus-undip" },
-  { name: "UB", city: "Malang", seed: "ngekost-kampus-ub" },
+  { name: "UGM", fullName: "Universitas Gadjah Mada", city: "Yogyakarta", seed: "ngekost-kampus-ugm" },
+  { name: "UI", fullName: "Universitas Indonesia", city: "Jakarta", seed: "ngekost-kampus-ui" },
+  { name: "ITB", fullName: "Institut Teknologi Bandung", city: "Bandung", seed: "ngekost-kampus-itb" },
+  { name: "ITS", fullName: "Institut Teknologi Sepuluh Nopember", city: "Surabaya", seed: "ngekost-kampus-its" },
+  { name: "UNPAD", fullName: "Universitas Padjadjaran", city: "Bandung", seed: "ngekost-kampus-unpad" },
+  { name: "UNAIR", fullName: "Universitas Airlangga", city: "Surabaya", seed: "ngekost-kampus-unair" },
+  { name: "UNDIP", fullName: "Universitas Diponegoro", city: "Semarang", seed: "ngekost-kampus-undip" },
+  { name: "UB", fullName: "Universitas Brawijaya", city: "Malang", seed: "ngekost-kampus-ub" },
 ];
 
 const WHY_ICONS = [
@@ -194,14 +194,22 @@ export default async function HomePage({
           ))}
         </div>
       </section>
-      {/* ===== KOS SEKITAR KAMPUS - clickable campus image tiles (mamikos ref) ===== */}
+      {/* ===== KOS SEKITAR KAMPUS - clickable campus logo cards (mamikos ref) ===== */}
       <section className="border-b border-nk-border">
         <div className="mx-auto w-full max-w-7xl px-6 py-16 lg:px-10 lg:py-20">
-          <div className="flex flex-col gap-2 pb-10">
-            <h2 className="text-2xl font-light tracking-tight text-nk-text sm:text-3xl">
-              {t("campus.title")}
-            </h2>
-            <p className="max-w-md text-sm text-nk-text-muted">{t("campus.subtitle")}</p>
+          <div className="flex items-end justify-between pb-10">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-2xl font-light tracking-tight text-nk-text sm:text-3xl">
+                {t("campus.title")}
+              </h2>
+              <p className="max-w-md text-sm text-nk-text-muted">{t("campus.subtitle")}</p>
+            </div>
+            <Link
+              href="/kost"
+              className="hidden text-sm text-nk-text underline underline-offset-4 transition-colors hover:text-nk-text-muted sm:block"
+            >
+              {t("campus.seeAll")}
+            </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -209,23 +217,32 @@ export default async function HomePage({
               <Link
                 key={campus.name}
                 href={`/kost?kota=${encodeURIComponent(campus.city)}`}
-                className="group relative block overflow-hidden rounded-lg"
+                title={`${campus.name} - ${campus.fullName}`}
+                className="group relative flex flex-col items-center justify-between rounded-2xl border border-nk-border bg-nk-surface p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:border-nk-accent/40 hover:shadow-sm sm:p-6"
               >
-                <Image
-                  src={getCampusImage(campus.name)}
-                  alt={`Kos sekitar ${campus.name} ${campus.city}`}
-                  width={640}
-                  height={480}
-                  className="aspect-[4/3] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-nk-dark/80 via-nk-dark/10 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-4">
-                  <div className="flex flex-col">
-                    <span className="text-base font-medium tracking-tight text-white">
-                      {campus.name}
-                    </span>
-                    <span className="text-xs text-white/70">{campus.city}</span>
-                  </div>
+                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-nk-warm/60 p-3 transition-transform duration-300 group-hover:scale-105">
+                  <Image
+                    src={getCampusImage(campus.name)}
+                    alt={`Logo ${campus.name}`}
+                    width={80}
+                    height={80}
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+
+                <div className="mt-4 flex flex-col items-center">
+                  <span className="text-base font-semibold tracking-tight text-nk-text transition-colors group-hover:text-nk-accent">
+                    {campus.name}
+                  </span>
+                  <span className="mt-0.5 text-xs text-nk-text-muted">
+                    {campus.city}
+                  </span>
+                </div>
+
+                <div className="mt-4 flex w-full items-center justify-between border-t border-nk-border/60 pt-3">
+                  <span className="text-xs font-medium text-nk-text-muted transition-colors group-hover:text-nk-text">
+                    {t("category.explore")}
+                  </span>
                   <svg
                     width="16"
                     height="16"
@@ -235,7 +252,7 @@ export default async function HomePage({
                     strokeWidth="1.6"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="text-white opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
+                    className="text-nk-text opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
                     style={{ transform: "translateX(-8px)" }}
                     aria-hidden="true"
                   >
@@ -244,6 +261,15 @@ export default async function HomePage({
                 </div>
               </Link>
             ))}
+          </div>
+
+          <div className="mt-8 sm:hidden">
+            <Link
+              href="/kost"
+              className="block w-full border border-nk-border bg-nk-bg px-6 py-3 text-center text-sm text-nk-text transition-colors hover:bg-nk-section"
+            >
+              {t("campus.seeAll")}
+            </Link>
           </div>
         </div>
       </section>

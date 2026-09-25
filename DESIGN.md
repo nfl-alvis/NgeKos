@@ -1,6 +1,6 @@
 ---
 version: alpha
-name: NgeKost
+name: NgeKos
 description: Platform listing kost premium - warm neutral + terracotta, modern Indonesian boarding house marketplace.
 colors:
   text: "#1C1917"
@@ -80,7 +80,7 @@ components:
 
 ## Overview
 
-NgeKost adalah platform listing kost premium Indonesia. Desain mengutamakan kehangatan (warm neutral) dengan aksen terracotta yang memberikan kesan premium namun tetap approachable. Layout asimetris, spacing lega, tipografi tegas.
+NgeKos adalah platform listing kost premium Indonesia. Desain mengutamakan kehangatan (warm neutral) dengan aksen terracotta yang memberikan kesan premium namun tetap approachable. Layout asimetris, spacing lega, tipografi tegas.
 
 ## Colors
 

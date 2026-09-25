@@ -15,6 +15,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -795,7 +801,7 @@ export default function OwnerPropertyDetailPage() {
               return (
                 <div
                   key={rt.id}
-                  className="overflow-hidden rounded-xl border border-nk-border bg-nk-surface shadow-sm transition-all"
+                  className="rounded-xl border border-nk-border bg-nk-surface shadow-sm transition-all"
                 >
                   {/* Header Tipe Kamar */}
                   <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between bg-nk-surface border-b border-nk-border/60">
@@ -943,91 +949,76 @@ export default function OwnerPropertyDetailPage() {
                           {filteredUnits.map((room) => {
                             const meta = roomStatusMeta[room.status];
                             return (
-                              <div key={room.number} className="relative">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setMenuRoom(
-                                      menuRoom === room.number ? null : room.number
-                                    )
-                                  }
-                                  className={cn(
-                                    "flex w-full flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-all hover:shadow-sm active:scale-[0.98]",
-                                    meta.cls
-                                  )}
-                                >
-                                  <div className="flex w-full items-center justify-between">
-                                    <span className="font-mono text-sm font-bold tabular-nums text-nk-text">
-                                      {room.number}
-                                    </span>
-                                    <span
-                                      className={cn(
-                                        "size-2 rounded-full",
-                                        meta.dot
-                                      )}
-                                    />
-                                  </div>
-                                  <div className="flex w-full items-center justify-between text-[11px]">
-                                    <span className="text-nk-text-muted">
-                                      {room.floor ? `Lt. ${room.floor}` : "Lt. 1"}
-                                    </span>
-                                    <StatusBadge
-                                      color={meta.badge}
-                                      className="!px-1.5 !py-0 text-[10px]"
-                                    >
-                                      {meta.label}
-                                    </StatusBadge>
-                                  </div>
-                                </button>
-
-                                {/* Dropdown Aksi Cepat Status */}
-                                {menuRoom === room.number && (
-                                  <>
-                                    <div
-                                      className="fixed inset-0 z-30"
-                                      onClick={() => setMenuRoom(null)}
-                                      aria-hidden="true"
-                                    />
-                                    <div className="absolute left-0 top-full z-40 mt-1 w-52 overflow-hidden rounded-xl border border-nk-border bg-nk-surface py-1.5 shadow-xl animate-in fade-in-50 zoom-in-95">
-                                      <div className="px-3 py-1 text-[11px] font-semibold text-nk-text-muted border-b border-nk-border/60 mb-1">
-                                        Ubah Status: Kamar {room.number}
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => setRoomStatus(room, "kosong")}
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-nk-text transition-colors hover:bg-nk-warm"
-                                      >
-                                        <span className="size-2 rounded-full bg-emerald-500" />
-                                        <span>Tandai Kosong (Tersedia)</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setRoomStatus(room, "terisi")}
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-nk-text transition-colors hover:bg-nk-warm"
-                                      >
-                                        <span className="size-2 rounded-full bg-zinc-400" />
-                                        <span>Tandai Terisi</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setRoomStatus(room, "dipesan")}
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-nk-text transition-colors hover:bg-nk-warm"
-                                      >
-                                        <span className="size-2 rounded-full bg-amber-500" />
-                                        <span>Tandai Sedang Dipesan</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setRoomStatus(room, "maintenance")}
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-nk-text transition-colors hover:bg-nk-warm"
-                                      >
-                                        <span className="size-2 rounded-full bg-rose-500" />
-                                        <span>Tandai Perbaikan (Maintenance)</span>
-                                      </button>
+                              <DropdownMenu key={room.number}>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className={cn(
+                                      "flex w-full flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-all hover:shadow-sm active:scale-[0.98] cursor-pointer focus:outline-none focus:ring-2 focus:ring-nk-accent/40",
+                                      meta.cls
+                                    )}
+                                  >
+                                    <div className="flex w-full items-center justify-between">
+                                      <span className="font-mono text-sm font-bold tabular-nums text-nk-text">
+                                        {room.number}
+                                      </span>
+                                      <span
+                                        className={cn(
+                                          "size-2 rounded-full",
+                                          meta.dot
+                                        )}
+                                      />
                                     </div>
-                                  </>
-                                )}
-                              </div>
+                                    <div className="flex w-full items-center justify-between text-[11px]">
+                                      <span className="text-nk-text-muted">
+                                        {room.floor ? `Lt. ${room.floor}` : "Lt. 1"}
+                                      </span>
+                                      <StatusBadge
+                                        color={meta.badge}
+                                        className="!px-1.5 !py-0 text-[10px]"
+                                      >
+                                        {meta.label}
+                                      </StatusBadge>
+                                    </div>
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="start"
+                                  className="w-56 p-1.5 bg-nk-surface border-nk-border shadow-xl z-50 rounded-xl"
+                                >
+                                  <div className="px-2.5 py-1 text-[11px] font-semibold text-nk-text-muted border-b border-nk-border/60 mb-1">
+                                    Ubah Status: Kamar {room.number}
+                                  </div>
+                                  <DropdownMenuItem
+                                    onClick={() => setRoomStatus(room, "kosong")}
+                                    className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2.5 rounded-lg hover:bg-nk-warm"
+                                  >
+                                    <span className="size-2 rounded-full bg-emerald-500" />
+                                    <span>Tandai Kosong (Tersedia)</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => setRoomStatus(room, "terisi")}
+                                    className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2.5 rounded-lg hover:bg-nk-warm"
+                                  >
+                                    <span className="size-2 rounded-full bg-zinc-400" />
+                                    <span>Tandai Terisi</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => setRoomStatus(room, "dipesan")}
+                                    className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2.5 rounded-lg hover:bg-nk-warm"
+                                  >
+                                    <span className="size-2 rounded-full bg-amber-500" />
+                                    <span>Tandai Sedang Dipesan</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => setRoomStatus(room, "maintenance")}
+                                    className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2.5 rounded-lg hover:bg-nk-warm text-rose-600 focus:text-rose-600"
+                                  >
+                                    <span className="size-2 rounded-full bg-rose-500" />
+                                    <span>Tandai Perbaikan (Maintenance)</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             );
                           })}
                         </div>

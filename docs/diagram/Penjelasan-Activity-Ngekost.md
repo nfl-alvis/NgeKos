@@ -1,8 +1,8 @@
-# Penjelasan Activity Diagram - Sistem Ngekost (Sisi Pengguna)
+# Penjelasan Activity Diagram - Sistem NgeKos (Sisi Pengguna)
 
-**File drawio:** `Activity-Ngekost.drawio` (11 halaman / tab)
+**File drawio:** `Activity-NgeKos.drawio` (11 halaman / tab)
 **Generator:** `gen_activity_ngekost.py` - data-driven, regenerate jangan edit XML manual
-**Sumber:** PRD-Ngekost-FULL.md, API.md, DATABASE.md, skema database Ngekost
+**Sumber:** PRD-NgeKos-FULL.md, API.md, DATABASE.md, skema database NgeKos
 **Format layout:** swimlane vertikal hitam-putih, konsisten dengan standar UML
 **Total:** 11 halaman, 189 vertex, 160 edge - semua lolos validator struktural (tanpa duplicate ID, tanpa dangling edge, tanpa node orphan).
 
@@ -168,7 +168,7 @@ Endpoint: `POST /api/webhooks/midtrans`.
 
 | Langkah | Aktor / Lane | Keterangan |
 |---|---|---|
-| Kirim webhook notifikasi pembayaran settlement | Midtrans | Mengirim payload HTTP POST ke server Ngekost |
+| Kirim webhook notifikasi pembayaran settlement | Midtrans | Mengirim payload HTTP POST ke server NgeKos |
 | Validasi signature & nominal transaksi | Sistem | Memeriksa keabsahan signature hash Midtrans |
 | Decision: data webhook valid? | Sistem | Jika tidak valid, kembalikan response 400 Bad Request. Jika valid, lanjut ke fork |
 | Fork: Update Booking & RentalAgreement aktif | Sistem | Mengubah status booking menjadi CONFIRMED dan menerbitkan perjanjian sewa |

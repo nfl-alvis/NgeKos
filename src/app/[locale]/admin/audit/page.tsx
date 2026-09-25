@@ -101,6 +101,14 @@ export default function AdminAuditPage() {
       minute: "2-digit",
     });
 
+  const groupOptions = [
+    { label: t("filterAll"), value: "all" },
+    ...(Object.keys(GROUP_COLOR) as (keyof typeof GROUP_COLOR)[]).map((g) => ({
+      label: t(`group${g.charAt(0).toUpperCase()}${g.slice(1)}`),
+      value: g,
+    })),
+  ];
+
   return (
     <AdminPageShell
       title={t("title")}
@@ -130,17 +138,30 @@ export default function AdminAuditPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("searchPlaceholder")}
-                className="h-11 pl-9 md:h-9 md:w-60"
+                className="h-11 border-nk-border bg-nk-surface pl-9 md:h-9 md:w-60"
               />
             </div>
-            <Select value={group} onValueChange={(v) => setGroup(v as typeof group)}>
-              <SelectTrigger className="h-11 w-40 md:h-9" aria-label={t("filterLabel")}>
+            <Select
+              value={group}
+              onValueChange={(v) => setGroup(v as typeof group)}
+              items={groupOptions}
+            >
+              <SelectTrigger
+                className="flex h-11 w-44 cursor-pointer items-center justify-between rounded-lg border-solid border border-nk-border bg-nk-surface px-3 py-1.5 text-sm font-medium text-nk-text shadow-xs transition-colors hover:border-nk-accent/40 hover:bg-nk-warm/60 focus-visible:border-nk-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nk-accent md:h-9"
+                aria-label={t("filterLabel")}
+              >
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("filterAll")}</SelectItem>
-                {(Object.keys(GROUP_COLOR) as (keyof typeof GROUP_COLOR)[]).map((g) => (
-                  <SelectItem key={g} value={g}>{t(`group${g.charAt(0).toUpperCase()}${g.slice(1)}`)}</SelectItem>
+              <SelectContent
+                alignItemWithTrigger={false}
+                side="bottom"
+                sideOffset={6}
+                className="w-(--anchor-width) min-w-44 border border-nk-border bg-nk-surface shadow-lg"
+              >
+                {groupOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value} className="cursor-pointer py-2">
+                    {opt.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

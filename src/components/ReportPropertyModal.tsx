@@ -132,7 +132,7 @@ export default function ReportPropertyModal({
               </DialogTitle>
             </div>
             <DialogDescription className="text-xs text-nk-text-muted mt-1">
-              Bantu tim NgeKost memverifikasi keaslian dan kenyamanan properti <strong>{propertyName}</strong>.
+              Bantu tim NgeKos memverifikasi keaslian dan kenyamanan properti <strong>{propertyName}</strong>.
             </DialogDescription>
           </DialogHeader>
 
@@ -141,7 +141,7 @@ export default function ReportPropertyModal({
               <CheckCircle2 className="size-10 text-emerald-600 mb-2" />
               <p className="text-sm font-semibold text-nk-text">Laporan Berhasil Terkirim</p>
               <p className="mt-1 text-xs text-nk-text-muted max-w-xs">
-                Terima kasih telah berkontribusi menjaga komunitas NgeKost. Tim kami akan meninjau laporan ini dalam 1x24 jam kerja.
+                Terima kasih telah berkontribusi menjaga komunitas NgeKos. Tim kami akan meninjau laporan ini dalam 1x24 jam kerja.
               </p>
             </div>
           ) : (

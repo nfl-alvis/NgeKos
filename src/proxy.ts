@@ -19,8 +19,9 @@ export default async function proxy(request: NextRequest) {
 
   const intlResponse = handleI18n(request);
   const { response, user } = await refreshSupabaseSession(request, intlResponse);
+  const hasSession = !!user || request.cookies.has("nk_session");
 
-  if (protectedArea.test(pathname) && !publicAdminLogin.test(pathname) && !user) {
+  if (protectedArea.test(pathname) && !publicAdminLogin.test(pathname) && !hasSession) {
     const locale = pathname.split("/")[1] === "en" ? "en" : "id";
     const loginUrl = new URL(`/${locale}/login`, request.url);
     loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);

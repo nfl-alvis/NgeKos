@@ -25,69 +25,41 @@ export const POST = withApi(async (request: Request) => {
     status: string;
   };
 
-  if (auth) {
-    try {
-      const dbBooking = await getBooking(auth.profile, input.bookingId);
-      bookingData = {
-        id: dbBooking.id,
-        code: dbBooking.code,
-        property: { name: dbBooking.property.name },
-        roomTypeId: dbBooking.roomTypeId,
-        applicant: {
-          fullName: dbBooking.applicant.fullName,
-          email: dbBooking.applicant.email,
-          phone: dbBooking.applicant.phone,
-        },
-        monthlyPriceSnapshot: Number(dbBooking.monthlyPriceSnapshot),
-        depositSnapshot: dbBooking.depositSnapshot !== null ? Number(dbBooking.depositSnapshot) : null,
-        status: dbBooking.status,
-      };
-    } catch {
-      const staticB = staticBookings.find(
-        (b) => b.id.toLowerCase() === input.bookingId.toLowerCase()
-      );
-      if (staticB) {
-        bookingData = {
-          id: staticB.id,
-          code: staticB.id,
-          property: { name: staticB.propertyName },
-          roomTypeId: staticB.roomId,
-          applicant: {
-            fullName: auth.profile.fullName || staticB.applicantName,
-            email: auth.profile.email || staticB.applicantEmail,
-            phone: auth.profile.phone || staticB.applicantPhone,
-          },
-          monthlyPriceSnapshot: staticB.monthlyPrice,
-          depositSnapshot: staticB.usesDp ? Math.round(staticB.monthlyPrice * 0.35) : null,
-          status: "APPROVED_AWAITING_PAYMENT",
-        };
-      } else {
-        throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking tidak ditemukan");
-      }
-    }
+  const staticBooking = staticBookings.find(
+    (booking) => booking.id.toLowerCase() === input.bookingId.toLowerCase(),
+  );
+  if (staticBooking) {
+    bookingData = {
+      id: staticBooking.id,
+      code: staticBooking.id,
+      property: { name: staticBooking.propertyName },
+      roomTypeId: staticBooking.roomId,
+      applicant: {
+        fullName: auth?.profile.fullName || staticBooking.applicantName || "Tester Midtrans",
+        email: auth?.profile.email || staticBooking.applicantEmail || "tester@ngekost.id",
+        phone: auth?.profile.phone || staticBooking.applicantPhone || "081234567890",
+      },
+      monthlyPriceSnapshot: staticBooking.monthlyPrice,
+      depositSnapshot: staticBooking.usesDp ? Math.round(staticBooking.monthlyPrice * 0.35) : null,
+      status: "APPROVED_AWAITING_PAYMENT",
+    };
   } else {
-    // Guest or unauthenticated test for static demo bookings
-    const staticB = staticBookings.find(
-      (b) => b.id.toLowerCase() === input.bookingId.toLowerCase()
-    );
-    if (staticB) {
-      bookingData = {
-        id: staticB.id,
-        code: staticB.id,
-        property: { name: staticB.propertyName },
-        roomTypeId: staticB.roomId,
-        applicant: {
-          fullName: staticB.applicantName || "Tester Midtrans",
-          email: staticB.applicantEmail || "tester@ngekost.id",
-          phone: staticB.applicantPhone || "081234567890",
-        },
-        monthlyPriceSnapshot: staticB.monthlyPrice,
-        depositSnapshot: staticB.usesDp ? Math.round(staticB.monthlyPrice * 0.35) : null,
-        status: "APPROVED_AWAITING_PAYMENT",
-      };
-    } else {
-      throw new ApiError(401, "UNAUTHENTICATED", "Silakan masuk terlebih dahulu untuk membayar booking ini.");
-    }
+    if (!auth) throw new ApiError(401, "UNAUTHENTICATED", "Silakan masuk terlebih dahulu untuk membayar booking ini.");
+    const dbBooking = await getBooking(auth.profile, input.bookingId);
+    bookingData = {
+      id: dbBooking.id,
+      code: dbBooking.code,
+      property: { name: dbBooking.property.name },
+      roomTypeId: dbBooking.roomTypeId,
+      applicant: {
+        fullName: dbBooking.applicant.fullName,
+        email: dbBooking.applicant.email,
+        phone: dbBooking.applicant.phone,
+      },
+      monthlyPriceSnapshot: Number(dbBooking.monthlyPriceSnapshot),
+      depositSnapshot: dbBooking.depositSnapshot !== null ? Number(dbBooking.depositSnapshot) : null,
+      status: dbBooking.status,
+    };
   }
 
   // Periksa apakah status booking dapat dibayar
@@ -122,28 +94,32 @@ export const POST = withApi(async (request: Request) => {
   // Buat order ID unik untuk Midtrans: BOOK-{code}-{timestamp}
   const orderId = `BOOK-${bookingData.code || bookingData.id.slice(0, 8)}-${Date.now()}`;
 
-  const snapResult = await createSnapTransaction({
-    orderId,
-    grossAmount: amount,
-    customerDetails: {
-      first_name: bookingData.applicant.fullName || "Penyewa",
-      email: bookingData.applicant.email || "customer@ngekost.id",
-      phone: bookingData.applicant.phone || undefined,
-    },
-    itemDetails: [
-      {
-        id: bookingData.roomTypeId,
-        name: `Sewa ${bookingData.property.name}`.slice(0, 50),
-        price: Math.round(amount),
-        quantity: 1,
+  let snapResult;
+  try {
+    snapResult = await createSnapTransaction({
+      orderId,
+      grossAmount: amount,
+      customerDetails: {
+        first_name: bookingData.applicant.fullName || "Penyewa",
+        email: bookingData.applicant.email || "customer@ngekost.id",
+        phone: bookingData.applicant.phone || undefined,
       },
-    ],
-    callbacks: input.returnUrl
-      ? {
-          finish: input.returnUrl,
-        }
-      : undefined,
-  });
+      itemDetails: [
+        {
+          id: bookingData.roomTypeId,
+          name: `Sewa ${bookingData.property.name}`.slice(0, 50),
+          price: Math.round(amount),
+          quantity: 1,
+        },
+      ],
+      callbacks: input.returnUrl ? { finish: input.returnUrl } : undefined,
+    });
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "fetch failed") {
+      throw new ApiError(503, "PAYMENT_GATEWAY_UNAVAILABLE", "Tidak dapat terhubung ke Midtrans. Periksa koneksi server, lalu coba lagi.");
+    }
+    throw error;
+  }
 
   return successResponse({
     isConfigured: true,

@@ -2,7 +2,7 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 
 /**
- * Wordmark NgeKost (logo gambar). Varian putih dipakai di footer gelap.
+ * Wordmark NgeKos (logo gambar). Varian putih dipakai di footer gelap.
  */
 export default function Logo({
   className = "",
@@ -14,10 +14,10 @@ export default function Logo({
   variant?: "dark" | "white";
 }) {
   return (
-    <Link href={href} className={className} aria-label="NgeKost">
+    <Link href={href} className={className} aria-label="NgeKos">
       <Image
         src={variant === "white" ? "/assets/logo-white.png" : "/assets/logo.png"}
-        alt="NgeKost"
+        alt="NgeKos"
         width={581}
         height={240}
         priority

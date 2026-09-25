@@ -81,11 +81,22 @@ export default function AdminNoticesPage() {
           <div className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="bc-target">{t("targetLabelFull")}</Label>
-              <Select value={target} onValueChange={(v) => setTarget(v as typeof target)}>
-                <SelectTrigger id="bc-target" className="h-11 md:h-9">
+              <Select
+                value={target}
+                onValueChange={(v) => setTarget(v as typeof target)}
+                items={[
+                  { label: t("targetOwner"), value: "owner" },
+                  { label: t("targetSeeker"), value: "seeker" },
+                  { label: t("targetAll"), value: "semua" },
+                ]}
+              >
+                <SelectTrigger
+                  id="bc-target"
+                  className="flex h-11 w-full cursor-pointer items-center justify-between rounded-lg border-solid border border-nk-border bg-nk-warm/80 px-3.5 text-sm font-medium text-nk-text shadow-xs transition-colors hover:border-nk-accent/40 hover:bg-nk-warm focus-visible:border-nk-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nk-accent md:h-10"
+                >
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent alignItemWithTrigger={false} side="bottom" sideOffset={6} className="w-(--anchor-width) border border-nk-border bg-nk-surface shadow-lg">
                   <SelectItem value="owner">{t("targetOwner")}</SelectItem>
                   <SelectItem value="seeker">{t("targetSeeker")}</SelectItem>
                   <SelectItem value="semua">{t("targetAll")}</SelectItem>

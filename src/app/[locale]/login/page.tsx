@@ -40,10 +40,10 @@ function LoginInner() {
   return (
     <div className="min-h-dvh bg-nk-bg p-4 lg:p-6">
       <div className="mx-auto grid min-h-[calc(100dvh-2rem)] w-full max-w-[1500px] overflow-hidden lg:min-h-[calc(100dvh-3rem)] lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="relative hidden overflow-hidden rounded-lg bg-nk-warm lg:block" aria-label="NgeKost Hunian Nyaman">
+        <section className="relative hidden overflow-hidden rounded-lg bg-nk-warm lg:block" aria-label="NgeKos Hunian Nyaman">
           <Image
             src="/images/about-hero-wide.jpg"
-            alt="Suasana hunian kost NgeKost"
+            alt="Suasana hunian kost NgeKos"
             fill
             priority
             className="object-cover"
@@ -52,7 +52,7 @@ function LoginInner() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-10 text-white xl:p-14">
             <p className="max-w-lg text-3xl font-light leading-tight tracking-tight">
-              Cari kost idamanmu atau kelola properti kos dengan praktis di NgeKost.
+              Cari kost idamanmu atau kelola properti kos dengan praktis di NgeKos.
             </p>
           </div>
         </section>

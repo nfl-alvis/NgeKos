@@ -27,7 +27,7 @@
   "hero": {
     "badge": "Ratusan kost terverifikasi",
     "title1": "Cari kost impianmu",
-    "title2": "mudah bersama NgeKost.",
+    "title2": "mudah bersama NgeKos.",
     "subtitle": "Temukan kost terverifikasi di dekat kampus atau kantormu. Harga transparan, fasilitas lengkap, proses sewa cepat.",
     "placeholder": "Masukan nama lokasi/area/alamat",
     "search": "Cari",
@@ -146,7 +146,7 @@
     "terms": "Syarat & Ketentuan",
     "privacy": "Kebijakan Privasi",
     "rights": "Hak cipta dilindungi.",
-    "verifiedBadge": "Semua kost di NgeKost melewati verifikasi tim kami.",
+    "verifiedBadge": "Semua kost di NgeKos melewati verifikasi tim kami.",
     "exploreAll": "Semua Kost",
     "jakarta": "Kost Jakarta",
     "bandung": "Kost Bandung",
@@ -202,8 +202,8 @@
     "ctaBack": "Ke beranda"
   },
   "why": {
-    "heading": "Kenapa NgeKost?",
-    "subheading": "Dengan NgeKost kamu bisa langsung nemuin kost impian, tanpa ribet.",
+    "heading": "Kenapa NgeKos?",
+    "subheading": "Dengan NgeKos kamu bisa langsung nemuin kost impian, tanpa ribet.",
     "agent": "Bicara dengan tim kami",
     "favorite": "Temukan kost favoritmu",
     "agentBody": "Tim kami mengecek setiap kost sebelum tampil. Yang lolos yang tampil.",
@@ -211,7 +211,7 @@
     "faq": {
       "items": [
         {
-          "q": "Kost di NgeKost sudah pasti terverifikasi?",
+          "q": "Kost di NgeKos sudah pasti terverifikasi?",
           "a": "Iya. Tim kami mengecek setiap kost sebelum tampil. Yang lolos yang tampil."
         },
         {
@@ -247,10 +247,10 @@
     "seeAll": "Lihat semua kampus"
   },
   "about": {
-    "title": "Tentang NgeKost",
+    "title": "Tentang NgeKos",
     "heroLine1": "Platform cari kost yang",
     "heroLine2": "datanya bisa dicek.",
-    "subtitle": "NgeKost lahir dari masalah sederhana: nyari kost itu melelahkan. Iklan nggak sesuai, harga nggak jelas, foto nggak nyambung. Sejak 2021 kami merapikan tiga hal itu, satu kost per satu.",
+    "subtitle": "NgeKos lahir dari masalah sederhana: nyari kost itu melelahkan. Iklan nggak sesuai, harga nggak jelas, foto nggak nyambung. Sejak 2021 kami merapikan tiga hal itu, satu kost per satu.",
     "ctaButton": "Jelajahi Kost",
     "heroSecondary": "Punya kost? Daftarkan di sini",
     "f1Title": "Data kost yang lengkap",
@@ -261,10 +261,10 @@
     "f3Body": "Ribuan kamar di 6 kota besar, terpusat di area kampus dan transit. Kami buka kota baru kalau tim verifikasinya sudah siap di sana.",
     "z1Title": "Verifikasi dulu, tayang kemudian.",
     "z1Body": "Tim kami mengecek dokumen kepemilikan, lokasi, dan kesesuaian foto satu per satu. Kost yang tidak lolos dikembalikan ke pemiliknya untuk diperbaiki, bukan dibiarkan menyesatkan pencari.",
-    "z1Alt": "Tim NgeKost memeriksa dokumen dan foto kost saat kunjungan",
+    "z1Alt": "Tim NgeKos memeriksa dokumen dan foto kost saat kunjungan",
     "z2Title": "Kota demi kota, kami buka dengan data nyata.",
-    "z2Body": "Kami tidak menayangkan kota sebelum jumlah kost terverifikasinya cukup untuk dipakai cari-cari. Sekarang NgeKost aktif di Jakarta, Bandung, Yogyakarta, Malang, Surabaya, dan Semarang.",
-    "z2Alt": "Peta jangkauan kota NgeKost di Indonesia",
+    "z2Body": "Kami tidak menayangkan kota sebelum jumlah kost terverifikasinya cukup untuk dipakai cari-cari. Sekarang NgeKos aktif di Jakarta, Bandung, Yogyakarta, Malang, Surabaya, dan Semarang.",
+    "z2Alt": "Peta jangkauan kota NgeKos di Indonesia",
     "ctaTitle": "Siap pindah ke kost yang lebih baik?",
     "ctaBody": "Jelajahi ratusan kost terverifikasi di 6 kota. Harga bersih, fasilitas sesuai.",
     "ctaCities": "Kota yang sudah kami rambah"
@@ -309,7 +309,7 @@
     "successBody": "Nomor booking {code}. Pemilik punya 24 jam untuk merespons. Status berubah di halaman Booking Saya.",
     "successWa": "Kabari pemilik via WhatsApp",
     "successCta": "Lihat Status Booking Saya",
-    "waMessage": "Halo, saya {name}. Baru mengajukan sewa {room} di {property} di NgeKost (kode {code}). Mohon dicek, terima kasih.",
+    "waMessage": "Halo, saya {name}. Baru mengajukan sewa {room} di {property} di NgeKos (kode {code}). Mohon dicek, terima kasih.",
     "notFound": "Kost ini sedang tidak menerima pengajuan.",
     "backList": "Kembali ke daftar kost",
     "totalPeriod": "Total {count, plural, other {# bulan}} pertama",
@@ -1204,7 +1204,7 @@
     }
   },
   "blog": {
-    "title": "Blog NgeKost",
+    "title": "Blog NgeKos",
     "subtitle": "Panduan tinggal di kos: cari, pindah, tetap ramah dengan tetangga.",
     "featured": "Sorotan",
     "readMore": "Baca selengkapnya",
@@ -1257,7 +1257,7 @@
     }
   },
   "karir": {
-    "title": "Karir di NgeKost",
+    "title": "Karir di NgeKos",
     "subtitle": "Tim kecil yang mengerjakan pencarian kos untuk jutaan penyewa. Bekerja dari Jakarta, Bandung, dan rumah masing-masing.",
     "openings": "Lowongan Terbuka",
     "sendCv": "Kirim CV ke",
@@ -1308,7 +1308,7 @@
     "statsPayoutValue": "24 jam",
     "statsVerify": "Verifikasi properti",
     "statsVerifyValue": "3 hari",
-    "why": "Kenapa pemilik memilih NgeKost",
+    "why": "Kenapa pemilik memilih NgeKos",
     "why1Title": "Notifikasi Telegram",
     "why1Body": "Booking baru, pembayaran diterima, dan tenant menunggak masuk ke chat Telegram pribadimu.",
     "why2Title": "Template pesan siap pakai",
@@ -1382,13 +1382,13 @@
       "q4": "Metode pembayaran apa saja yang tersedia?",
       "q4a": "Transfer bank (BCA, Mandiri, BNI), e-wallet (GoPay, OVO, DANA), QRIS, dan gerai retail (Indomaret, Alfamart).",
       "q5": "Apakah data pembayaran saya aman?",
-      "a5": "Pembayaran diproses lewat penyedia pembayaran berlisensi. NgeKost tidak pernah menyimpan nomor kartu atau kredensial bank kamu.",
+      "a5": "Pembayaran diproses lewat penyedia pembayaran berlisensi. NgeKos tidak pernah menyimpan nomor kartu atau kredensial bank kamu.",
       "q6": "Bagaimana cara mendaftarkan kos saya?",
       "a6": "Daftar sebagai Pemilik, isi data properti dan tipe kamar, lalu kirim untuk verifikasi. Prosesnya gratis dan selesai dalam 3 hari kerja.",
-      "q7": "Berapa biaya pakai NgeKost untuk pemilik?",
+      "q7": "Berapa biaya pakai NgeKos untuk pemilik?",
       "a7": "Listing gratis. Paket berlangganan mulai Rp99.000/bulan untuk fitur manajemen: tagihan otomatis, notifikasi Telegram, dan laporan okupansi.",
       "q8": "Bagaimana proses pencairan pembayaran?",
-      "a8": "Pembayaran dari penyewa masuk ke saldo NgeKost, lalu dicairkan ke rekeningmu dalam 24 jam kerja setelah pembayaran terkonfirmasi."
+      "a8": "Pembayaran dari penyewa masuk ke saldo NgeKos, lalu dicairkan ke rekeningmu dalam 24 jam kerja setelah pembayaran terkonfirmasi."
     }
   },
   "legal": {
@@ -1399,7 +1399,7 @@
     "sections": [
       {
         "heading": "1. Penerimaan Ketentuan",
-        "body": "Dengan mengakses NgeKost, kamu menyetujui ketentuan ini. Kalau tidak setuju dengan bagian mana pun, hentikan penggunaan layanan. Ketentuan berlaku untuk semua pengguna: pencari kos, pemilik properti, dan pengunjung."
+        "body": "Dengan mengakses NgeKos, kamu menyetujui ketentuan ini. Kalau tidak setuju dengan bagian mana pun, hentikan penggunaan layanan. Ketentuan berlaku untuk semua pengguna: pencari kos, pemilik properti, dan pengunjung."
       },
       {
         "heading": "2. Akun dan Tanggung Jawab",
@@ -1416,12 +1416,12 @@
         "list": [
           "Pembayaran diproses oleh penyedia pembayaran berlisensi.",
           "Pengembalian dana mengikuti kebijakan pembatalan yang tercantum di halaman detail properti.",
-          "NgeKost tidak menyimpan data kartu atau kredensial bank."
+          "NgeKos tidak menyimpan data kartu atau kredensial bank."
         ]
       },
       {
-        "heading": "4. Peran NgeKost",
-        "body": "NgeKost adalah platform perantara. Kami memverifikasi identitas pemilik dan kelengkapan data properti, tetapi tidak menjadi pihak dalam perjanjian sewa antara pemilik dan penyewa. Sengketa fisik atas kamar, fasilitas, atau kenyamanan diselesaikan kedua belah pihak; kami membantu mediasi lewat Pusat Bantuan."
+        "heading": "4. Peran NgeKos",
+        "body": "NgeKos adalah platform perantara. Kami memverifikasi identitas pemilik dan kelengkapan data properti, tetapi tidak menjadi pihak dalam perjanjian sewa antara pemilik dan penyewa. Sengketa fisik atas kamar, fasilitas, atau kenyamanan diselesaikan kedua belah pihak; kami membantu mediasi lewat Pusat Bantuan."
       },
       {
         "heading": "5. Konten Pengguna",
@@ -1435,7 +1435,7 @@
     "sectionsPrivacy": [
       {
         "heading": "1. Data yang Kami Kumpulkan",
-        "body": "Saat kamu mendaftar dan memakai NgeKost, kami mengumpulkan:",
+        "body": "Saat kamu mendaftar dan memakai NgeKos, kami mengumpulkan:",
         "list": [
           "Nama, email, dan nomor telepon.",
           "Data properti dan transaksi (booking, tagihan, pembayaran).",

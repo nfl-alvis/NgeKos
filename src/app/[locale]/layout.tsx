@@ -23,8 +23,8 @@ export function generateStaticParams() {
 
 export const metadata: Metadata = {
   title: {
-    default: "NgeKost - Cari Kost Terverifikasi",
-    template: "%s - NgeKost",
+    default: "NgeKos - Cari Kost Terverifikasi",
+    template: "%s - NgeKos",
   },
   description:
     "Platform kost terverifikasi untuk anak kos Indonesia. Harga transparan, fasilitas lengkap.",

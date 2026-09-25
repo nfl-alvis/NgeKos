@@ -79,7 +79,7 @@ export default function SearchBar() {
           onValueChange={(v) => setCity(v ?? "")}
           items={CITIES.map((c) => ({ label: c, value: c }))}
         >
-          <SelectTrigger className="h-auto w-full cursor-pointer py-0 text-sm text-nk-text">
+          <SelectTrigger className="h-auto w-full cursor-pointer border-none bg-transparent px-0 py-0 text-sm text-nk-text shadow-none">
             <SelectValue placeholder={t("popular")} className="truncate" />
           </SelectTrigger>
           <SelectContent align="start">

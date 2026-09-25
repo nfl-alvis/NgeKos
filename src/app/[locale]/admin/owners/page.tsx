@@ -61,6 +61,7 @@ export default function AdminOwnersPage() {
               email: u.email,
               phone: u.phone || "-",
               city: "Indonesia",
+              tier: "basic" as const,
               propertyCount: u._count?.properties ?? 0,
               status: u.status === "ACTIVE" ? "aktif" : u.status === "SUSPENDED" ? "ditangguhkan" : "menunggu",
               joinedAt: typeof u.createdAt === "string" ? u.createdAt.slice(0, 10) : "2026-09-01",
@@ -180,12 +181,14 @@ export default function AdminOwnersPage() {
                   <TableCell className="px-4 py-3 text-nk-text-muted">{o.city}</TableCell>
                   <TableCell className="px-4 py-3 tabular-nums text-nk-text">{o.propertyCount}</TableCell>
                   <TableCell className="px-4 py-3">
-                    <StatusBadge color={o.tier === "premium" ? "blue" : "gray"}>{t(`tier${o.tier.charAt(0).toUpperCase()}${o.tier.slice(1)}`)}</StatusBadge>
+                    <StatusBadge color={o.tier === "premium" ? "blue" : "gray"}>
+                      {t(o.tier === "premium" ? "tierPremium" : "tierBasic")}
+                    </StatusBadge>
                   </TableCell>
                   <TableCell className="px-4 py-3 text-nk-text-muted">{formatReviewDate(o.joinedAt, locale)}</TableCell>
                   <TableCell className="px-4 py-3">
                     <StatusBadge color={st === "aktif" ? "green" : st === "ditangguhkan" ? "red" : "yellow"}>
-                      {t(`st${st === "aktif" ? "Active" : st === "ditangguhkan" ? "Suspended" : "Pending"}`)}
+                      {t(st === "aktif" ? "stActive" : st === "ditangguhkan" ? "stSuspended" : "stPending")}
                     </StatusBadge>
                   </TableCell>
                   <TableCell className="px-2 py-3 text-right">

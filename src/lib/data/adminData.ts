@@ -195,7 +195,7 @@ export const platformTransactions: PlatformTransaction[] = [
   { id: "VT-8839", bookingId: "BK-1244", propertyName: "Kost Putri Mawar", payer: "Anindya Paramitha", method: "gopay", amount: 1250000, fee: 62500, status: "pending", at: "2026-09-02T21:33:00" },
   { id: "VT-8837", bookingId: "BK-1242", propertyName: "Kost Pangeran Diponegoro", payer: "Kevin Hanjaya", method: "va-bni", amount: 3250000, fee: 162500, status: "settlement", at: "2026-09-02T15:08:00" },
   { id: "VT-8835", bookingId: "BK-1240", propertyName: "Kost Al-Amin", payer: "Sarah Amelia Pohan", method: "va-bca", amount: 1100000, fee: 55000, status: "expired", at: "2026-09-01T19:57:00" },
-  { id: "VT-8832", bookingId: "BK-1236", propertyName: "Kost Ratna Darmo", payer: "Reza Fahlevi", method: "qris", amount: 1400000, fee: 70000, status: "cancel", at: "2026-09-01T12:26:00" },
+  { id: "VT-8832", bookingId: "BK-1236", propertyName: "Kost Melati Surabaya", payer: "Reza Fahlevi", method: "qris", amount: 1400000, fee: 70000, status: "cancel", at: "2026-09-01T12:26:00" },
   { id: "VT-8830", bookingId: "BK-1233", propertyName: "Kost Bougenville", payer: "Muhammad Iqbal", method: "va-bca", amount: 850000, fee: 42500, status: "settlement", at: "2026-08-31T09:14:00" },
   { id: "VT-8828", bookingId: "BK-1230", propertyName: "Kost Griya Cemara", payer: "I made Sudiarta", method: "gopay", amount: 1200000, fee: 60000, status: "settlement", at: "2026-08-30T20:47:00" },
   { id: "VT-8825", bookingId: "BK-1227", propertyName: "Kost Sara Theresa", payer: "Dinda Kartika", method: "va-bni", amount: 1750000, fee: 87500, status: "refund", at: "2026-08-29T10:02:00" },
@@ -223,7 +223,7 @@ export const monthlyRevenue: { monthId: string; gross: number; fee: number }[] =
 
 export const refundRequests: RefundRequest[] = [
   { id: "RD-114", bookingId: "BK-1225", propertyName: "Kost Sara Theresa", user: "Dinda Kartika", amount: 1750000, reasonId: "Kamar tidak sesuai foto, AC tidak berfungsi saat check-in.", reasonEn: "Room does not match photos, AC not working at check-in.", requestedAt: "2026-09-01", status: "diajukan" },
-  { id: "RD-113", bookingId: "BK-1219", propertyName: "Kost Ratna Darmo", user: "Reza Fahlevi", amount: 1400000, reasonId: "Owner membatalkan sepihak 2 hari sebelum masuk.", reasonEn: "Owner cancelled unilaterally 2 days before move-in.", requestedAt: "2026-08-30", status: "diajukan" },
+  { id: "RD-113", bookingId: "BK-1219", propertyName: "Kost Melati Surabaya", user: "Reza Fahlevi", amount: 1400000, reasonId: "Owner membatalkan sepihak 2 hari sebelum masuk.", reasonEn: "Owner cancelled unilaterally 2 days before move-in.", requestedAt: "2026-08-30", status: "diajukan" },
   { id: "RD-112", bookingId: "BK-1214", propertyName: "Kost Al-Amin", user: "Sarah Amelia Pohan", amount: 550000, reasonId: "DP sudah dibayar tapi kamar diberikan ke orang lain.", reasonEn: "DP paid but the room was given to someone else.", requestedAt: "2026-08-28", status: "diajukan" },
   { id: "RD-110", bookingId: "BK-1202", propertyName: "Kost Mutiara Gading", user: "Bayu Anggara", amount: 1550000, reasonId: "Salah bayar dua kali untuk booking yang sama.", reasonEn: "Paid twice for the same booking.", requestedAt: "2026-08-21", status: "disetujui" },
   { id: "RD-108", bookingId: "BK-1193", propertyName: "Kost Griya Cemara", user: "Kevin Hanjaya", amount: 500000, reasonId: "Ingin mundur karena pindah kota, sudah lewat batas pembatalan gratis.", reasonEn: "Wants to withdraw due to moving cities, past the free cancellation window.", requestedAt: "2026-08-12", status: "ditolak" },
@@ -232,7 +232,7 @@ export const refundRequests: RefundRequest[] = [
 /* ===== laporan pengguna ===== */
 
 export const userReports: UserReport[] = [
-  { id: "RP-221", type: "properti", target: "Kost Ratna Darmo · Surabaya", reporter: "Reza Fahlevi", reasonId: "FakePrice", reasonEn: "Fake price", at: "2026-09-02", status: "baru" },
+  { id: "RP-221", type: "properti", target: "Kost Melati Surabaya · Surabaya", reporter: "Reza Fahlevi", reasonId: "FakePrice", reasonEn: "Fake price", at: "2026-09-02", status: "baru" },
   { id: "RP-220", type: "pengguna", target: "Reza Fahlevi (u-6)", reporter: "Lilis Suryani", reasonId: "SpamChat", reasonEn: "Chat spam", at: "2026-09-02", status: "baru" },
   { id: "RP-219", type: "review", target: "Ulasan rv-7 · Kost Zinnia", reporter: "Nia Kurniasih", reasonId: "Abusive", reasonEn: "Abusive content", at: "2026-09-01", status: "baru" },
   { id: "RP-216", type: "properti", target: "Kost Melati Baru · Depok", reporter: "Anindya Paramitha", reasonId: "FakeListing", reasonEn: "Fake listing", at: "2026-08-27", status: "selesai" },

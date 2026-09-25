@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { Prisma, type BookingStatus, type Profile } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { canTransitionBooking } from "@/server/booking-policy";
+import { bookingIdentifierWhere } from "@/server/booking-identifier";
 import { ApiError } from "@/server/http";
 import type { BookingCreateInput } from "@/server/validation";
 
@@ -86,7 +87,7 @@ export async function listBookings(profile: Profile, page: number, limit: number
 }
 
 export async function getBooking(profile: Profile, id: string) {
-  const booking = await prisma.booking.findFirst({ where: { OR: [{ id }, { code: id }] }, include: bookingInclude });
+  const booking = await prisma.booking.findFirst({ where: bookingIdentifierWhere(id), include: bookingInclude });
   if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking tidak ditemukan");
   const allowed = profile.role === "ADMIN" || booking.applicantId === profile.id || booking.property.ownerId === profile.id;
   if (!allowed) throw new ApiError(403, "FORBIDDEN", "Anda tidak memiliki akses ke booking ini");
@@ -100,7 +101,7 @@ export async function transitionBooking(
 ) {
   return prisma.$transaction(async (tx) => {
     const booking = await tx.booking.findFirst({
-      where: { OR: [{ id }, { code: id }] },
+      where: bookingIdentifierWhere(id),
       include: { property: { select: { ownerId: true } } },
     });
     if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking tidak ditemukan");

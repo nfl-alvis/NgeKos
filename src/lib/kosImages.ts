@@ -54,12 +54,6 @@ export const KOS_IMAGES: Record<string, KosImageSet> = {
     bathroom: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
     common: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80",
   },
-  "kost-ratna-darmo": {
-    main: "https://images.unsplash.com/photo-1540518614846-7ede433c4ef0?auto=format&fit=crop&w=1200&q=80",
-    room: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
-    bathroom: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
-    common: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80",
-  },
   "kost-sara-theresa-cibubur": {
     main: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=1200&q=80",
     room: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80",
@@ -122,14 +116,14 @@ export function getCityImage(cityOrSeed: string): string {
 }
 
 export const CAMPUS_IMAGES: Record<string, string> = {
-  ugm: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
-  ui: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
-  itb: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
-  its: "https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=800&q=80",
-  unpad: "https://images.unsplash.com/photo-1492538368677-f6e0afe31dcc?auto=format&fit=crop&w=800&q=80",
-  unair: "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?auto=format&fit=crop&w=800&q=80",
-  undip: "https://images.unsplash.com/photo-1576495199011-eb94736d05d6?auto=format&fit=crop&w=800&q=80",
-  ub: "https://images.unsplash.com/photo-1519452635265-7b1fbfd1e4e0?auto=format&fit=crop&w=800&q=80",
+  ugm: "/images/kampus/ugm.png",
+  ui: "/images/kampus/ui.png",
+  itb: "/images/kampus/itb.png",
+  its: "/images/kampus/its.png",
+  unpad: "/images/kampus/unpad.png",
+  unair: "/images/kampus/unair.png",
+  undip: "/images/kampus/undip.png",
+  ub: "/images/kampus/ub.png",
 };
 
 export function getCampusImage(nameOrSeed: string): string {

@@ -160,7 +160,7 @@ export default function Navbar() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-medium tracking-tight text-nk-text">
-                  Daftar Akun NgeKost
+                  Daftar Akun NgeKos
                 </h2>
                 <p className="mt-1 text-xs text-nk-text-muted">
                   Pilih tipe pendaftaran yang sesuai dengan Anda

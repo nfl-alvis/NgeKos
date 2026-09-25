@@ -113,7 +113,7 @@ export default function AdminVerificationPage() {
     fetch("/api/admin/verifications")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const mapped: AdminReviewEntry[] = json.data.map((row: any) => ({
             id: row.id,
             propertyId: row.property?.id || "",
@@ -129,13 +129,20 @@ export default function AdminVerificationPage() {
               : 0,
             minPrice: Number(row.property?.minMonthlyPrice || 0),
             submittedAt: typeof row.submittedAt === "string" ? row.submittedAt : new Date(row.submittedAt).toISOString().slice(0, 10),
-            images: Array.isArray(row.property?.images) ? row.property.images.map((img: any) => img.url) : [],
+            images: Array.isArray(row.property?.images) ? row.property.images.map((img: any) => img.url).filter(Boolean) : [],
           }));
-          setQueue(mapped);
+
+          const decidedIds = new Set(history.map((h) => h.id).concat(history.map((h) => h.propertySlug)));
+          const dbIds = new Set(mapped.map((m) => m.id).concat(mapped.map((m) => m.propertySlug)));
+          const remainingDemo = initialQueue.filter(
+            (q) => !decidedIds.has(q.id) && !decidedIds.has(q.propertySlug) && !dbIds.has(q.id) && !dbIds.has(q.propertySlug)
+          );
+
+          setQueue([...mapped, ...remainingDemo]);
         }
       })
       .catch(() => {});
-  }, []);
+  }, [initialQueue, history]);
 
   const decidedToday = history.filter((h) => {
     const d = h.decidedAt ?? "";

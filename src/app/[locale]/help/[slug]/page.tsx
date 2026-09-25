@@ -19,8 +19,8 @@ export async function generateMetadata({
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
   return {
-    title: `${readable} - Pusat Bantuan Ngekost`,
-    description: `Panduan lengkap mengenai ${readable} di aplikasi Ngekost.`,
+    title: `${readable} - Pusat Bantuan NgeKos`,
+    description: `Panduan lengkap mengenai ${readable} di aplikasi NgeKos.`,
   };
 }
 
@@ -94,14 +94,14 @@ export default async function HelpArticlePage({
           <h2 className="text-base font-semibold text-nk-text mb-2">Ringkasan</h2>
           <p className="text-sm leading-relaxed text-nk-text-muted">
             Panduan ini menjelaskan prosedur dan solusi praktis untuk pertanyaan &ldquo;{matchedTitle}&rdquo; di platform
-            Ngekost. Tim kami berkomitmen memberikan proses yang transparan, aman, dan tanpa biaya tersembunyi.
+            NgeKos. Tim kami berkomitmen memberikan proses yang transparan, aman, dan tanpa biaya tersembunyi.
           </p>
         </div>
 
         <h3 className="text-lg font-medium text-nk-text mt-8 mb-3">Langkah-langkah Penyelesaian</h3>
         <ol className="list-decimal pl-5 space-y-3 text-sm leading-relaxed text-nk-text-muted">
           <li>
-            <strong className="text-nk-text">Pastikan Anda telah masuk (login):</strong> Masuk ke akun Ngekost Anda menggunakan email atau Google untuk mengakses data booking dan profil.
+            <strong className="text-nk-text">Pastikan Anda telah masuk (login):</strong> Masuk ke akun NgeKos Anda menggunakan email atau Google untuk mengakses data booking dan profil.
           </li>
           <li>
             <strong className="text-nk-text">Buka menu yang relevan:</strong> Kunjungi menu Dashboard, Booking Saya, atau Tagihan sesuai dengan aktivitas yang ingin Anda kelola.
@@ -117,7 +117,7 @@ export default async function HelpArticlePage({
         <div className="mt-8 rounded-lg border border-amber-200/80 bg-amber-50/50 p-4">
           <h4 className="text-sm font-semibold text-amber-900 mb-1">Catatan Penting</h4>
           <p className="text-xs leading-relaxed text-amber-800">
-            Pastikan seluruh transaksi sewa dan pembayaran uang muka (DP) hanya dilakukan melalui rekening resmi atau sesuai petunjuk platform Ngekost untuk menghindari penipuan di luar aplikasi.
+            Pastikan seluruh transaksi sewa dan pembayaran uang muka (DP) hanya dilakukan melalui rekening resmi atau sesuai petunjuk platform NgeKos untuk menghindari penipuan di luar aplikasi.
           </p>
         </div>
       </article>

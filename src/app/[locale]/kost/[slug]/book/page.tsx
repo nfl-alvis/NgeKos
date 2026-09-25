@@ -43,14 +43,14 @@ export default async function BookingApplyPage({
         rating: dbProp.rating,
         reviewCount: dbProp.reviewCount,
         imageSeed: dbProp.slug,
-        facilities: dbProp.facilities.map((f) => f.key as Facility),
+        facilities: dbProp.facilities.map((f: { key: string }) => f.key as Facility),
         minPrice: dbProp.minPrice,
         distanceToCampusM: dbProp.distanceToCampusM ?? 0,
         depositAmount: dbProp.depositAmount,
         depositInfo: dbProp.depositAmount ? `DP Rp ${dbProp.depositAmount.toLocaleString("id-ID")}` : "Tanpa deposit",
         verificationStatus: dbProp.status === "VERIFIED" ? "verified" : dbProp.status === "REJECTED" ? "rejected" : "pending",
         dpAmount: dbProp.depositAmount ?? undefined,
-        roomTypes: dbProp.roomTypes.map((rt) => ({
+        roomTypes: dbProp.roomTypes.map((rt: { id: string; name: string; pricePerMonth: number; available: number; total: number; sizeM2?: number | null }) => ({
           id: rt.id,
           name: rt.name,
           pricePerMonth: rt.pricePerMonth,

@@ -13,7 +13,7 @@ export async function generateMetadata({
   return { title: t("title"), description: t("subtitle") };
 }
 
-/* ---- Mamikos-style art, re-inked to the NgeKost palette ---- */
+/* ---- Mamikos-style art, re-inked to the NgeKos palette ---- */
 
 function CurveHero({ children }: { children: React.ReactNode }) {
   return (
@@ -53,7 +53,7 @@ function PhoneMock({ className }: { className?: string }) {
       viewBox="0 0 280 500"
       className={className}
       role="img"
-      aria-label="Aplikasi NgeKost di ponsel"
+      aria-label="Aplikasi NgeKos di ponsel"
     >
       <rect x="10" y="10" width="260" height="480" rx="40" fill="#FDFCF9" />
       <rect

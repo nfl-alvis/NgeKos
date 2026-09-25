@@ -12,31 +12,81 @@ function requestedRole(user: User): UserRole {
 }
 
 export async function getAuthContext(): Promise<AuthContext | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user?.email) return null;
-
-  const user = data.user;
-  const email = user.email;
-  if (!email) return null;
-  const profile = await prisma.profile.upsert({
-    where: { id: user.id },
-    update: { email: email.toLowerCase(), lastSeenAt: new Date() },
-    create: {
-      id: user.id,
-      email: email.toLowerCase(),
-      fullName: user.user_metadata?.full_name?.trim() || email.split("@")[0],
-      phone: user.user_metadata?.phone || null,
-      role: requestedRole(user),
-      locale: user.user_metadata?.locale === "en" ? "en" : "id",
-      lastSeenAt: new Date(),
-    },
-  });
-
-  if (profile.status !== "ACTIVE") {
-    throw new ApiError(403, "ACCOUNT_DISABLED", "Akun tidak aktif");
+  const { getSessionCookie, profileFromSession } = await import("@/server/user-store");
+  const session = await getSessionCookie();
+  if (session) {
+    const profile = profileFromSession(session);
+    const authUser = {
+      id: session.userId,
+      email: session.email,
+      user_metadata: {
+        full_name: session.fullName,
+        role: session.role.toLowerCase(),
+      },
+    } as unknown as User;
+    return { authUser, profile };
   }
-  return { authUser: user, profile };
+
+  try {
+    const supabase = await createClient();
+    const userPromise = supabase.auth.getUser();
+    const timeoutPromise = new Promise<{ data: { user: null }; error: Error }>((resolve) =>
+      setTimeout(() => resolve({ data: { user: null }, error: new Error("Supabase auth timeout") }), 2500)
+    );
+    const { data, error } = await Promise.race([userPromise, timeoutPromise]);
+    if (error || !data.user?.email) return null;
+
+    const user = data.user;
+    const email = user.email;
+    if (!email) return null;
+
+    try {
+      const profile = await prisma.profile.upsert({
+        where: { id: user.id },
+        update: { email: email.toLowerCase(), lastSeenAt: new Date() },
+        create: {
+          id: user.id,
+          email: email.toLowerCase(),
+          fullName: user.user_metadata?.full_name?.trim() || email.split("@")[0],
+          phone: user.user_metadata?.phone || null,
+          role: requestedRole(user),
+          locale: user.user_metadata?.locale === "en" ? "en" : "id",
+          lastSeenAt: new Date(),
+        },
+      });
+
+      if (profile.status !== "ACTIVE") {
+        throw new ApiError(403, "ACCOUNT_DISABLED", "Akun tidak aktif");
+      }
+      return { authUser: user, profile };
+    } catch (dbErr) {
+      if (dbErr instanceof ApiError) throw dbErr;
+      // Fallback if DB is unavailable
+      const fallbackProfile: Profile = {
+        id: user.id,
+        email: email.toLowerCase(),
+        fullName: user.user_metadata?.full_name?.trim() || email.split("@")[0],
+        phone: user.user_metadata?.phone || null,
+        avatarUrl: null,
+        birthPlace: null,
+        occupation: null,
+        role: requestedRole(user),
+        adminRole: requestedRole(user) === "ADMIN" ? "SUPER" : null,
+        status: "ACTIVE",
+        locale: "id",
+        emailNotifications: true,
+        pushNotifications: true,
+        marketingNotifications: false,
+        lastSeenAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+      return { authUser: user, profile: fallbackProfile };
+    }
+  } catch {
+    return null;
+  }
 }
 
 export async function requireUser(allowedRoles?: readonly UserRole[]): Promise<AuthContext> {

@@ -9,23 +9,47 @@ import { getOwnerProperties, subscriptionState } from "@/lib/data/entities";
 import CreatePropertyDialog from "@/components/owner/CreatePropertyDialog";
 import type { Property } from "@/lib/data/types";
 import { getKosImage } from "@/lib/kosImages";
+import { useSession } from "@/components/SessionProvider";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function OwnerPropertiesPage() {
   const t = useTranslations("owner.properties");
   const router = useRouter();
-  const [props, setProps] = useState<Array<ReturnType<typeof getOwnerProperties>[number] | Property>>(
-    getOwnerProperties()
-  );
+  const { user } = useSession();
+  const [props, setProps] = useState<Array<ReturnType<typeof getOwnerProperties>[number] | Property>>([]);
+  const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+
+  const handleResubmitVerification = async (idOrSlug: string) => {
+    try {
+      const res = await fetch(`/api/properties/${idOrSlug}/submit-verification`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        setProps((prev) =>
+          prev.map((item) =>
+            item.slug === idOrSlug || ("id" in item && item.id === idOrSlug)
+              ? { ...item, verificationStatus: "pending" }
+              : item
+          )
+        );
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
     async function loadMine() {
       try {
         const res = await fetch("/api/properties?mine=true");
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (!cancelled) setProps(getOwnerProperties());
+          return;
+        }
         const json = await res.json();
-        if (Array.isArray(json.data) && json.data.length > 0 && !cancelled) {
+        if (Array.isArray(json.data) && !cancelled) {
           const mapped: Property[] = json.data.map((dto: any) => ({
             id: dto.id,
             slug: dto.slug,
@@ -60,9 +84,13 @@ export default function OwnerPropertiesPage() {
           const existingSlugs = new Set(mapped.map((m) => m.slug));
           const merged = [...mapped, ...getOwnerProperties().filter((p) => !existingSlugs.has(p.slug))];
           setProps(merged);
+        } else if (!cancelled) {
+          setProps(getOwnerProperties());
         }
       } catch {
-        // fallback to initial props
+        if (!cancelled) setProps(getOwnerProperties());
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
     loadMine();
@@ -71,9 +99,33 @@ export default function OwnerPropertiesPage() {
     };
   }, []);
 
-  const isTrial = subscriptionState.status === "trial";
-  const LIMIT = isTrial ? 1 : Infinity;
-  const atLimit = props.filter((p) => p.verificationStatus === "verified").length >= LIMIT;
+  const isOwnerUnlimited = user?.email?.toLowerCase() === "owner@ngekost.id";
+  const isTrial = !isOwnerUnlimited && subscriptionState.status === "trial";
+  const LIMIT = isTrial ? 5 : Infinity;
+  const atLimit = !isOwnerUnlimited && props.filter((p) => p.verificationStatus === "verified").length >= LIMIT;
+
+  if (loading) {
+    return (
+      <DashboardShell role="owner">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Skeleton className="h-8 w-44 rounded-lg" />
+          <Skeleton className="h-10 w-36 rounded-lg" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex flex-col overflow-hidden rounded-xl border border-nk-border bg-nk-surface">
+              <Skeleton className="h-44 w-full" />
+              <div className="p-4 space-y-3">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </DashboardShell>
+    );
+  }
 
   if (props.length === 0) {
     return (
@@ -202,6 +254,7 @@ export default function OwnerPropertiesPage() {
                     </p>
                     <button
                       type="button"
+                      onClick={() => handleResubmitVerification(("id" in p ? p.id : "") || p.slug)}
                       className="mt-2 text-xs font-medium text-[#9C3B32] underline underline-offset-4 hover:opacity-80"
                     >
                       {t("resubmit")}

@@ -1,8 +1,8 @@
-# Penjelasan DFD - Sistem Ngekost
+# Penjelasan DFD - Sistem NgeKos
 
-**File drawio:** `DFD-Ngekost.drawio` (2 halaman / tab)
+**File drawio:** `DFD-NgeKos.drawio` (2 halaman / tab)
 **Generator:** `gen_dfd_ngekost.py` - data-driven, regenerate jangan edit XML manual
-**Sumber:** PRD-Ngekost-FULL.md v3.5/v3.6, API.md v3.5, DATABASE.md v3.5, rute `src/app/[locale]` repo ngekost-v3
+**Sumber:** PRD-NgeKos-FULL.md v3.5/v3.6, API.md v3.5, DATABASE.md v3.5, rute `src/app/[locale]` repo ngekost-v3
 **Notasi:** Yourdon/DeMarco - kotak = entitas eksternal, elips biru = proses, kotak hijau terbuka (stored-data) = data store, panah berlabel = alur data.
 
 ---
@@ -78,8 +78,8 @@ Sesuai enum `ActorType` di DATABASE.md (OWNER | GUEST | SYSTEM) plus Admin sebag
 
 ```bash
 cd docs/diagram
-python3 gen_dfd_ngekost.py          # DFD-Ngekost.drawio
-python3 gen_activity_ngekost.py     # Activity-Ngekost.drawio
+python3 gen_dfd_ngekost.py          # DFD-NgeKos.drawio
+python3 gen_activity_ngekost.py     # Activity-NgeKos.drawio
 # cek cepat layout (butuh venv cairosvg):
-python3 preview_svg.py DFD-Ngekost.drawio /tmp/dfd_prev
+python3 preview_svg.py DFD-NgeKos.drawio /tmp/dfd_prev
 ```

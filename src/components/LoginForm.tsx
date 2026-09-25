@@ -74,7 +74,12 @@ export default function LoginForm({
     try {
       await loginWithGoogle(role, "login");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : t("oauthError"));
+      const msg = reason instanceof Error ? reason.message : "";
+      if (/provider/i.test(msg) && /not enabled|unsupported/i.test(msg)) {
+        setError("Login dengan Google belum diaktifkan di Supabase Dashboard (Authentication > Providers > Google). Silakan gunakan form email & password di bawah.");
+      } else {
+        setError(reason instanceof Error ? reason.message : t("oauthError"));
+      }
       setPending(false);
     }
   };
@@ -113,35 +118,6 @@ export default function LoginForm({
           <AlertDescription className="text-xs leading-relaxed">{error}</AlertDescription>
         </Alert>
       )}
-
-      <div className="mt-5 rounded-lg border border-nk-accent/20 bg-nk-warm p-3.5 text-left">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wider text-nk-accent">Akun Demo Siap Pakai</span>
-          <span className="text-[10px] text-nk-text-muted">Klik untuk isi form</span>
-        </div>
-        <div className="mt-2.5 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setEmail("owner@ngekost.id");
-              setPassword("Password123!");
-            }}
-            className="rounded border border-nk-border bg-nk-surface px-2.5 py-1 text-xs font-medium text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
-          >
-            Demo Pemilik (owner@ngekost.id)
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setEmail("admin@ngekost.id");
-              setPassword("Password123!");
-            }}
-            className="rounded border border-nk-border bg-nk-surface px-2.5 py-1 text-xs font-medium text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
-          >
-            Demo Admin (admin@ngekost.id)
-          </button>
-        </div>
-      </div>
 
       <div className="mt-6">
         <GoogleButton label={t("google")} onClick={() => void attemptGoogleLogin()} disabled={pending} />

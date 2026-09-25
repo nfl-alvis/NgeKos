@@ -28,11 +28,34 @@ export const propertyCreateSchema = z
     distanceToCampusM: z.coerce.number().int().min(0).max(1_000_000).optional(),
     maxRooms: z.coerce.number().int().min(1).max(10_000).optional(),
     facilities: z.array(z.string().trim().min(1).max(64)).max(50).default([]),
+    roomTypes: z
+      .array(
+        z.object({
+          name: trimmedText(1, 100),
+          description: optionalText(2_000),
+          pricePerMonth: money,
+          sizeM2: z.coerce.number().positive().max(10_000).optional(),
+          total: z.coerce.number().int().min(1).max(1_000).default(1),
+          available: z.coerce.number().int().min(0).max(1_000).optional(),
+        })
+      )
+      .optional(),
+    images: z
+      .array(
+        z.object({
+          url: z.string().trim().optional(),
+          storagePath: z.string().trim().optional(),
+          isCover: z.boolean().optional(),
+          altText: optionalText(250),
+        })
+      )
+      .optional(),
+    autoSubmitVerification: z.boolean().optional().default(true),
   })
   .strict();
 
 export const propertyUpdateSchema = propertyCreateSchema
-  .omit({ facilities: true })
+  .omit({ facilities: true, roomTypes: true, images: true, autoSubmitVerification: true })
   .partial()
   .extend({
     facilities: z.array(z.string().trim().min(1).max(64)).max(50).optional(),

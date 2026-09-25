@@ -146,7 +146,7 @@
     "terms": "Terms & Conditions",
     "privacy": "Privacy Policy",
     "rights": "All rights reserved.",
-    "verifiedBadge": "Every property on NgeKost is verified by our team.",
+    "verifiedBadge": "Every property on NgeKos is verified by our team.",
     "exploreAll": "All Properties",
     "jakarta": "Kost Jakarta",
     "bandung": "Kost Bandung",
@@ -202,8 +202,8 @@
     "ctaBack": "Back to home"
   },
   "why": {
-    "heading": "Why NgeKost?",
-    "subheading": "With NgeKost you can quickly find your dream boarding house.",
+    "heading": "Why NgeKos?",
+    "subheading": "With NgeKos you can quickly find your dream boarding house.",
     "agent": "Talk to our team",
     "favorite": "Find your dream kost",
     "agentBody": "Our team checks every kost before it goes live. Only verified ones show up.",
@@ -211,7 +211,7 @@
     "faq": {
       "items": [
         {
-          "q": "Are the kosts on NgeKost verified?",
+          "q": "Are the kosts on NgeKos verified?",
           "a": "Yes. Our team checks every kost before it goes live. Only verified ones show up."
         },
         {
@@ -247,10 +247,10 @@
     "seeAll": "View all campuses"
   },
   "about": {
-    "title": "About NgeKost",
+    "title": "About NgeKos",
     "heroLine1": "The boarding-house platform",
     "heroLine2": "with checkable data.",
-    "subtitle": "NgeKost started from a simple problem: finding a kost is exhausting. Mismatched ads, unclear prices, misleading photos. Since 2021 we have been fixing all three, one property at a time.",
+    "subtitle": "NgeKos started from a simple problem: finding a kost is exhausting. Mismatched ads, unclear prices, misleading photos. Since 2021 we have been fixing all three, one property at a time.",
     "ctaButton": "Explore Kost",
     "heroSecondary": "Own a kost? List it here",
     "f1Title": "Complete listing data",
@@ -261,10 +261,10 @@
     "f3Body": "Thousands of rooms across 6 major cities, centered on campus and transit areas. We open a new city only when our verification team is ready there.",
     "z1Title": "Verified first, listed second.",
     "z1Body": "Our team checks ownership documents, location, and photo accuracy one by one. A kost that fails goes back to its owner to be fixed, not left to mislead renters.",
-    "z1Alt": "NgeKost team reviewing kost documents and photos on a site visit",
+    "z1Alt": "NgeKos team reviewing kost documents and photos on a site visit",
     "z2Title": "We open a city only with real inventory.",
-    "z2Body": "We never switch on a city before enough verified kosts exist to actually browse. Today NgeKost is live in Jakarta, Bandung, Yogyakarta, Malang, Surabaya, and Semarang.",
-    "z2Alt": "Map of NgeKost city coverage in Indonesia",
+    "z2Body": "We never switch on a city before enough verified kosts exist to actually browse. Today NgeKos is live in Jakarta, Bandung, Yogyakarta, Malang, Surabaya, and Semarang.",
+    "z2Alt": "Map of NgeKos city coverage in Indonesia",
     "ctaTitle": "Ready to move to a better kost?",
     "ctaBody": "Browse hundreds of verified kosts across 6 cities. Clear prices, facilities as promised.",
     "ctaCities": "Cities we cover"
@@ -309,7 +309,7 @@
     "successBody": "Booking number {code}. The owner has 24 hours to respond. Track it under My Bookings.",
     "successWa": "Message the owner on WhatsApp",
     "successCta": "See My Booking Status",
-    "waMessage": "Hi, I'm {name}. Just requested {room} at {property} on NgeKost (code {code}). Please review, thank you.",
+    "waMessage": "Hi, I'm {name}. Just requested {room} at {property} on NgeKos (code {code}). Please review, thank you.",
     "notFound": "This boarding house is not accepting requests.",
     "backList": "Back to listings",
     "totalPeriod": "Total for {count, plural, one {# month} other {# months}}",
@@ -1204,7 +1204,7 @@
     }
   },
   "blog": {
-    "title": "NgeKost Blog",
+    "title": "NgeKos Blog",
     "subtitle": "Guides to boarding-house life: finding a place, moving in, and staying on good terms with housemates.",
     "featured": "Featured",
     "readMore": "Read more",
@@ -1257,7 +1257,7 @@
     }
   },
   "karir": {
-    "title": "Careers at NgeKost",
+    "title": "Careers at NgeKos",
     "subtitle": "A small team building boarding-house search for millions of renters. Working from Jakarta, Bandung, and home.",
     "openings": "Open Positions",
     "sendCv": "Send your CV to",
@@ -1308,7 +1308,7 @@
     "statsPayoutValue": "24 hours",
     "statsVerify": "Property verification",
     "statsVerifyValue": "3 days",
-    "why": "Why owners choose NgeKost",
+    "why": "Why owners choose NgeKos",
     "why1Title": "Telegram notifications",
     "why1Body": "New bookings, received payments, and tenants in arrears land in your personal Telegram chat.",
     "why2Title": "Ready-to-use message templates",
@@ -1382,13 +1382,13 @@
       "q4": "Which payment methods are available?",
       "q4a": "Bank transfer (BCA, Mandiri, BNI), e-wallets (GoPay, OVO, DANA), QRIS, and retail outlets (Indomaret, Alfamart).",
       "q5": "Is my payment data safe?",
-      "a5": "Payments are processed by a licensed payment provider. NgeKost never stores your card numbers or bank credentials.",
+      "a5": "Payments are processed by a licensed payment provider. NgeKos never stores your card numbers or bank credentials.",
       "q6": "How do I list my kost?",
       "a6": "Register as an Owner, fill in property and room-type data, then submit for verification. It's free and completes within 3 business days.",
-      "q7": "What does NgeKost cost for owners?",
+      "q7": "What does NgeKos cost for owners?",
       "a7": "Listing is free. Subscription plans start at Rp99,000/month for management features: automatic invoicing, Telegram notifications, and occupancy reports.",
       "q8": "How does payment disbursement work?",
-      "a8": "Tenant payments land in your NgeKost balance, then disburse to your bank account within 24 business hours after confirmation."
+      "a8": "Tenant payments land in your NgeKos balance, then disburse to your bank account within 24 business hours after confirmation."
     }
   },
   "legal": {
@@ -1399,7 +1399,7 @@
     "sections": [
       {
         "heading": "1. Acceptance of Terms",
-        "body": "By accessing NgeKost you agree to these terms. If you disagree with any part, stop using the service. These terms apply to all users: renters, property owners, and visitors."
+        "body": "By accessing NgeKos you agree to these terms. If you disagree with any part, stop using the service. These terms apply to all users: renters, property owners, and visitors."
       },
       {
         "heading": "2. Accounts and Responsibility",
@@ -1416,12 +1416,12 @@
         "list": [
           "Payments are processed by a licensed payment provider.",
           "Refunds follow the cancellation policy on each property page.",
-          "NgeKost never stores card numbers or bank credentials."
+          "NgeKos never stores card numbers or bank credentials."
         ]
       },
       {
-        "heading": "4. NgeKost's Role",
-        "body": "NgeKost is an intermediary platform. We verify owner identity and property data completeness, but we are not a party to the rental agreement between owner and tenant. Disputes over the room, facilities, or comfort are settled between both parties; we assist mediation through the Help Center."
+        "heading": "4. NgeKos's Role",
+        "body": "NgeKos is an intermediary platform. We verify owner identity and property data completeness, but we are not a party to the rental agreement between owner and tenant. Disputes over the room, facilities, or comfort are settled between both parties; we assist mediation through the Help Center."
       },
       {
         "heading": "5. User Content",
@@ -1435,7 +1435,7 @@
     "sectionsPrivacy": [
       {
         "heading": "1. Data We Collect",
-        "body": "When you register and use NgeKost, we collect:",
+        "body": "When you register and use NgeKos, we collect:",
         "list": [
           "Name, email, and phone number.",
           "Property and transaction data (bookings, invoices, payments).",

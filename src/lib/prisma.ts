@@ -5,11 +5,11 @@ import { env } from "@/lib/env";
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function getDatasourceUrl(): string {
-  const url = env.DATABASE_URL;
-  if (!url) return url;
-  if (url.includes("connect_timeout")) return url;
-  const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}connect_timeout=30&pool_timeout=30`;
+  const url = new URL(env.DATABASE_URL);
+  if (!url.searchParams.has("connect_timeout")) url.searchParams.set("connect_timeout", "5");
+  if (!url.searchParams.has("pool_timeout")) url.searchParams.set("pool_timeout", "5");
+  if (!url.searchParams.has("connection_limit")) url.searchParams.set("connection_limit", "3");
+  return url.toString();
 }
 
 export const prisma =

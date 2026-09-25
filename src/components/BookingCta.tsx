@@ -88,7 +88,7 @@ export default function BookingCta({
                   onValueChange={(v) => setRoomId((v as string) ?? roomId)}
                   items={rooms.map((r) => ({ label: r.name, value: r.id }))}
                 >
-                  <SelectTrigger className="w-full cursor-pointer">
+                  <SelectTrigger className="w-full cursor-pointer border-none bg-transparent px-0 shadow-none">
                     <SelectValue className="truncate" />
                   </SelectTrigger>
                   <SelectContent align="start">
@@ -119,7 +119,7 @@ export default function BookingCta({
                     value: m,
                   }))}
                 >
-                  <SelectTrigger className="w-full cursor-pointer">
+                  <SelectTrigger className="w-full cursor-pointer border-none bg-transparent px-0 shadow-none">
                     <SelectValue className="truncate" />
                   </SelectTrigger>
                   <SelectContent align="start">
