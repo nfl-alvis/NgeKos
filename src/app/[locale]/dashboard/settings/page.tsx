@@ -21,6 +21,7 @@ import { DashSection } from "@/components/dashboard/DashSection";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/components/SessionProvider";
 import { AlertCircle, CheckCircle2, Loader2, ShieldCheck, Trash2 } from "lucide-react";
+import TelegramConnectCard from "@/components/owner/TelegramConnectCard";
 
 /** Pengaturan akun user - preferensi notifikasi, ubah kata sandi, dan hapus akun. */
 export default function DashboardSettingsPage() {
@@ -197,6 +198,9 @@ export default function DashboardSettingsPage() {
               </div>
             ))}
           </DashSection>
+
+          {/* Section Integrasi Notifikasi Telegram */}
+          <TelegramConnectCard isOwner={false} />
 
           {/* Section Keamanan & Kata Sandi */}
           <DashSection title={t("security")} bodyClass="p-4 sm:p-6">

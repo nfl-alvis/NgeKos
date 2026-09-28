@@ -1614,9 +1614,11 @@
     "reviewsTitle": "My Reviews",
     "profileTitle": "My Profile",
     "settingsTitle": "Settings",
+    "messagesTitle": "Messages & Owner Chat",
     "nav": {
       "dashboard": "Overview",
       "bookings": "Bookings",
+      "messages": "Messages",
       "payments": "Payments",
       "favorites": "Favorites",
       "reviews": "Reviews",

@@ -11,7 +11,7 @@ const bindSchema = z.object({
 });
 
 export const POST = withApi(async (request: Request) => {
-  const auth = await requireUser(["OWNER"]);
+  const auth = await requireUser(["OWNER", "SEEKER"]);
   const input = await parseJson(request, bindSchema);
   const result = await bindTelegramManual(auth.profile.id, input);
   return successResponse(result);

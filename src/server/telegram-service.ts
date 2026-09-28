@@ -200,12 +200,14 @@ export async function processTelegramWebhookUpdate(update: any): Promise<{
           },
         });
 
-        await sendTelegramMessage(
-          chatId,
-          `<b>Selamat, ${profile.fullName}!</b>\n\nAkun Telegram Anda berhasil terhubung dengan Dashboard Owner <b>NgeKos</b>.\n\nPesan dari calon penyewa yang bertanya via Telegram akan otomatis masuk ke dashboard web Anda, dan Anda dapat membalasnya langsung dari website.`
-        );
+        const isOwner = profile.role === "OWNER";
+        const welcomeText = isOwner
+          ? `<b>Selamat, ${profile.fullName}!</b>\n\nAkun Telegram Anda berhasil terhubung dengan Dashboard Pemilik Kost <b>NgeKos</b>.\n\nNotifikasi pesan baru dari calon penyewa dan pengajuan sewa akan otomatis dikirimkan ke sini, dan Anda dapat membalasnya langsung dari website.`
+          : `<b>Selamat, ${profile.fullName}!</b>\n\nAkun Telegram Anda berhasil terhubung dengan akun pencari kost <b>NgeKos</b>.\n\nAnda akan menerima notifikasi otomatis setiap ada balasan pesan dari pemilik kost atau pembaruan status sewa Anda.`;
 
-        return { handled: true, action: "owner_connected" };
+        await sendTelegramMessage(chatId, welcomeText);
+
+        return { handled: true, action: isOwner ? "owner_connected" : "seeker_connected" };
       }
     } catch (err) {
       console.error("[Telegram Webhook] Connect token lookup error:", err);
@@ -277,27 +279,18 @@ export async function processTelegramWebhookUpdate(update: any): Promise<{
         },
       });
 
-      // Jika belum ada conversation, cari owner aktif pertama sebagai fallback
+      // Filter Anti-Spam: Jika tidak ada percakapan aktif yang sah, jangan sembarangan teruskan
       if (!conv) {
-        const defaultOwner = await prisma.profile.findFirst({
-          where: { role: "OWNER", status: "ACTIVE" },
-        });
+        const guidanceMsg =
+          `Halo <b>${externalName}</b>! 👋\n\n` +
+          `Saya adalah bot notifikasi resmi <b>NgeKos</b>.\n\n` +
+          `🛡️ <b>Obrolan Terpusat & Bebas Spam:</b>\n` +
+          `Untuk keamanan dan kenyamanan bersama, percakapan dengan pemilik kost dilakukan melalui website resmi NgeKos.\n\n` +
+          `👉 Silakan kunjungi website kami di <b>NgeKos</b>, cari kost yang Anda minati, lalu klik tombol <b>"Chat Pemilik"</b> pada halaman kost terkait.\n\n` +
+          `Pesan Anda akan otomatis terhubung ke pemilik kost yang tepat dan terlindungi dari spam!`;
 
-        if (defaultOwner) {
-          conv = await prisma.conversation.create({
-            data: {
-              ownerId: defaultOwner.id,
-              channel: "TELEGRAM",
-              externalChatId: chatId,
-              externalName,
-              externalUsername,
-            },
-            include: {
-              owner: true,
-              property: true,
-            },
-          });
-        }
+        await sendTelegramMessage(chatId, guidanceMsg);
+        return { handled: true, action: "antispam_guidance_sent" };
       }
 
       if (conv) {

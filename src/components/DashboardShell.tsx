@@ -129,6 +129,7 @@ const USER_GROUPS: { groupKey?: string; items: Item[] }[] = [
   ]},
   { groupKey: "booking", items: [
     { href: "/dashboard/bookings", label: "bookings", icon: CalendarCheck },
+    { href: "/dashboard/messages", label: "messages", icon: MessageSquare },
     { href: "/dashboard/payments", label: "payments", icon: CreditCard },
     { href: "/dashboard/favorites", label: "favorites", icon: Heart },
     { href: "/dashboard/reviews", label: "reviews", icon: Star },

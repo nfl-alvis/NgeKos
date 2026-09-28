@@ -1,11 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { formatIDR } from "@/lib/utils";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import BookingCta from "@/components/BookingCta";
 import { useBookingFlow, type BookingRoom } from "@/components/BookingFlowProvider";
+import { useSession } from "@/components/SessionProvider";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, MessageSquare, Send, ShieldCheck } from "lucide-react";
 
 /**
  * Aksi booking di sidebar detail kost. Sebelum pengajuan dipilih:
@@ -24,7 +35,52 @@ export default function BookingSidebarActions({
 }) {
   const t = useTranslations("booking");
   const params = useParams<{ locale: string; slug: string }>();
+  const router = useRouter();
   const { flow, setFlow } = useBookingFlow();
+  const { user } = useSession();
+
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessage, setChatMessage] = useState("");
+  const [sendingChat, setSendingChat] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+
+  const quickQuestions = [
+    "Apakah kamar ini masih tersedia?",
+    "Bisa jadwalkan survei ke lokasi?",
+    "Apakah harga sewa sudah termasuk listrik?",
+  ];
+
+  const handleSendChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatMessage.trim() || sendingChat) return;
+
+    setSendingChat(true);
+    setChatError(null);
+
+    try {
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertySlug: params.slug,
+          initialMessage: chatMessage.trim(),
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json?.error?.message || "Gagal mengirim pesan.");
+      }
+
+      setChatOpen(false);
+      setChatMessage("");
+      router.push(`/dashboard/messages?slug=${params.slug}`);
+    } catch (err: unknown) {
+      setChatError(err instanceof Error ? err.message : "Terjadi kesalahan saat mengirim pesan.");
+    } finally {
+      setSendingChat(false);
+    }
+  };
 
   if (!flow) {
     return (
@@ -38,20 +94,29 @@ export default function BookingSidebarActions({
           {t("detailBook")}
         </BookingCta>
 
-        <a
-          href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "NgekostBot"}?start=kost_${params.slug}`}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => setChatOpen(true)}
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-nk-border bg-nk-surface px-6 py-2.5 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm"
         >
-          <svg className="size-3.5 text-[#2AABEE]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
-          </svg>
-          Tanya Pemilik via Telegram
-        </a>
+          <MessageSquare className="size-3.5 text-nk-accent" />
+          Chat Pemilik Kost
+        </button>
+
         {dpAmount > 0 && (
           <div className="flex items-start gap-2 rounded-lg bg-nk-warm p-3 text-xs leading-relaxed text-nk-text-muted">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mt-0.5 shrink-0 text-nk-accent">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="mt-0.5 shrink-0 text-nk-accent"
+            >
               <circle cx="12" cy="12" r="10" />
               <path d="M12 16v-4M12 8h.01" />
             </svg>
@@ -61,6 +126,102 @@ export default function BookingSidebarActions({
             </span>
           </div>
         )}
+
+        {/* Dialog Chat Pemilik */}
+        <Dialog open={chatOpen} onOpenChange={setChatOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold text-nk-text">
+                Hubungi Pemilik Kost
+              </DialogTitle>
+              <DialogDescription className="text-xs text-nk-text-muted mt-0.5">
+                {propertyName}
+              </DialogDescription>
+            </DialogHeader>
+
+            {!user ? (
+              <div className="space-y-4 py-2">
+                <div className="rounded-lg border border-nk-border bg-nk-warm p-3.5 text-xs text-nk-text leading-relaxed">
+                  <p className="font-medium mb-1">Masuk untuk Mengirim Pesan</p>
+                  <p className="text-nk-text-muted">
+                    Untuk kenyamanan dan mencegah spam, percakapan dilakukan melalui sistem NgeKos dan otomatis diteruskan ke Telegram pemilik.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/login?next=/kost/${params.slug}`)}
+                  className="w-full rounded-lg bg-nk-accent py-2.5 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90"
+                >
+                  Masuk ke Akun
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSendChat} className="space-y-4 py-2">
+                {chatError && (
+                  <div className="rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-800">
+                    {chatError}
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="chat-msg" className="block text-xs font-medium text-nk-text mb-1.5">
+                    Pesan Anda
+                  </label>
+                  <textarea
+                    id="chat-msg"
+                    rows={3}
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                    placeholder="Tuliskan pertanyaan atau kebutuhan Anda..."
+                    required
+                    className="w-full rounded-lg border border-nk-border bg-nk-bg p-3 text-xs text-nk-text outline-none placeholder:text-nk-text-muted focus:border-nk-accent"
+                  />
+                </div>
+
+                <div>
+                  <p className="mb-1.5 text-[11px] font-medium text-nk-text-muted">Pertanyaan Cepat:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {quickQuestions.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => setChatMessage(q)}
+                        className="rounded-full border border-nk-border bg-nk-surface px-2.5 py-1 text-[11px] text-nk-text transition-colors hover:border-nk-accent hover:bg-nk-warm text-left"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2 rounded-lg border border-emerald-200/80 bg-emerald-50/50 p-2.5 text-[11px] text-emerald-900">
+                  <ShieldCheck className="size-4 shrink-0 text-emerald-600 mt-0.5" />
+                  <p className="leading-relaxed">
+                    Obrolan diproses aman melalui website. Pemilik kost yang menghubungkan Telegram akan otomatis menerima notifikasi instan.
+                  </p>
+                </div>
+
+                <DialogFooter className="mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setChatOpen(false)}
+                    className="rounded-lg border border-nk-border px-4 py-2 text-xs font-medium text-nk-text hover:bg-nk-warm"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={sendingChat || !chatMessage.trim()}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    {sendingChat ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+                    <span>{sendingChat ? "Mengirim..." : "Kirim Pesan"}</span>
+                  </button>
+                </DialogFooter>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

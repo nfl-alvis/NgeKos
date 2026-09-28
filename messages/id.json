@@ -1614,9 +1614,11 @@
     "reviewsTitle": "Review Saya",
     "profileTitle": "Profil Saya",
     "settingsTitle": "Pengaturan",
+    "messagesTitle": "Pesan & Tanya Pemilik",
     "nav": {
       "dashboard": "Ringkasan",
       "bookings": "Booking",
+      "messages": "Pesan",
       "payments": "Pembayaran",
       "favorites": "Favorit",
       "reviews": "Review",

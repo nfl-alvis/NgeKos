@@ -9,7 +9,13 @@ interface TelegramStatus {
   connectedAt: string | null;
 }
 
-export default function TelegramConnectCard({ onStatusChange }: { onStatusChange?: (status: TelegramStatus) => void }) {
+export default function TelegramConnectCard({
+  onStatusChange,
+  isOwner = true,
+}: {
+  onStatusChange?: (status: TelegramStatus) => void;
+  isOwner?: boolean;
+}) {
   const [status, setStatus] = useState<TelegramStatus>({
     connected: false,
     username: null,
@@ -136,9 +142,13 @@ export default function TelegramConnectCard({ onStatusChange }: { onStatusChange
             <Send className="size-5" />
           </div>
           <div>
-            <h2 className="text-base font-medium text-nk-text">Integrasi Telegram Bot</h2>
+            <h2 className="text-base font-medium text-nk-text">
+              {isOwner ? "Integrasi Telegram Bot" : "Notifikasi Telegram Bot"}
+            </h2>
             <p className="text-xs text-nk-text-muted">
-              Terima chat dari calon penyewa dan balas langsung dari website.
+              {isOwner
+                ? "Terima chat dari calon penyewa dan balas langsung dari website."
+                : "Terima notifikasi balasan pesan pemilik kost dan update sewa langsung di Telegram."}
             </p>
           </div>
         </div>
@@ -196,8 +206,9 @@ export default function TelegramConnectCard({ onStatusChange }: { onStatusChange
           </div>
 
           <p className="text-xs text-nk-text-muted">
-            Setiap ada calon penyewa yang mengirim pesan via Telegram, notifikasi akan otomatis masuk dan percakapan
-            tersedia di menu <span className="font-medium text-nk-text">Pesan</span>.
+            {isOwner
+              ? "Setiap ada calon penyewa yang mengirim pesan, notifikasi akan otomatis masuk dan percakapan dapat dibalas langsung dari menu Pesan."
+              : "Setiap ada pesan balasan dari pemilik kost atau update sewa, bot NgeKos akan mengirim notifikasi langsung ke Telegram Anda."}
           </p>
         </div>
       ) : (
