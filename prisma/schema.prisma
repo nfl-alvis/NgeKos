@@ -169,13 +169,18 @@ model Profile {
   adminRole              AdminRole? @map("admin_role")
   status                 UserStatus @default(ACTIVE)
   locale                 String     @default("id") @db.VarChar(5)
-  emailNotifications     Boolean    @default(true) @map("email_notifications")
-  pushNotifications      Boolean    @default(true) @map("push_notifications")
-  marketingNotifications Boolean    @default(false) @map("marketing_notifications")
-  lastSeenAt             DateTime?  @map("last_seen_at") @db.Timestamptz(3)
-  createdAt              DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt              DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
-  deletedAt              DateTime?  @map("deleted_at") @db.Timestamptz(3)
+  emailNotifications     Boolean   @default(true) @map("email_notifications")
+  pushNotifications      Boolean   @default(true) @map("push_notifications")
+  marketingNotifications Boolean   @default(false) @map("marketing_notifications")
+  telegramChatId         String?   @unique @map("telegram_chat_id")
+  telegramUsername       String?   @map("telegram_username")
+  telegramConnectedAt    DateTime? @map("telegram_connected_at") @db.Timestamptz(3)
+  telegramConnectToken   String?   @unique @map("telegram_connect_token")
+  telegramConnectTokenExpiresAt DateTime? @map("telegram_connect_token_expires_at") @db.Timestamptz(3)
+  lastSeenAt             DateTime? @map("last_seen_at") @db.Timestamptz(3)
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt              DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   properties             Property[]             @relation("OwnerProperties")
   bookings               Booking[]              @relation("ApplicantBookings")
@@ -595,36 +600,44 @@ model Notification {
 }
 
 model Conversation {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ownerId    String    @map("owner_id") @db.Uuid
-  contactId  String    @map("contact_id") @db.Uuid
-  propertyId String?   @map("property_id") @db.Uuid
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
-  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(3)
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerId          String    @map("owner_id") @db.Uuid
+  contactId        String?   @map("contact_id") @db.Uuid
+  propertyId       String?   @map("property_id") @db.Uuid
+  channel          String    @default("IN_APP")
+  externalChatId   String?   @map("external_chat_id")
+  externalName     String?   @map("external_name")
+  externalUsername String?   @map("external_username")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   owner    Profile   @relation("ConversationOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  contact  Profile   @relation("ConversationContact", fields: [contactId], references: [id], onDelete: Restrict)
+  contact  Profile?  @relation("ConversationContact", fields: [contactId], references: [id], onDelete: Restrict)
   property Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   messages Message[]
 
   @@unique([ownerId, contactId, propertyId])
   @@index([ownerId, updatedAt])
   @@index([contactId, updatedAt])
+  @@index([externalChatId])
   @@map("conversations")
 }
 
 model Message {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  conversationId String    @map("conversation_id") @db.Uuid
-  senderId       String    @map("sender_id") @db.Uuid
-  body           String
-  readAt         DateTime? @map("read_at") @db.Timestamptz(3)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId    String    @map("conversation_id") @db.Uuid
+  senderId          String?   @map("sender_id") @db.Uuid
+  senderRole        String    @default("OWNER") @map("sender_role")
+  channel           String    @default("IN_APP")
+  telegramMessageId String?   @map("telegram_message_id")
+  body              String
+  readAt            DateTime? @map("read_at") @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       Profile      @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+  sender       Profile?     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
 
   @@index([conversationId, createdAt])
   @@map("messages")

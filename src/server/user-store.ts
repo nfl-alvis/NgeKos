@@ -102,6 +102,9 @@ export interface SessionPayload {
   role: UserRole;
   adminRole?: AdminRole | null;
   phone?: string | null;
+  telegramChatId?: string | null;
+  telegramUsername?: string | null;
+  telegramConnectedAt?: string | null;
 }
 
 export async function setSessionCookie(user: SessionPayload) {
@@ -149,6 +152,11 @@ export function profileFromSession(session: SessionPayload): Profile {
     emailNotifications: true,
     pushNotifications: true,
     marketingNotifications: false,
+    telegramChatId: session.telegramChatId ?? null,
+    telegramUsername: session.telegramUsername ?? null,
+    telegramConnectedAt: session.telegramConnectedAt ? new Date(session.telegramConnectedAt) : null,
+    telegramConnectToken: null,
+    telegramConnectTokenExpiresAt: null,
     lastSeenAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),

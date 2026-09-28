@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, MoreHorizontal, Search, Send } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
@@ -23,7 +24,45 @@ export default function OwnerMessagesPage() {
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [telegramStatus, setTelegramStatus] = useState<{ connected: boolean; username: string | null }>({
+    connected: false,
+    username: null,
+  });
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const fetchConversations = async () => {
+    try {
+      const res = await fetch("/api/conversations");
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json?.data) && json.data.length > 0) {
+          setThreads(json.data);
+        }
+      }
+    } catch {
+      // fallback to existing mock
+    }
+  };
+
+  const fetchTelegramStatus = async () => {
+    try {
+      const res = await fetch("/api/me");
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.data?.telegram) {
+          setTelegramStatus(json.data.telegram);
+        }
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchConversations();
+    fetchTelegramStatus();
+    const interval = setInterval(fetchConversations, 8000);
+    return () => clearInterval(interval);
+  }, []);
 
   const active = threads.find((c) => c.id === activeId) ?? null;
 
@@ -38,29 +77,62 @@ export default function OwnerMessagesPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeId, threads]);
 
-  const send = () => {
-    if (!draft.trim() || !active) return;
+  const send = async () => {
+    if (!draft.trim() || !active || sending) return;
+    const currentDraft = draft.trim();
+    setDraft("");
+    setSending(true);
+
+    const tempMsgId = `m-${Date.now()}`;
+    const newMsg = {
+      id: tempMsgId,
+      from: "owner" as const,
+      text: currentDraft,
+      at: new Date().toISOString(),
+      channel: active.channel,
+    };
+
+    // Optimistic UI update
     setThreads((prev) =>
       prev.map((c) =>
         c.id === active.id
           ? {
               ...c,
               unread: 0,
-              messages: [
-                ...c.messages,
-                {
-                  id: `m-${c.id}-${c.messages.length + 1}`,
-                  from: "owner" as const,
-                  text: draft,
-                  at: new Date().toISOString(),
-                  channel: c.channel,
-                },
-              ],
+              messages: [...c.messages, newMsg],
             }
           : c
       )
     );
-    setDraft("");
+
+    try {
+      const res = await fetch(`/api/conversations/${active.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: currentDraft }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.data?.id) {
+          setThreads((prev) =>
+            prev.map((c) =>
+              c.id === active.id
+                ? {
+                    ...c,
+                    messages: c.messages.map((m) =>
+                      m.id === tempMsgId ? { ...m, id: json.data.id } : m
+                    ),
+                  }
+                : c
+            )
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Gagal mengirim pesan:", err);
+    } finally {
+      setSending(false);
+    }
   };
 
   const removeChat = (id: string) => {
@@ -81,7 +153,26 @@ export default function OwnerMessagesPage() {
       <div className="flex h-[calc(100vh-7.5rem)] min-h-96 gap-6">
         {/* section kiri: menyatu dengan canvas - title, search, list kontak */}
         <aside className={cn("flex w-full min-h-0 flex-col lg:w-80 lg:shrink-0", active && "hidden lg:flex")}>
-          <h1 className="px-1 pb-3 text-2xl font-medium tracking-tight text-nk-text">{t("title")}</h1>
+          <div className="flex items-center justify-between px-1 pb-3">
+            <h1 className="text-2xl font-medium tracking-tight text-nk-text">{t("title")}</h1>
+            {telegramStatus.connected ? (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-[#2AABEE]/15 px-2 py-0.5 text-[11px] font-medium text-[#2AABEE]"
+                title="Telegram Bot Terhubung"
+              >
+                <span className="size-1.5 rounded-full bg-[#2AABEE]" />
+                {telegramStatus.username ? `@${telegramStatus.username}` : "Telegram"}
+              </span>
+            ) : (
+              <Link
+                href={`/${locale}/owner/settings`}
+                className="inline-flex items-center gap-1 rounded-md border border-nk-border bg-nk-surface px-2 py-1 text-[11px] font-medium text-nk-text-muted transition-colors hover:border-nk-accent hover:text-nk-text"
+              >
+                <span className="size-1.5 rounded-full bg-nk-text-muted" />
+                Hubungkan Telegram
+              </Link>
+            )}
+          </div>
           <div className="relative pb-3">
             <Search
               className="pointer-events-none absolute left-3 top-[calc(50%-6px)] size-4 -translate-y-1/2 text-nk-text-muted"

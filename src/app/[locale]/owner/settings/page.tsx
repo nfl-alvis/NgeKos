@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import DashboardShell from "@/components/DashboardShell";
 import { OWNER_PROFILE } from "@/lib/data/entities";
+import TelegramConnectCard from "@/components/owner/TelegramConnectCard";
 
 export default function OwnerSettingsPage() {
   const t = useTranslations("owner.settings");
@@ -131,6 +132,10 @@ export default function OwnerSettingsPage() {
             {saving ? "Menyimpan..." : t("save")}
           </button>
         </div>
+      </div>
+
+      <div className="mt-6 max-w-xl">
+        <TelegramConnectCard />
       </div>
 
       {/* toast */}

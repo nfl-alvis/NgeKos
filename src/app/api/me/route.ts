@@ -20,6 +20,11 @@ function profileDto(profile: Awaited<ReturnType<typeof requireUser>>["profile"])
       pushNotifications: profile.pushNotifications,
       marketingNotifications: profile.marketingNotifications,
     },
+    telegram: {
+      connected: Boolean(profile.telegramChatId),
+      username: profile.telegramUsername,
+      connectedAt: profile.telegramConnectedAt ? profile.telegramConnectedAt.toISOString() : null,
+    },
   };
 }
 

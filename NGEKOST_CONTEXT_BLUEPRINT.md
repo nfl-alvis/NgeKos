@@ -89,6 +89,10 @@ Migrasi SQL: `prisma/migrations/`
   - Menambahkan kolom `min_monthly_price` dan indeks pencarian publik.
 - **`20260917105700_seed_facilities`**:
   - Seeding 13 fasilitas kost master (wifi, ac, bathroom-in, parking, kitchen, dll).
+- **`20260928100500_telegram_integration`**:
+  - Menambahkan kolom Telegram di `profiles` (`telegram_chat_id`, `telegram_username`, `telegram_connected_at`, `telegram_connect_token`, `telegram_connect_token_expires_at`).
+  - Menambahkan kolom channel & external guest di `conversations` (`channel`, `external_chat_id`, `external_name`, `external_username`) dan membuat `contact_id` nullable.
+  - Menambahkan kolom channel & role di `messages` (`channel`, `sender_role`, `telegram_message_id`) dan membuat `sender_id` nullable.
 
 ### Seed Data
 Tersedia script `npm run prisma:seed` (`prisma/seed.ts` via `tsx`) yang telah men-seed 10 properti kost riil (Kost Griya Cemara Dago, Kost Putri Mawar, Kost Pangeran Diponegoro, dll) lengkap dengan tipe kamar dan status unit kamar.
@@ -101,9 +105,16 @@ Semua endpoint berada di `src/app/api/`:
   - `POST /api/auth/register`: Pendaftaran user baru via Supabase Auth.
   - `POST /api/auth/login`: Autentikasi email/password dengan validasi kecocokan role profil.
   - `POST /api/auth/logout`: Sign out session.
-  - `GET /api/me`: Mengambil DTO profil pengguna yang sedang login.
+  - `GET /api/me`: Mengambil DTO profil pengguna yang sedang login (termasuk status Telegram).
   - `PATCH /api/me`: Mengubah preferensi notifikasi / profil.
   - `GET /auth/callback`: Pertukaran kode OAuth Google & email confirmation, validasi role mismatch.
+- **Telegram Bot & Messaging (Komunikasi Dua Arah):**
+  - `POST /api/webhooks/telegram`: Menerima update pesan & event dari Telegram Bot webhook secara realtime.
+  - `POST /api/owner/telegram/connect`: Generate link koneksi bot Telegram owner (`https://t.me/<bot>?start=conn_<token>`).
+  - `POST /api/owner/telegram/bind-manual`: Hubungkan akun Telegram owner secara langsung via username (@username) atau chat ID.
+  - `POST /api/owner/telegram/disconnect`: Putuskan tautan akun Telegram dari owner.
+  - `GET /api/conversations`: Daftar percakapan aktif owner (disertai indikator channel Telegram/In-App).
+  - `POST /api/conversations/[id]/messages`: Kirim balasan pesan dari owner via dashboard web; jika channel Telegram, otomatis terkirim langsung ke Telegram lawan bicara.
 - **Properties & Rooms:**
   - `GET /api/properties`: Listing publik kost terverifikasi (filter: kota, gender, maxPrice, fasilitas, search `q`, sort). Menerima query `mine=true` untuk melihat properti milik owner sendiri.
   - `POST /api/properties`: Pembuatan kost baru oleh owner.

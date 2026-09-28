@@ -16,6 +16,8 @@
     "prisma:deploy": "dotenv -e .env.local -- prisma migrate deploy",
     "prisma:seed": "tsx --env-file=.env.local prisma/seed.ts",
     "prisma:studio": "dotenv -e .env.local -- prisma studio",
+    "telegram:webhook": "tsx scripts/set-telegram-webhook.ts",
+    "telegram:poll": "tsx scripts/telegram-polling.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
