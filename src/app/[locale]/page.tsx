@@ -5,8 +5,9 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import SearchBar from "@/components/SearchBar";
 import PropertyCard from "@/components/PropertyCard";
+import ExploreCitiesAccordion from "@/components/ExploreCitiesAccordion";
 import { getVerifiedProperties } from "@/lib/data/properties";
-import { getCityImage, getCampusImage } from "@/lib/kosImages";
+import { getCampusImage } from "@/lib/kosImages";
 
 export async function generateMetadata({
   params,
@@ -18,13 +19,6 @@ export async function generateMetadata({
     title: locale === "en" ? "Find Verified Boarding Houses" : "Cari Kost Terverifikasi",
   };
 }
-
-const CATEGORY_IMAGES = [
-  { seed: "ngekost-cat-bandung", label: "Bandung", area: "Dago · Setiabudi", hero: 0 },
-  { seed: "ngekost-cat-jogja", label: "Yogyakarta", area: "Kotabaru · Caturtunggal", hero: 1 },
-  { seed: "ngekost-cat-jakarta", label: "Jakarta", area: "Menteng · Tebet", hero: 2 },
-  { seed: "ngekost-cat-malang", label: "Malang", area: "Sumbersari · Dinoyo", hero: 3 },
-];
 
 const CAMPUS_TILES = [
   { name: "UGM", fullName: "Universitas Gadjah Mada", city: "Yogyakarta", seed: "ngekost-kampus-ugm" },
@@ -135,13 +129,18 @@ export default async function HomePage({
         </div>
       </section>
 
-      {/* ===== SHOP BY CATEGORY - full-height image columns ===== */}
-      <section className="border-b border-nk-border">
-        <div className="mx-auto w-full max-w-7xl px-6 pt-16 lg:px-10">
-          <div className="flex items-end justify-between pb-8">
-            <h2 className="text-2xl font-light tracking-tight text-nk-text sm:text-3xl">
-              {t("category.title")}
-            </h2>
+      {/* ===== EXPLORE BY CITY - Accordion Gallery (React Bits) ===== */}
+      <section className="border-b border-nk-border py-16 lg:py-20">
+        <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between pb-8">
+            <div className="flex flex-col gap-1.5">
+              <h2 className="text-2xl font-light tracking-tight text-nk-text sm:text-3xl">
+                {t("category.title")}
+              </h2>
+              <p className="max-w-md text-sm text-nk-text-muted">
+                {t("category.subtitle")}
+              </p>
+            </div>
             <Link
               href="/kost"
               className="hidden text-sm text-nk-text underline underline-offset-4 transition-colors hover:text-nk-text-muted sm:block"
@@ -149,49 +148,17 @@ export default async function HomePage({
               {t("category.viewAll")}
             </Link>
           </div>
-        </div>
 
-        <div className="flex flex-col border-t border-nk-border lg:h-[75vh] lg:flex-row">
-          {CATEGORY_IMAGES.map((cat) => (
+          <ExploreCitiesAccordion />
+
+          <div className="mt-6 sm:hidden">
             <Link
-              key={cat.label}
-              href={`/kost?kota=${encodeURIComponent(cat.label)}`}
-              className="group relative flex-1 overflow-hidden border-b border-nk-border last:border-b-0 lg:h-full lg:border-b-0 lg:border-r lg:last:border-r-0"
+              href="/kost"
+              className="block w-full border border-nk-border bg-nk-bg px-6 py-3 text-center text-sm text-nk-text transition-colors hover:bg-nk-section"
             >
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-[2000ms] ease-out group-hover:scale-105"
-                style={{ backgroundImage: `url(${getCityImage(cat.label)})` }}
-              />
-              <div className="absolute inset-x-0 top-0 h-[60%] bg-gradient-to-b from-nk-bg via-nk-bg/80 to-transparent" />
-              <div className="relative z-10 flex h-[38vh] flex-col p-6 lg:h-full lg:p-8 lg:pt-12">
-                <h3 className="text-xl font-light tracking-tight text-nk-text lg:text-2xl">
-                  {cat.label}
-                </h3>
-                <div className="mt-auto pb-2">
-                  <div className="flex w-full items-center justify-between border-t border-nk-text/10 pt-4">
-                    <span className="text-xs font-medium text-nk-text">
-                      {t("category.explore")}
-                    </span>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-nk-text opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
-                      style={{ transform: "translateX(-8px)" }}
-                      aria-hidden="true"
-                    >
-                      <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+              {t("category.viewAll")}
             </Link>
-          ))}
+          </div>
         </div>
       </section>
       {/* ===== KOS SEKITAR KAMPUS - clickable campus logo cards (mamikos ref) ===== */}
