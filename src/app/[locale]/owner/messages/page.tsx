@@ -30,32 +30,30 @@ const formatTime = (iso: string) => {
 
 const formatChatListTime = (iso: string, locale: string) => {
   try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return "";
+    const target = new Date(iso);
+    if (isNaN(target.getTime())) return "";
     const now = new Date();
-    const isToday =
-      d.getDate() === now.getDate() &&
-      d.getMonth() === now.getMonth() &&
-      d.getFullYear() === now.getFullYear();
+    const targetMidnight = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const diffDays = Math.round((todayMidnight - targetMidnight) / (24 * 60 * 60 * 1000));
 
-    if (isToday) {
-      const hours = d.getHours().toString().padStart(2, "0");
-      const minutes = d.getMinutes().toString().padStart(2, "0");
+    if (diffDays <= 0) {
+      const hours = target.getHours().toString().padStart(2, "0");
+      const minutes = target.getMinutes().toString().padStart(2, "0");
       return `${hours}:${minutes}`;
     }
 
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    const isYesterday =
-      d.getDate() === yesterday.getDate() &&
-      d.getMonth() === yesterday.getMonth() &&
-      d.getFullYear() === yesterday.getFullYear();
-
-    if (isYesterday) {
+    if (diffDays === 1) {
       return locale === "id" ? "Kemarin" : "Yesterday";
     }
 
-    return d.toLocaleDateString(locale === "id" ? "id-ID" : "en-US", {
+    if (diffDays < 7) {
+      return target.toLocaleDateString(locale === "id" ? "id-ID" : "en-US", {
+        weekday: "long",
+      });
+    }
+
+    return target.toLocaleDateString(locale === "id" ? "id-ID" : "en-US", {
       day: "numeric",
       month: "short",
     });
@@ -188,13 +186,38 @@ export default function OwnerMessagesPage() {
     if (activeId === id) setActiveId(null);
   };
 
-  const formatDay = (iso: string) =>
-    new Date(iso).toLocaleDateString(locale === "id" ? "id-ID" : "en-US", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+  const formatDay = (iso: string) => {
+    try {
+      const target = new Date(iso);
+      if (isNaN(target.getTime())) return "";
+      const now = new Date();
+      const targetMidnight = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const diffDays = Math.round((todayMidnight - targetMidnight) / (24 * 60 * 60 * 1000));
+
+      if (diffDays <= 0) {
+        return locale === "id" ? "Hari ini" : "Today";
+      }
+
+      if (diffDays === 1) {
+        return locale === "id" ? "Kemarin" : "Yesterday";
+      }
+
+      if (diffDays < 7) {
+        return target.toLocaleDateString(locale === "id" ? "id-ID" : "en-US", {
+          weekday: "long",
+        });
+      }
+
+      return target.toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch {
+      return "";
+    }
+  };
 
   return (
     <DashboardShell role="owner">
