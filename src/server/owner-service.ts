@@ -85,11 +85,18 @@ export async function listNotifications(profile: Profile) {
 
 export async function markNotificationRead(profile: Profile, id?: string) {
   if (id) {
-    const changed = await prisma.notification.updateMany({ where: { id, profileId: profile.id }, data: { readAt: new Date() } });
-    if (!changed.count) throw new ApiError(404, "NOTIFICATION_NOT_FOUND", "Notifikasi tidak ditemukan");
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (!isUuid) return;
+    await prisma.notification.updateMany({ where: { id, profileId: profile.id }, data: { readAt: new Date() } });
   } else {
     await prisma.notification.updateMany({ where: { profileId: profile.id, readAt: null }, data: { readAt: new Date() } });
   }
+}
+
+export async function deleteNotification(profile: Profile, id: string) {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  if (!isUuid) return;
+  await prisma.notification.deleteMany({ where: { id, profileId: profile.id } });
 }
 
 export async function submitPropertyVerification(profile: Profile, propertyId: string) {
@@ -189,7 +196,12 @@ export async function decidePropertyVerification(
           : {
               property: { slug: verificationId },
             },
-        select: { id: true, propertyId: true, decision: true },
+        select: {
+          id: true,
+          propertyId: true,
+          decision: true,
+          property: { select: { ownerId: true, name: true } },
+        },
       });
 
       if (!verification) {
@@ -198,7 +210,7 @@ export async function decidePropertyVerification(
           where: isUuid
             ? { OR: [{ id: verificationId }, { slug: verificationId }] }
             : { slug: verificationId },
-          select: { id: true },
+          select: { id: true, ownerId: true, name: true },
         });
 
         if (property) {
@@ -210,7 +222,7 @@ export async function decidePropertyVerification(
               publishedAt: decision === "APPROVED" ? new Date() : undefined,
             },
           });
-          return tx.propertyVerification.create({
+          const result = await tx.propertyVerification.create({
             data: {
               propertyId: property.id,
               decision,
@@ -219,6 +231,24 @@ export async function decidePropertyVerification(
               decidedById: profile.id,
             },
           });
+
+          try {
+            await tx.notification.create({
+              data: {
+                profileId: property.ownerId,
+                type: "SYSTEM",
+                title: decision === "APPROVED" ? "Properti Berhasil Diverifikasi" : "Verifikasi Properti Ditolak",
+                body: decision === "APPROVED"
+                  ? `Properti "${property.name}" Anda telah diverifikasi dan aktif dipublikasikan.`
+                  : `Pengajuan verifikasi properti "${property.name}" ditolak.${reason ? ` Alasan: ${reason}` : ""}`,
+                linkUrl: "/owner/properties",
+              },
+            });
+          } catch (notifErr) {
+            console.error("Failed to notify owner of property verification:", notifErr);
+          }
+
+          return result;
         }
 
         // Demo or mock ID (e.g. req-101)
@@ -261,7 +291,7 @@ export async function decidePropertyVerification(
         },
       });
 
-      return tx.propertyVerification.update({
+      const updated = await tx.propertyVerification.update({
         where: { id: verification.id },
         data: {
           decision,
@@ -270,6 +300,26 @@ export async function decidePropertyVerification(
           decidedById: profile.id,
         },
       });
+
+      try {
+        if (verification.property?.ownerId) {
+          await tx.notification.create({
+            data: {
+              profileId: verification.property.ownerId,
+              type: "SYSTEM",
+              title: decision === "APPROVED" ? "Properti Berhasil Diverifikasi" : "Verifikasi Properti Ditolak",
+              body: decision === "APPROVED"
+                ? `Properti "${verification.property.name}" Anda telah diverifikasi dan aktif dipublikasikan.`
+                : `Pengajuan verifikasi properti "${verification.property.name}" ditolak.${reason ? ` Alasan: ${reason}` : ""}`,
+              linkUrl: "/owner/properties",
+            },
+          });
+        }
+      } catch (notifErr) {
+        console.error("Failed to notify owner of property verification:", notifErr);
+      }
+
+      return updated;
     });
   } catch (err) {
     if (err instanceof ApiError) throw err;

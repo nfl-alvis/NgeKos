@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   Bell,
@@ -71,7 +71,29 @@ import Logo from "@/components/Logo";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useSession } from "@/components/SessionProvider";
 import { notifications } from "@/lib/data/entities";
+import type { NotificationItem } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
+
+function formatNotifTime(iso?: string) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const diffMs = Date.now() - d.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    if (diffSec < 60) return "Baru saja";
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m lalu`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return `${diffHour}j lalu`;
+    const diffDays = Math.floor(diffHour / 24);
+    if (diffDays === 1) return "Kemarin";
+    if (diffDays < 7) return `${diffDays}h lalu`;
+    return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  } catch {
+    return "";
+  }
+}
 
 type Item = { href: string; label: string; icon: React.ComponentType };
 
@@ -223,7 +245,55 @@ export default function DashboardShell({
         ? "Bayu Pratama"
         : "I made Sudiarta");
   const initial = userName.trim().charAt(0).toUpperCase();
-  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const [notifs, setNotifs] = useState<NotificationItem[]>(notifications);
+  const [unreadCount, setUnreadCount] = useState<number>(() =>
+    notifications.filter((n) => !n.read).length
+  );
+
+  const fetchNotifs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications");
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json?.data) && json.data.length > 0) {
+          const mapped: NotificationItem[] = json.data.map((n: any) => ({
+            id: n.id,
+            type: n.type || "system",
+            title: n.title,
+            body: n.body,
+            linkUrl: n.linkUrl || (role === "admin" ? "/admin" : role === "user" ? "/dashboard" : "/owner"),
+            read: Boolean(n.read),
+            at: n.at || n.createdAt || new Date().toISOString(),
+          }));
+          setNotifs(mapped);
+          setUnreadCount(mapped.filter((m) => !m.read).length);
+        }
+      }
+    } catch {}
+  }, [role]);
+
+  useEffect(() => {
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 15000);
+    return () => clearInterval(interval);
+  }, [fetchNotifs]);
+
+  const handleMarkAllRead = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+    setUnreadCount(0);
+    fetch("/api/notifications", { method: "PATCH" }).catch(() => {});
+  };
+
+  const handleMarkSingleRead = (id: string, targetUrl: string) => {
+    setNotifs((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+    setUnreadCount((c) => Math.max(0, c - 1));
+    fetch(`/api/notifications/${id}`, { method: "PATCH" }).catch(() => {});
+    router.push(targetUrl);
+  };
 
   const roleLabel =
     role === "owner"
@@ -345,99 +415,136 @@ export default function DashboardShell({
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher />
 
-            {/* bell notifikasi - owner, tenant & user (dataset milik owner; fallback link per role) */}
-            {role !== "admin" && (
+            {/* bell notifikasi untuk semua role (admin, owner, tenant, user) */}
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="relative flex size-9 items-center justify-center rounded-full border border-nk-border bg-nk-surface text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nk-accent"
+                className="relative flex size-9 shrink-0 items-center justify-center rounded-full border border-nk-border bg-nk-surface text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nk-accent"
                 aria-label={navT("notifications")}
               >
                 <Bell className="size-4" />
                 {unreadCount > 0 && (
                   <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[#9C3B32] font-mono text-[9px] font-semibold leading-none text-white">
-                    {unreadCount}
+                    {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80 p-0">
-                <DropdownMenuLabel className="flex items-center justify-between px-3 py-2.5">
-                  <span>{navT("notifications")}</span>
+              <DropdownMenuContent align="end" className="w-80 sm:w-96 p-0 shadow-xl border border-nk-border">
+                <DropdownMenuLabel className="flex items-center justify-between px-3.5 py-2.5 border-b border-nk-border bg-nk-warm/30">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm text-nk-text">{navT("notifications")}</span>
+                    {unreadCount > 0 && (
+                      <span className="rounded-full bg-nk-accent/15 px-2 py-0.5 font-mono text-[10px] font-semibold text-nk-accent">
+                        {unreadCount} baru
+                      </span>
+                    )}
+                  </div>
                   {unreadCount > 0 && (
-                    <span className="rounded-full bg-nk-warm px-1.5 py-0.5 font-mono text-[10px] text-nk-text-muted">
-                      {unreadCount}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={handleMarkAllRead}
+                      className="text-xs font-medium text-nk-accent hover:underline cursor-pointer"
+                    >
+                      Tandai semua dibaca
+                    </button>
                   )}
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="m-0" />
-                <div className="max-h-80 overflow-y-auto">
-                  {notifications.slice(0, 6).map((n) => (
-                    <DropdownMenuItem key={n.id} asChild className="cursor-pointer p-0 focus:bg-nk-warm">
-                      <Link
-                        href={
-                          n.linkUrl ??
-                          (role === "tenant"
-                            ? "/tenant/dashboard"
-                            : role === "user"
-                              ? "/dashboard"
-                              : "/owner")
-                        }
-                        className="flex w-full flex-col items-start gap-0.5 border-b border-nk-border px-3 py-2.5 last:border-b-0"
-                      >
-                        <span className="flex w-full items-center gap-2">
-                          <span
+                <div className="max-h-80 overflow-y-auto divide-y divide-nk-border">
+                  {notifs.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-nk-text-muted">
+                      Tidak ada notifikasi saat ini
+                    </div>
+                  ) : (
+                    notifs.slice(0, 8).map((n) => {
+                      const targetUrl =
+                        n.linkUrl ??
+                        (role === "admin"
+                          ? "/admin"
+                          : role === "tenant"
+                          ? "/tenant/dashboard"
+                          : role === "user"
+                          ? "/dashboard"
+                          : "/owner");
+
+                      return (
+                        <DropdownMenuItem
+                          key={n.id}
+                          asChild
+                          className="cursor-pointer p-0 focus:bg-nk-warm"
+                          onClick={() => handleMarkSingleRead(n.id, targetUrl)}
+                        >
+                          <Link
+                            href={targetUrl}
                             className={cn(
-                              "size-1.5 shrink-0 rounded-full",
-                              n.read ? "bg-nk-border" : "bg-[#2F6B3C]"
-                            )}
-                          />
-                          <span
-                            className={cn(
-                              "truncate text-sm",
-                              n.read ? "text-nk-text-muted" : "font-medium text-nk-text"
+                              "flex w-full flex-col items-start gap-1 p-3 transition-colors",
+                              !n.read ? "bg-nk-warm/40 hover:bg-nk-warm/70" : "hover:bg-nk-warm/40"
                             )}
                           >
-                            {n.title}
-                          </span>
-                        </span>
-                        <span className="line-clamp-1 pl-3.5 text-xs text-nk-text-muted">{n.body}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
+                            <div className="flex w-full items-center justify-between gap-2">
+                              <span className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className={cn(
+                                    "size-2 shrink-0 rounded-full",
+                                    n.read ? "bg-nk-border" : "bg-[#2F6B3C]"
+                                  )}
+                                />
+                                <span
+                                  className={cn(
+                                    "truncate text-xs",
+                                    n.read ? "text-nk-text-muted font-normal" : "font-semibold text-nk-text"
+                                  )}
+                                >
+                                  {n.title}
+                                </span>
+                              </span>
+                              <span className="shrink-0 text-[10px] text-nk-text-muted">
+                                {formatNotifTime(n.at)}
+                              </span>
+                            </div>
+                            <span className="line-clamp-2 pl-4 text-[11px] leading-relaxed text-nk-text-muted">
+                              {n.body}
+                            </span>
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })
+                  )}
                 </div>
                 <DropdownMenuSeparator className="m-0" />
-                <DropdownMenuItem asChild className="cursor-pointer focus:bg-nk-warm">
+                <DropdownMenuItem asChild className="cursor-pointer focus:bg-nk-warm p-0">
                   <Link
                     href={
                       role === "owner"
                         ? "/owner/notifications"
+                        : role === "admin"
+                        ? "/admin/notices"
                         : role === "tenant"
-                          ? "/tenant/dashboard"
-                          : "/dashboard"
+                        ? "/tenant/dashboard"
+                        : "/dashboard"
                     }
-                    className="w-full py-2.5 text-center text-sm text-nk-accent"
+                    className="block w-full py-2.5 text-center text-xs font-medium text-nk-accent hover:underline"
                   >
-                    {navT("notifications")}
+                    Lihat Semua Notifikasi
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            )}
 
-            {/* avatar menu (shadcn Avatar) */}
-            <div className="relative">
+            {/* avatar menu (shadcn Avatar) - ukuran & posisi persis serasi dengan bell notifikasi */}
+            <div className="relative flex items-center">
               <button
                 type="button"
                 aria-label={userName}
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((v) => !v)}
-                className="rounded-full transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
+                className="relative flex size-9 shrink-0 items-center justify-center rounded-full border border-nk-border bg-nk-surface transition-transform hover:scale-105 hover:border-nk-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nk-accent overflow-hidden"
               >
-                <Avatar size="sm">
+                <Avatar className="size-full">
                   <AvatarImage
-                    src={`https://picsum.photos/seed/user-${(user?.email ?? "admin").split("@")[0]}/64/64`}
-                    alt=""
+                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userName)}&backgroundColor=024936&textColor=ffffff`}
+                    alt={userName}
+                    className="size-full object-cover"
                   />
-                  <AvatarFallback className="bg-nk-accent font-medium text-nk-text-inverse">
+                  <AvatarFallback className="bg-nk-accent text-xs font-semibold text-nk-text-inverse">
                     {initial}
                   </AvatarFallback>
                 </Avatar>

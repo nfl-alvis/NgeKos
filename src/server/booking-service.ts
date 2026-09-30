@@ -38,7 +38,7 @@ export async function createBooking(profile: Profile, input: BookingCreateInput)
 
   const roomType = await prisma.roomType.findFirst({
     where: { id: input.roomTypeId, propertyId: input.propertyId, deletedAt: null, property: { status: "VERIFIED", deletedAt: null } },
-    include: { property: { select: { depositAmount: true } } },
+    include: { property: { select: { depositAmount: true, ownerId: true, name: true } } },
   });
   if (!roomType) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Tipe kamar tidak tersedia");
 
@@ -68,6 +68,21 @@ export async function createBooking(profile: Profile, input: BookingCreateInput)
     },
     include: bookingInclude,
   });
+
+  try {
+    await prisma.notification.create({
+      data: {
+        profileId: roomType.property.ownerId,
+        type: "BOOKING",
+        title: "Pengajuan Sewa Baru",
+        body: `Ada pengajuan sewa baru untuk ${roomType.property.name} (${roomType.name}) dari ${profile.fullName || "Penyewa"}.`,
+        linkUrl: "/owner/bookings",
+      },
+    });
+  } catch (notifErr) {
+    console.error("Failed to notify owner of new booking:", notifErr);
+  }
+
   return bookingDto(booking);
 }
 
@@ -102,7 +117,7 @@ export async function transitionBooking(
   return prisma.$transaction(async (tx) => {
     const booking = await tx.booking.findFirst({
       where: bookingIdentifierWhere(id),
-      include: { property: { select: { ownerId: true } } },
+      include: { property: { select: { ownerId: true, name: true } } },
     });
     if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking tidak ditemukan");
     const ownsProperty = booking.property.ownerId === profile.id;
@@ -147,6 +162,43 @@ export async function transitionBooking(
       },
       include: bookingInclude,
     });
+
+    try {
+      if (input.status === "APPROVED_AWAITING_PAYMENT") {
+        await tx.notification.create({
+          data: {
+            profileId: booking.applicantId,
+            type: "BOOKING",
+            title: "Pengajuan Sewa Disetujui",
+            body: `Pengajuan sewa Anda untuk "${booking.property.name}" telah disetujui! Silakan lanjutkan pembayaran sebelum batas waktu.`,
+            linkUrl: "/dashboard",
+          },
+        });
+      } else if (input.status === "REJECTED") {
+        await tx.notification.create({
+          data: {
+            profileId: booking.applicantId,
+            type: "BOOKING",
+            title: "Pengajuan Sewa Ditolak",
+            body: `Pengajuan sewa Anda untuk "${booking.property.name}" tidak dapat disetujui.${input.note ? ` Alasan: ${input.note}` : ""}`,
+            linkUrl: "/dashboard",
+          },
+        });
+      } else if (input.status === "CANCELLED" && profile.role === "SEEKER") {
+        await tx.notification.create({
+          data: {
+            profileId: booking.property.ownerId,
+            type: "BOOKING",
+            title: "Booking Dibatalkan",
+            body: `Pengajuan sewa untuk "${booking.property.name}" telah dibatalkan oleh calon penyewa.`,
+            linkUrl: "/owner/bookings",
+          },
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to notify user on booking transition:", notifErr);
+    }
+
     return bookingDto(updated);
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
