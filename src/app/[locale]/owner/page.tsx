@@ -6,32 +6,24 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   AlertCircle,
-  ArrowUpRight,
   BedDouble,
-  Building2,
   CalendarClock,
+  CheckCircle2,
+  Clock,
+  CreditCard,
   Download,
   Ellipsis,
-  MessageSquare,
   Plus,
   TrendingUp,
+  Wrench,
 } from "lucide-react";
-import { Link } from "@/i18n/navigation";
-import DashboardShell from "@/components/DashboardShell";
-import { DashSection } from "@/components/dashboard/DashSection";
-import { StatusBadge } from "@/components/StatusBadge";
-import { useSession } from "@/components/SessionProvider";
-import { getKosImage } from "@/lib/kosImages";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import {
-  OWNER_PROFILE,
-  ownerBookings,
-  roomUnits,
-  tenants,
-  invoices,
-} from "@/lib/data/entities";
-import { properties } from "@/lib/data/properties";
-import { cn, formatIDR } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import {
   Table,
   TableBody,
@@ -40,12 +32,77 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
+import { Link } from "@/i18n/navigation";
+import DashboardShell from "@/components/DashboardShell";
+import OwnerDashboardInsights from "@/components/OwnerDashboardInsights";
+import { StatusBadge } from "@/components/StatusBadge";
+import { getKosImage } from "@/lib/kosImages";
+import {
+  OWNER_PROFILE,
+  ownerBookings,
+  ownerReviews,
+  roomUnits,
+  tenants,
+} from "@/lib/data/entities";
+import { properties } from "@/lib/data/properties";
+import { cn, formatIDR } from "@/lib/utils";
+import { useSession } from "@/components/SessionProvider";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+const REVENUE = [24.1, 26.8, 25.3, 28.9, 31.2, 33.7]; // juta Rp
+const REVENUE_RANGES = {
+  weekly: [14.2, 16.8, 15.1, 18.6, 17.3, 19.8, 21.4],
+  monthly: REVENUE,
+  yearly: [142.5, 168.2, 189.9, 214.6],
+} as const;
+
+type RevenueRange = keyof typeof REVENUE_RANGES;
+
+const ACTIVITIES = {
+  en: [
+    { id: "a1", text: "Booking #BK-1234 approved", at: "2 hours ago", type: "approved" },
+    { id: "a2", text: "Payment received from Citra Lestari Dewi", at: "3 hours ago", type: "payment" },
+    { id: "a3", text: "Booking #BK-1231 submitted by Kevin Hanjaya", at: "5 hours ago", type: "booking" },
+    { id: "a4", text: "Room A-104 status set to Maintenance", at: "Yesterday, 16:40", type: "maintenance" },
+    { id: "a5", text: "Booking #BK-1155 expired", at: "Yesterday, 10:05", type: "expired" },
+  ],
+  id: [
+    { id: "a1", text: "Booking #BK-1234 disetujui", at: "2 jam lalu", type: "approved" },
+    { id: "a2", text: "Pembayaran diterima dari Citra Lestari Dewi", at: "3 jam lalu", type: "payment" },
+    { id: "a3", text: "Booking #BK-1231 diajukan Kevin Hanjaya", at: "5 jam lalu", type: "booking" },
+    { id: "a4", text: "Kamar A-104 diubah jadi Perawatan", at: "Kemarin, 16.40", type: "maintenance" },
+    { id: "a5", text: "Booking #BK-1155 kedaluwarsa", at: "Kemarin, 10.05", type: "expired" },
+  ],
+} as const;
+
+const ACTIVITY_ICONS = {
+  approved: CheckCircle2,
+  payment: CreditCard,
+  booking: CalendarClock,
+  maintenance: Wrench,
+  expired: Clock,
+};
+
+const ACTIVITY_COLORS = {
+  approved: "bg-emerald-100 text-emerald-700",
+  payment: "bg-blue-100 text-blue-700",
+  booking: "bg-amber-100 text-amber-700",
+  maintenance: "bg-purple-100 text-purple-700",
+  expired: "bg-gray-100 text-gray-700",
+};
+
+const SPARKS = {
+  revenue: [19.2, 21.4, 20.1, 23.8, 22.6, 26.9, 29.4, 33.7],
+  occupancy: [52, 55, 55, 58, 58, 55, 55, 55],
+  arrears: [4.2, 3.9, 3.6, 3.4, 3.0, 2.9, 2.6, 2.5],
+  bookings: [1, 2, 2, 3, 4, 4, 5, 5],
+};
 
 function StarIcon({ className }: { className?: string }) {
   return (
@@ -83,6 +140,8 @@ export default function OwnerDashboardPage() {
     arrearsSum: number;
     pendingCount: number;
   } | null>(null);
+
+  const [range, setRange] = useState<RevenueRange>("monthly");
 
   useEffect(() => {
     let cancelled = false;
@@ -154,7 +213,9 @@ export default function OwnerDashboardPage() {
     };
   }, [ready, user]);
 
-  // Bookings pending
+  const monthNames = t.raw("months") as string[];
+
+  // Pending bookings
   const dbPending = (dbBookings || [])
     .filter((b: any) => b.status === "PENDING")
     .map((b: any) => ({
@@ -173,29 +234,21 @@ export default function OwnerDashboardPage() {
     ...ownerBookings.filter((b) => b.status === "pending" && !existingPendingIds.has(b.id)),
   ];
 
-  // Room status counts
+  // Property room counts
   const allRooms = Object.values(roomUnits).flat();
-  const filledRooms = allRooms.filter((r) => r.status === "terisi").length;
-  const emptyRooms = allRooms.filter((r) => r.status === "kosong").length;
-  const repairRooms = allRooms.filter((r) => r.status === "maintenance").length;
-  const totalRoomsCount = allRooms.length;
+  const filled = allRooms.filter((r) => r.status === "terisi").length;
+  const totalRooms = allRooms.length;
+  const arrears = tenants.filter((tn) => tn.paymentStatus === "menunggak").length;
+  const arrearsSum = tenants
+    .filter((tn) => tn.paymentStatus === "menunggak")
+    .reduce((acc, tn) => acc + tn.monthlyRent, 0);
 
-  // Unpaid invoices
-  const unpaidInvoices = invoices
-    .filter((i) => i.status === "belum-lunas")
-    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-  const totalUnpaidSum = unpaidInvoices.reduce((sum, i) => sum + i.amount, 0);
-
-  // Computed metrics
-  const displayRevenue = dynMetrics ? dynMetrics.revenue : 33700000;
-  const displayFilled = dynMetrics ? dynMetrics.filled : filledRooms;
-  const displayTotalRooms =
-    dynMetrics && dynMetrics.totalRooms > 0 ? dynMetrics.totalRooms : totalRoomsCount;
-  const displayArrears = dynMetrics ? dynMetrics.arrears : unpaidInvoices.length;
-  const displayArrearsSum = dynMetrics ? dynMetrics.arrearsSum : totalUnpaidSum;
-  const displayPending = dynMetrics ? dynMetrics.pendingCount : pending.length;
-  const displayOccupancy =
-    displayTotalRooms > 0 ? Math.round((displayFilled / displayTotalRooms) * 100) : 0;
+  const today = new Date().toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   // Property performance rows
   const ownerProps = properties.filter((p) =>
@@ -217,12 +270,30 @@ export default function OwnerDashboardPage() {
     return { property: p, rooms: rooms.length, occ, pct, monthly };
   });
 
-  const today = new Date().toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const best = [...perfRows]
+    .filter((r) => r.property.rating > 0)
+    .sort((a, b) => b.monthly * b.pct - a.monthly * a.pct)[0];
+
+  const rated = perfRows.filter((r) => r.property.rating > 0);
+  const reviewTotal = rated.reduce((s, r) => s + r.property.reviewCount, 0);
+  const reviewAvg =
+    reviewTotal > 0
+      ? rated.reduce((s, r) => s + r.property.rating * r.property.reviewCount, 0) / reviewTotal
+      : 0;
+
+  const dist = [5, 4, 3, 2, 1].map((star) => ({
+    star,
+    weight: Math.max(0, Math.exp(-Math.abs(star - reviewAvg) * 1.1)),
+  }));
+  const distSum = dist.reduce((s, d) => s + d.weight, 0) || 1;
+
+  const fmtDate = (iso: string) =>
+    new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    });
 
   const exportCsv = () => {
     const header = ["ID", "Calon penyewa", "Properti", "Kamar", "Status", "Harga/bulan", "Diajukan"];
@@ -259,35 +330,69 @@ export default function OwnerDashboardPage() {
     URL.revokeObjectURL(url);
   };
 
+  const revenue = REVENUE_RANGES[range];
+  const revenueTotal = revenue.reduce((a, v) => a + v, 0);
+  const chartLabels =
+    range === "weekly"
+      ? (t.raw("days") as string[])
+      : range === "yearly"
+        ? (t.raw("years") as string[])
+        : monthNames;
+  const chartData = chartLabels.map((label, i) => ({ label, value: revenue[i] }));
+  const chartConfig = {
+    value: { label: t("chartSeries"), color: "var(--nk-accent)" },
+  } satisfies ChartConfig;
+
+  const displayRevenue = dynMetrics ? dynMetrics.revenue : 33700000;
+  const displayFilled = dynMetrics ? dynMetrics.filled : filled;
+  const displayTotalRooms = dynMetrics && dynMetrics.totalRooms > 0 ? dynMetrics.totalRooms : totalRooms;
+  const displayArrears = dynMetrics ? dynMetrics.arrears : arrears;
+  const displayArrearsSum = dynMetrics ? dynMetrics.arrearsSum : arrearsSum;
+  const displayPending = dynMetrics ? dynMetrics.pendingCount : pending.length;
+  const displayOccupancy = displayTotalRooms > 0 ? Math.round((displayFilled / displayTotalRooms) * 100) : 0;
+
   const stats = [
     {
+      id: "stat-revenue",
       label: t("statRevenue"),
       value: formatIDR(displayRevenue),
       note: t("statRevenueChange"),
+      up: true,
       icon: TrendingUp,
-      tint: { card: "bg-[#E9F4EC]", icon: "bg-[#CFE8D6] text-[#2F6B3C]" },
+      iconColor: "bg-emerald-100 text-emerald-700",
+      spark: SPARKS.revenue,
+      sparkColor: "#2F6B3C",
     },
     {
+      id: "stat-occupancy",
       label: t("statOccupancy"),
       value: `${displayOccupancy}%`,
       note: t("statOccupancyNote", { filled: displayFilled, total: displayTotalRooms }),
       icon: BedDouble,
-      tint: { card: "bg-[#E8EFF8]", icon: "bg-[#D3E0F0] text-[#33517C]" },
+      iconColor: "bg-blue-100 text-blue-700",
+      spark: SPARKS.occupancy,
+      sparkColor: "#33517C",
     },
     {
+      id: "stat-bookings",
       label: t("statNewBookings"),
       value: String(displayPending),
       note: displayPending > 0 ? t("statNeedsResponse") : (isEn ? "No queue" : "Tidak ada antrean"),
       badge: displayPending > 0,
       icon: CalendarClock,
-      tint: { card: "bg-[#FBF3DC]", icon: "bg-[#F3E3B8] text-[#8A6A1F]" },
+      iconColor: "bg-amber-100 text-amber-700",
+      spark: SPARKS.bookings,
+      sparkColor: "#D97706",
     },
     {
+      id: "stat-arrears",
       label: t("statArrears"),
       value: formatIDR(displayArrearsSum),
       note: t("statArrearsNote", { count: displayArrears }),
       icon: AlertCircle,
-      tint: { card: "bg-[#FAEAE8]", icon: "bg-[#F3D7D3] text-[#9C3B32]" },
+      iconColor: "bg-rose-100 text-rose-700",
+      spark: SPARKS.arrears,
+      sparkColor: "#DC2626",
     },
   ];
 
@@ -297,7 +402,19 @@ export default function OwnerDashboardPage() {
       <DashboardShell role="owner">
         <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-16 text-center">
           <div className="mb-6 flex size-20 items-center justify-center rounded-2xl bg-nk-accent/10 text-nk-accent">
-            <Building2 className="size-10" />
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+            </svg>
           </div>
           <h1 className="text-3xl font-light tracking-tight text-nk-text sm:text-4xl">
             Hai, <span className="font-semibold">{displayName}</span>!
@@ -323,17 +440,17 @@ export default function OwnerDashboardPage() {
   return (
     <DashboardShell role="owner">
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-nk-text sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-nk-text sm:text-3xl">
             {t("welcome", { name: (user?.name || OWNER_PROFILE.name).split(" ")[0] })}
           </h1>
           <p className="mt-1 text-sm text-nk-text-muted">{today}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <Link
             href="/owner/properties/new"
-            className="flex items-center gap-1.5 rounded-md bg-nk-accent px-3 py-1.5 text-sm font-medium text-nk-text-inverse shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-nk-accent"
+            className="flex items-center gap-1.5 rounded-lg bg-nk-accent px-4 py-2 text-xs font-semibold text-nk-text-inverse shadow-sm transition-opacity hover:opacity-90"
           >
             <Plus className="size-4" />
             <span>{t("addProperty")}</span>
@@ -341,7 +458,7 @@ export default function OwnerDashboardPage() {
           <button
             type="button"
             onClick={exportCsv}
-            className="flex items-center gap-1.5 rounded-md bg-nk-surface px-3 py-1.5 text-sm text-nk-text ring-1 ring-foreground/10 transition-colors hover:bg-nk-warm focus-visible:outline-2 focus-visible:outline-nk-accent"
+            className="flex items-center gap-1.5 rounded-lg border border-nk-border bg-nk-surface px-3.5 py-2 text-xs font-medium text-nk-text shadow-sm transition-colors hover:bg-nk-warm focus-visible:outline-2 focus-visible:outline-nk-accent"
           >
             <Download className="size-4 text-nk-text-muted" aria-hidden="true" />
             <span>{t("exportCsv")}</span>
@@ -349,126 +466,298 @@ export default function OwnerDashboardPage() {
         </div>
       </div>
 
-      {/* 4 Clean Metric Cards */}
+      {/* 4 Clean Stat Cards with integrated smooth sparklines */}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((s) => (
           <div
-            key={s.label}
-            className={cn(
-              "flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10",
-              s.tint.card
-            )}
+            key={s.id}
+            className="flex flex-col justify-between overflow-hidden rounded-xl border border-nk-border bg-nk-surface p-5 shadow-sm transition-shadow hover:shadow"
           >
-            <p className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{s.label}</p>
-            <div className="flex flex-1 flex-col rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-2xl font-semibold tracking-tight text-nk-text tabular-nums">
-                    {s.value}
-                  </p>
-                  {s.note && (
-                    <div className="mt-1 flex items-center gap-1.5">
-                      {s.badge ? (
-                        <StatusBadge color="yellow">{s.note}</StatusBadge>
-                      ) : (
-                        <span className="truncate text-xs text-nk-text-muted">{s.note}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-nk-text-muted uppercase tracking-wider">
+                  {s.label}
+                </span>
                 <div
                   className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-full",
-                    s.tint.icon
+                    "flex size-9 items-center justify-center rounded-lg",
+                    s.iconColor
                   )}
                 >
                   <s.icon className="size-4" aria-hidden="true" />
                 </div>
               </div>
+
+              <div className="mt-3">
+                <p className="text-2xl font-bold tracking-tight text-nk-text tabular-nums">
+                  {s.value}
+                </p>
+                {s.note && (
+                  <div className="mt-1 flex items-center gap-1.5">
+                    {s.badge ? (
+                      <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 border border-amber-200">
+                        {s.note}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-nk-text-muted">{s.note}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Subtle mini wave */}
+            <div className="-mx-5 -mb-5 mt-4 h-10 overflow-hidden opacity-75">
+              <ChartContainer
+                config={{ v: { label: s.label, color: s.sparkColor } }}
+                className="h-full w-full"
+              >
+                <AreaChart
+                  data={s.spark.map((v, i) => ({ i, v }))}
+                  margin={{ top: 2, left: 0, right: 0, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id={`grad-${s.id}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={s.sparkColor} stopOpacity={0.28} />
+                      <stop offset="100%" stopColor={s.sparkColor} stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey="v"
+                    stroke={s.sparkColor}
+                    strokeWidth={1.8}
+                    fill={`url(#grad-${s.id})`}
+                    isAnimationActive={false}
+                  />
+                </AreaChart>
+              </ChartContainer>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Main Grid: 2 Columns */}
+      {/* Main 2-Column Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left Column: Bookings + Property Performance Table */}
+        {/* Left Column (2 cols): Spotlight + Pending Bookings + Revenue Chart + Property Table */}
         <div className="flex flex-col gap-6 lg:col-span-2">
-          {/* Pending Bookings */}
-          <DashSection
-            title={t("bookingPending")}
-            right={
-              <Link
-                href="/owner/bookings"
-                className="text-xs text-nk-accent underline underline-offset-4 hover:text-nk-accent-dark"
-              >
-                {t("seeAll")}
-              </Link>
-            }
-            bodyClass="divide-y divide-nk-border"
-          >
-            {pending.slice(0, 5).map((b) => (
-              <div key={b.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-nk-text">{b.applicantName}</p>
-                  <p className="truncate text-xs text-nk-text-muted">
-                    {b.propertyName} · {b.roomType} ({b.roomNumber})
-                  </p>
+          {/* Spotlight / Top Performer Property */}
+          {best && (
+            <div className="rounded-xl border border-nk-border bg-gradient-to-r from-nk-surface via-nk-section/30 to-nk-surface p-5 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="relative size-16 shrink-0 overflow-hidden rounded-xl border border-nk-border shadow-sm">
+                    <Image
+                      src={getKosImage(best.property.slug || best.property.imageSeed, "main")}
+                      alt={best.property.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                        <StarIcon className="size-3 text-amber-500 fill-amber-500" />
+                        <span>{best.property.rating.toFixed(1)}</span>
+                      </span>
+                      <span className="text-xs font-semibold text-nk-accent">
+                        🏆 {t("topPerformer")}
+                      </span>
+                    </div>
+                    <Link
+                      href={`/owner/properties/${best.property.slug}`}
+                      className="mt-1 block text-base font-semibold text-nk-text hover:underline"
+                    >
+                      {best.property.name}
+                    </Link>
+                    <p className="text-xs text-nk-text-muted">
+                      {best.property.city} · {t("statOccupancyNote", { filled: best.occ, total: best.rooms })}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-nk-text-muted">
-                  {new Date(b.createdAt).toLocaleString(locale === "id" ? "id-ID" : "en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => router.push("/owner/bookings")}
-                    className="rounded-md bg-[#2F6B3C] px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
+                <div className="flex items-center justify-between border-t border-nk-border/60 pt-3 sm:border-0 sm:pt-0 sm:text-right">
+                  <div>
+                    <p className="text-xs text-nk-text-muted">{isEn ? "Active Rent" : "Sewa Berjalan"}</p>
+                    <p className="text-lg font-bold text-nk-text tabular-nums">
+                      {formatIDR(best.monthly)}
+                      <span className="text-xs font-normal text-nk-text-muted">{t("perMonth")}</span>
+                    </p>
+                  </div>
+                  <Link
+                    href={`/owner/properties/${best.property.slug}`}
+                    className="ml-4 rounded-lg bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90 shadow-sm"
                   >
-                    {t("approve")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/owner/bookings")}
-                    className="rounded-md border border-[#EBC4C0] px-3 py-1.5 text-xs font-medium text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] active:scale-[0.98]"
-                  >
-                    {t("reject")}
-                  </button>
+                    {t("manageProperty")}
+                  </Link>
                 </div>
               </div>
-            ))}
-            {pending.length === 0 && (
-              <p className="p-5 text-sm text-nk-text-muted">{t("noPending")}</p>
-            )}
-          </DashSection>
+            </div>
+          )}
 
-          {/* Properties Performance Table */}
-          <DashSection
-            title={t("perfTitle")}
-            right={
+          {/* Pending Bookings */}
+          <div className="rounded-xl border border-nk-border bg-nk-surface shadow-sm">
+            <div className="flex items-center justify-between border-b border-nk-border p-5">
+              <div>
+                <h2 className="text-base font-semibold text-nk-text">{t("bookingPending")}</h2>
+                <p className="text-xs text-nk-text-muted">
+                  {isEn ? "Tenant applications requiring your action" : "Pengajuan sewa yang menunggu konfirmasi"}
+                </p>
+              </div>
               <Link
-                href="/owner/properties"
-                className="text-xs text-nk-accent underline underline-offset-4 hover:text-nk-accent-dark"
+                href="/owner/bookings"
+                className="text-xs font-medium text-nk-accent underline underline-offset-4 hover:text-nk-accent-dark"
               >
                 {t("seeAll")}
               </Link>
-            }
-            bodyClass="overflow-hidden"
-          >
+            </div>
+
+            <div className="divide-y divide-nk-border">
+              {pending.slice(0, 4).map((b) => (
+                <div
+                  key={b.id}
+                  className="flex flex-col gap-3 p-4 transition-colors hover:bg-nk-warm/30 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-nk-accent/15 text-xs font-bold text-nk-accent">
+                      {b.applicantName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-nk-text">{b.applicantName}</p>
+                      <p className="truncate text-xs text-nk-text-muted">
+                        {b.propertyName} · {b.roomType} ({b.roomNumber})
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 self-end sm:self-center">
+                    <span className="text-xs text-nk-text-muted">
+                      {new Date(b.createdAt).toLocaleString(locale === "id" ? "id-ID" : "en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => router.push("/owner/bookings")}
+                        className="rounded-lg bg-[#2F6B3C] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90 active:scale-95"
+                      >
+                        {t("approve")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/owner/bookings")}
+                        className="rounded-lg border border-red-200 bg-red-50/50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 active:scale-95"
+                      >
+                        {t("reject")}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {pending.length === 0 && (
+                <p className="p-8 text-center text-sm text-nk-text-muted">{t("noPending")}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Revenue Chart with Range Pills */}
+          <div className="rounded-xl border border-nk-border bg-nk-surface p-6 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-nk-border pb-5">
+              <div>
+                <h2 className="text-base font-semibold text-nk-text">{t("chartTitle")}</h2>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-2xl font-bold tracking-tight text-nk-text tabular-nums">
+                    {formatIDR(revenueTotal * 1_000_000)}
+                  </span>
+                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
+                    {t(`chartTrend${range.charAt(0).toUpperCase()}${range.slice(1)}`)}
+                  </span>
+                  <span className="text-xs text-nk-text-muted">
+                    {t(`chartCompare${range.charAt(0).toUpperCase()}${range.slice(1)}`)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Segmented Control Range */}
+              <div className="flex rounded-lg border border-nk-border bg-nk-section/60 p-1 text-xs">
+                {(["weekly", "monthly", "yearly"] as const).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRange(r)}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 font-medium transition-all",
+                      range === r
+                        ? "bg-nk-surface text-nk-text shadow-sm"
+                        : "text-nk-text-muted hover:text-nk-text"
+                    )}
+                  >
+                    {t(`range${r.charAt(0).toUpperCase()}${r.slice(1)}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <ChartContainer config={chartConfig} className="mt-6 h-48 w-full">
+              <BarChart accessibilityLayer data={chartData} margin={{ top: 8, left: 0, right: 0, bottom: 0 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
+                <XAxis
+                  dataKey="label"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  fontSize={11}
+                  interval={0}
+                />
+                <ChartTooltip
+                  cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                  content={
+                    <ChartTooltipContent
+                      hideLabel
+                      formatter={(value) => (
+                        <span className="font-semibold text-xs tabular-nums text-nk-text">
+                          Rp {(Number(value) * 1_000_000).toLocaleString("id-ID")}
+                        </span>
+                      )}
+                    />
+                  }
+                />
+                <Bar dataKey="value" fill="#2F6B3C" radius={[6, 6, 0, 0]} maxBarSize={48} />
+              </BarChart>
+            </ChartContainer>
+          </div>
+
+          {/* Properties Performance Table */}
+          <div className="rounded-xl border border-nk-border bg-nk-surface shadow-sm">
+            <div className="flex items-center justify-between border-b border-nk-border p-5">
+              <div>
+                <h2 className="text-base font-semibold text-nk-text">{t("perfTitle")}</h2>
+                <p className="text-xs text-nk-text-muted">
+                  {isEn ? "Occupancy and rent status across all properties" : "Okupansi dan status sewa properti aktif Anda"}
+                </p>
+              </div>
+              <Link
+                href="/owner/properties"
+                className="text-xs font-medium text-nk-accent underline underline-offset-4 hover:text-nk-accent-dark"
+              >
+                {t("seeAll")}
+              </Link>
+            </div>
+
             <div className="overflow-x-auto">
               <Table className="w-full text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-nk-border text-left text-xs text-nk-text-muted">
-                    <TableHead className="px-4 py-3 font-medium">{t("perfColProperty")}</TableHead>
-                    <TableHead className="px-4 py-3 font-medium">{t("perfColTenants")}</TableHead>
-                    <TableHead className="px-4 py-3 font-medium">{t("perfColOccupancy")}</TableHead>
-                    <TableHead className="px-4 py-3 font-medium">{t("perfColRevenue")}</TableHead>
-                    <TableHead className="px-4 py-3 font-medium">{t("perfColRating")}</TableHead>
-                    <TableHead className="w-10 px-2 py-3">
+                    <TableHead className="px-5 py-3 font-semibold">{t("perfColProperty")}</TableHead>
+                    <TableHead className="px-4 py-3 font-semibold">{t("perfColTenants")}</TableHead>
+                    <TableHead className="px-4 py-3 font-semibold">{t("perfColOccupancy")}</TableHead>
+                    <TableHead className="px-4 py-3 font-semibold">{t("perfColRevenue")}</TableHead>
+                    <TableHead className="px-4 py-3 font-semibold">{t("perfColRating")}</TableHead>
+                    <TableHead className="w-10 px-2 py-3 text-right">
                       <span className="sr-only">{t("perfColAction")}</span>
                     </TableHead>
                   </TableRow>
@@ -481,38 +770,39 @@ export default function OwnerDashboardPage() {
                     return (
                       <TableRow
                         key={r.property.slug}
-                        className="border-b border-nk-border last:border-b-0"
+                        className="border-b border-nk-border transition-colors hover:bg-nk-warm/30 last:border-b-0"
                       >
-                        <TableCell className="px-4 py-3">
+                        <TableCell className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
-                            <Image
-                              src={getKosImage(r.property.slug || r.property.imageSeed, "main")}
-                              alt=""
-                              width={32}
-                              height={32}
-                              className="size-8 shrink-0 rounded-md object-cover"
-                            />
+                            <div className="relative size-9 shrink-0 overflow-hidden rounded-lg border border-nk-border">
+                              <Image
+                                src={getKosImage(r.property.slug || r.property.imageSeed, "main")}
+                                alt={r.property.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
                             <div className="min-w-0">
                               <Link
                                 href={`/owner/properties/${r.property.slug}`}
-                                className="block truncate font-medium text-nk-text hover:underline"
+                                className="block truncate font-semibold text-nk-text hover:underline text-xs"
                               >
                                 {r.property.name}
                               </Link>
-                              <p className="truncate text-xs text-nk-text-muted">
+                              <p className="truncate text-[11px] text-nk-text-muted">
                                 {r.property.city}
                               </p>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="px-4 py-3 tabular-nums text-nk-text">
+                        <TableCell className="px-4 py-3.5 tabular-nums text-xs text-nk-text">
                           {tenantCount}
                         </TableCell>
-                        <TableCell className="px-4 py-3">
+                        <TableCell className="px-4 py-3.5">
                           {r.rooms > 0 ? (
                             <div className="flex min-w-28 items-center gap-2">
-                              <Progress value={r.pct} className="h-1.5 w-20 bg-nk-border" />
-                              <span className="text-xs tabular-nums text-nk-text-muted">
+                              <Progress value={r.pct} className="h-1.5 w-20 bg-nk-border [&>div]:bg-[#2F6B3C]" />
+                              <span className="text-xs font-semibold tabular-nums text-nk-text">
                                 {r.pct}%
                               </span>
                             </div>
@@ -520,15 +810,15 @@ export default function OwnerDashboardPage() {
                             <span className="text-xs text-nk-text-muted">{t("perfNoRooms")}</span>
                           )}
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text">
+                        <TableCell className="px-4 py-3.5 whitespace-nowrap text-xs font-semibold tabular-nums text-nk-text">
                           {r.monthly > 0 ? `${formatIDR(r.monthly)}${t("perMonth")}` : "-"}
                         </TableCell>
-                        <TableCell className="px-4 py-3">
+                        <TableCell className="px-4 py-3.5">
                           {r.property.rating > 0 ? (
-                            <span className="flex items-center gap-1 whitespace-nowrap tabular-nums text-nk-text">
-                              <StarIcon className="text-nk-star" />
-                              {r.property.rating.toFixed(1)}
-                              <span className="text-xs text-nk-text-muted">
+                            <span className="flex items-center gap-1 whitespace-nowrap text-xs tabular-nums text-nk-text font-medium">
+                              <StarIcon className="size-3.5 text-amber-500 fill-amber-500" />
+                              <span>{r.property.rating.toFixed(1)}</span>
+                              <span className="text-[11px] text-nk-text-muted">
                                 ({r.property.reviewCount})
                               </span>
                             </span>
@@ -536,11 +826,11 @@ export default function OwnerDashboardPage() {
                             <StatusBadge color="gray">{t("perfNoRating")}</StatusBadge>
                           )}
                         </TableCell>
-                        <TableCell className="px-2 py-3 text-right">
+                        <TableCell className="px-2 py-3.5 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger
                               aria-label={t("perfColAction")}
-                              className="flex size-8 items-center justify-center rounded-md text-nk-text-muted transition-colors hover:bg-nk-warm hover:text-nk-text focus-visible:outline-2 focus-visible:outline-nk-accent"
+                              className="flex size-7 items-center justify-center rounded-lg text-nk-text-muted transition-colors hover:bg-nk-warm hover:text-nk-text focus-visible:outline-2 focus-visible:outline-nk-accent"
                             >
                               <Ellipsis className="size-4" aria-hidden="true" />
                             </DropdownMenuTrigger>
@@ -569,144 +859,134 @@ export default function OwnerDashboardPage() {
                 </TableBody>
               </Table>
             </div>
-          </DashSection>
+          </div>
         </div>
 
-        {/* Right Column: Unpaid Invoices + Room Status + Quick Actions */}
+        {/* Right Column (1 col): Reviews + Recent Activity */}
         <div className="flex flex-col gap-6">
-          {/* Unpaid Invoices */}
-          <DashSection
-            title={t("unpaidInvoices")}
-            right={
-              <Link
-                href="/owner/invoices"
-                className="text-xs text-nk-accent underline underline-offset-4 hover:text-nk-accent-dark"
-              >
-                {t("seeAll")}
-              </Link>
-            }
-            bodyClass="divide-y divide-nk-border"
-          >
-            <div className="bg-nk-section/40 p-4">
+          {/* Tenant Reviews */}
+          <div className="rounded-xl border border-nk-border bg-nk-surface shadow-sm">
+            <div className="border-b border-nk-border p-5">
+              <h2 className="text-base font-semibold text-nk-text">{t("reviewsTitle")}</h2>
               <p className="text-xs text-nk-text-muted">
-                {isEn ? "Total Outstanding" : "Total Belum Lunas"}
-              </p>
-              <p className="mt-0.5 text-xl font-bold tracking-tight text-[#9C3B32] tabular-nums">
-                {formatIDR(displayArrearsSum)}
-              </p>
-              <p className="mt-0.5 text-[11px] text-nk-text-muted">
-                {isEn ? `${displayArrears} unpaid invoices` : `${displayArrears} tagihan belum dibayar`}
+                {t("reviewsCount", { count: reviewTotal, properties: rated.length })}
               </p>
             </div>
-            {unpaidInvoices.slice(0, 4).map((inv) => (
-              <div key={inv.id} className="p-4">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="truncate text-sm font-medium text-nk-text">{inv.tenantName}</p>
-                  <span className="font-semibold text-xs text-[#9C3B32] tabular-nums">
-                    {formatIDR(inv.amount)}
-                  </span>
-                </div>
-                <p className="mt-0.5 text-xs text-nk-text-muted">
-                  {inv.id} · {inv.period}
-                </p>
-                <p className="mt-1 text-[11px] text-nk-text-muted">
-                  {isEn ? `Due ${inv.dueDate}` : `Jatuh tempo: ${inv.dueDate}`}
-                </p>
-              </div>
-            ))}
-            {unpaidInvoices.length === 0 && (
-              <p className="p-4 text-xs text-nk-text-muted">{t("allInvoicesPaid")}</p>
-            )}
-          </DashSection>
 
-          {/* Room Status Summary */}
-          <DashSection title={t("roomStatus")} bodyClass="p-4">
-            <div className="space-y-3.5">
-              <div>
-                <div className="flex justify-between text-xs text-nk-text">
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-[#2F6B3C]" />
-                    <span>{isEn ? "Occupied" : "Terisi"}</span>
-                  </span>
-                  <span className="font-medium tabular-nums">
-                    {filledRooms} ({totalRoomsCount > 0 ? Math.round((filledRooms / totalRoomsCount) * 100) : 0}%)
-                  </span>
+            <div className="p-5">
+              <div className="flex items-center gap-5 border-b border-nk-border pb-5">
+                <div className="text-center">
+                  <p className="text-3xl font-extrabold text-nk-text tabular-nums">
+                    {reviewAvg.toFixed(1)}
+                  </p>
+                  <div className="mt-1 flex items-center justify-center gap-0.5 text-amber-500">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <StarIcon
+                        key={i}
+                        className={cn(
+                          "size-3.5 fill-amber-500",
+                          i <= Math.round(reviewAvg)
+                            ? "text-amber-500"
+                            : "text-nk-border fill-nk-border"
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <p className="mt-1 text-[11px] text-nk-text-muted">
+                    {reviewTotal} {isEn ? "reviews" : "ulasan"}
+                  </p>
                 </div>
-                <Progress
-                  value={totalRoomsCount > 0 ? Math.round((filledRooms / totalRoomsCount) * 100) : 0}
-                  className="mt-1.5 h-1.5 bg-nk-border [&>div]:bg-[#2F6B3C]"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs text-nk-text">
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-[#33517C]" />
-                    <span>{isEn ? "Available" : "Kosong"}</span>
-                  </span>
-                  <span className="font-medium tabular-nums">
-                    {emptyRooms} ({totalRoomsCount > 0 ? Math.round((emptyRooms / totalRoomsCount) * 100) : 0}%)
-                  </span>
+                <div className="flex-1 space-y-1.5">
+                  {dist.map((d) => {
+                    const count = Math.round((reviewTotal * d.weight) / distSum);
+                    const pct = Math.round((d.weight / distSum) * 100);
+                    return (
+                      <div key={d.star} className="flex items-center gap-2 text-xs">
+                        <span className="w-3 text-right font-medium text-nk-text-muted">
+                          {d.star}
+                        </span>
+                        <Progress
+                          value={pct}
+                          className="h-1.5 flex-1 bg-nk-border [&>div]:bg-amber-400"
+                        />
+                        <span className="w-6 text-right text-[11px] text-nk-text-muted tabular-nums">
+                          {count}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-                <Progress
-                  value={totalRoomsCount > 0 ? Math.round((emptyRooms / totalRoomsCount) * 100) : 0}
-                  className="mt-1.5 h-1.5 bg-nk-border [&>div]:bg-[#33517C]"
-                />
               </div>
 
-              <div>
-                <div className="flex justify-between text-xs text-nk-text">
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-[#D97706]" />
-                    <span>{isEn ? "Maintenance" : "Perawatan"}</span>
-                  </span>
-                  <span className="font-medium tabular-nums">
-                    {repairRooms} ({totalRoomsCount > 0 ? Math.round((repairRooms / totalRoomsCount) * 100) : 0}%)
-                  </span>
-                </div>
-                <Progress
-                  value={totalRoomsCount > 0 ? Math.round((repairRooms / totalRoomsCount) * 100) : 0}
-                  className="mt-1.5 h-1.5 bg-nk-border [&>div]:bg-[#D97706]"
-                />
+              {/* Review Cards */}
+              <div className="mt-4 space-y-3">
+                {ownerReviews.slice(0, 2).map((rv) => (
+                  <div
+                    key={rv.id}
+                    className="rounded-lg border border-nk-border bg-nk-section/30 p-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-nk-text">{rv.authorName}</p>
+                      <div className="flex items-center text-amber-500">
+                        {Array.from({ length: rv.rating }).map((_, i) => (
+                          <StarIcon key={i} className="size-3 fill-amber-500 text-amber-500" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-1.5 line-clamp-2 text-xs text-nk-text-muted leading-relaxed">
+                      {locale === "id" ? rv.bodyId : rv.bodyEn}
+                    </p>
+                    <p className="mt-1 text-[10px] text-nk-text-muted">{fmtDate(rv.at)}</p>
+                  </div>
+                ))}
               </div>
             </div>
-          </DashSection>
+          </div>
 
-          {/* Quick Shortcuts */}
-          <DashSection title={t("quickShortcuts")} bodyClass="p-2 divide-y divide-nk-border">
-            <Link
-              href="/owner/properties/new"
-              className="flex items-center justify-between p-2.5 text-xs font-medium text-nk-text hover:bg-nk-warm rounded-md transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                <Plus className="size-3.5 text-nk-accent" />
-                <span>{t("addProperty")}</span>
-              </span>
-              <ArrowUpRight className="size-3 text-nk-text-muted" />
-            </Link>
-            <Link
-              href="/owner/properties"
-              className="flex items-center justify-between p-2.5 text-xs font-medium text-nk-text hover:bg-nk-warm rounded-md transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                <Building2 className="size-3.5 text-nk-accent" />
-                <span>{isEn ? "Manage Properties" : "Kelola Properti"}</span>
-              </span>
-              <ArrowUpRight className="size-3 text-nk-text-muted" />
-            </Link>
-            <Link
-              href="/owner/messages"
-              className="flex items-center justify-between p-2.5 text-xs font-medium text-nk-text hover:bg-nk-warm rounded-md transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                <MessageSquare className="size-3.5 text-nk-accent" />
-                <span>{isEn ? "Tenant Messages" : "Pesan Penyewa"}</span>
-              </span>
-              <ArrowUpRight className="size-3 text-nk-text-muted" />
-            </Link>
-          </DashSection>
+          {/* Recent Activity Timeline */}
+          <div className="rounded-xl border border-nk-border bg-nk-surface shadow-sm">
+            <div className="border-b border-nk-border p-5">
+              <h2 className="text-base font-semibold text-nk-text">{t("activity")}</h2>
+              <p className="text-xs text-nk-text-muted">
+                {isEn ? "Latest platform and tenant actions" : "Pemberitahuan dan transaksi terbaru"}
+              </p>
+            </div>
+
+            <div className="space-y-4 p-5">
+              {ACTIVITIES[isEn ? "en" : "id"].map((a) => {
+                const IconComponent =
+                  ACTIVITY_ICONS[a.type as keyof typeof ACTIVITY_ICONS] || CalendarClock;
+                const colorClass =
+                  ACTIVITY_COLORS[a.type as keyof typeof ACTIVITY_COLORS] || "bg-nk-warm text-nk-text";
+                return (
+                  <div key={a.id} className="flex items-start gap-3">
+                    <div
+                      className={cn(
+                        "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs",
+                        colorClass
+                      )}
+                    >
+                      <IconComponent className="size-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-nk-text leading-snug">{a.text}</p>
+                      <p className="mt-0.5 text-[11px] text-nk-text-muted">{a.at}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Operations & Room Insights Component */}
+      <OwnerDashboardInsights
+        pendingBookingsCount={
+          (dynMetrics?.pendingCount || 0) +
+          ownerBookings.filter((b) => b.status === "pending").length
+        }
+      />
     </DashboardShell>
   );
 }
