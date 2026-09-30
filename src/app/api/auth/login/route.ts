@@ -26,6 +26,29 @@ export const POST = withApi(async (request: Request) => {
       }
     }
 
+    let telegramChatId: string | null = localUser.telegramChatId ?? null;
+    let telegramUsername: string | null = localUser.telegramUsername ?? null;
+    let telegramConnectedAt: string | null = localUser.telegramConnectedAt ?? null;
+
+    try {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(localUser.id);
+      const dbProfile = isUuid
+        ? await prisma.profile.findUnique({
+            where: { id: localUser.id },
+            select: { telegramChatId: true, telegramUsername: true, telegramConnectedAt: true },
+          })
+        : await prisma.profile.findUnique({
+            where: { email: localUser.email.toLowerCase() },
+            select: { telegramChatId: true, telegramUsername: true, telegramConnectedAt: true },
+          });
+
+      if (dbProfile) {
+        telegramChatId = dbProfile.telegramChatId;
+        telegramUsername = dbProfile.telegramUsername;
+        telegramConnectedAt = dbProfile.telegramConnectedAt ? dbProfile.telegramConnectedAt.toISOString() : null;
+      }
+    } catch {}
+
     await setSessionCookie({
       userId: localUser.id,
       email: localUser.email,
@@ -33,6 +56,9 @@ export const POST = withApi(async (request: Request) => {
       role: localUser.role,
       adminRole: localUser.adminRole,
       phone: localUser.phone,
+      telegramChatId,
+      telegramUsername,
+      telegramConnectedAt,
     });
 
     // Background attempt to sign in to Supabase if reachable
@@ -58,14 +84,31 @@ export const POST = withApi(async (request: Request) => {
     }
 
     let role: "SEEKER" | "OWNER" | "ADMIN" = "SEEKER";
+    let dbProfile: {
+      role: "SEEKER" | "OWNER" | "ADMIN";
+      status: string;
+      telegramChatId: string | null;
+      telegramUsername: string | null;
+      telegramConnectedAt: Date | null;
+    } | null = null;
+
     try {
-      const profile = await prisma.profile.findUnique({ where: { id: data.user.id }, select: { role: true, status: true } });
-      if (profile) {
-        if (profile.status !== "ACTIVE") {
+      dbProfile = await prisma.profile.findUnique({
+        where: { id: data.user.id },
+        select: {
+          role: true,
+          status: true,
+          telegramChatId: true,
+          telegramUsername: true,
+          telegramConnectedAt: true,
+        },
+      });
+      if (dbProfile) {
+        if (dbProfile.status !== "ACTIVE") {
           await supabase.auth.signOut();
           throw new ApiError(403, "ACCOUNT_DISABLED", "Akun tidak aktif");
         }
-        role = profile.role;
+        role = dbProfile.role;
       } else {
         const requested = data.user.user_metadata?.role === "owner" ? "OWNER" : "SEEKER";
         role = requested;
@@ -89,6 +132,9 @@ export const POST = withApi(async (request: Request) => {
       email: data.user.email ?? input.email,
       fullName: data.user.user_metadata?.full_name ?? input.email.split("@")[0],
       role,
+      telegramChatId: dbProfile?.telegramChatId ?? null,
+      telegramUsername: dbProfile?.telegramUsername ?? null,
+      telegramConnectedAt: dbProfile?.telegramConnectedAt ? dbProfile.telegramConnectedAt.toISOString() : null,
     });
 
     return successResponse({ user: { id: data.user.id, email: data.user.email, role } });

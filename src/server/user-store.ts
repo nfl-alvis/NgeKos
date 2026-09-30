@@ -10,6 +10,9 @@ export interface StoredUser {
   phone?: string | null;
   role: UserRole;
   adminRole?: AdminRole | null;
+  telegramChatId?: string | null;
+  telegramUsername?: string | null;
+  telegramConnectedAt?: string | null;
 }
 
 // In-memory registry with pre-seeded demo accounts
@@ -34,6 +37,9 @@ const userStore = new Map<string, StoredUser>([
       fullName: "Ratri Wulandari (Owner Demo)",
       role: "OWNER",
       adminRole: null,
+      telegramChatId: "8169372099",
+      telegramUsername: "spawn2pwn",
+      telegramConnectedAt: "2026-09-28T07:59:10.141Z",
     },
   ],
   [

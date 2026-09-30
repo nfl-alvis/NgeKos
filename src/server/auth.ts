@@ -15,13 +15,30 @@ export async function getAuthContext(): Promise<AuthContext | null> {
   const { getSessionCookie, profileFromSession } = await import("@/server/user-store");
   const session = await getSessionCookie();
   if (session) {
-    const profile = profileFromSession(session);
+    let profile = profileFromSession(session);
+    try {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(session.userId);
+      const dbProfile = isUuid
+        ? await prisma.profile.findUnique({ where: { id: session.userId } })
+        : await prisma.profile.findUnique({ where: { email: session.email.toLowerCase() } });
+
+      if (dbProfile) {
+        if (dbProfile.status !== "ACTIVE") {
+          throw new ApiError(403, "ACCOUNT_DISABLED", "Akun tidak aktif");
+        }
+        profile = dbProfile;
+      }
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      // DB connection failed or fallback: use profileFromSession
+    }
+
     const authUser = {
-      id: session.userId,
-      email: session.email,
+      id: profile.id || session.userId,
+      email: profile.email || session.email,
       user_metadata: {
-        full_name: session.fullName,
-        role: session.role.toLowerCase(),
+        full_name: profile.fullName || session.fullName,
+        role: profile.role.toLowerCase(),
       },
     } as unknown as User;
     return { authUser, profile };
