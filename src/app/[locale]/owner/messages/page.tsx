@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowLeft, MoreHorizontal, Search, Send } from "lucide-react";
+import { ArrowLeft, CheckCheck, MoreHorizontal, Search, Send } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
 import {
   DropdownMenu,
@@ -15,6 +15,54 @@ import { conversations, messageTemplates } from "@/lib/data/entities";
 import { cn } from "@/lib/utils";
 
 const dayKey = (iso: string) => iso.slice(0, 10);
+
+const formatTime = (iso: string) => {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const hours = d.getHours().toString().padStart(2, "0");
+    const minutes = d.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  } catch {
+    return "";
+  }
+};
+
+const formatChatListTime = (iso: string, locale: string) => {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const now = new Date();
+    const isToday =
+      d.getDate() === now.getDate() &&
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear();
+
+    if (isToday) {
+      const hours = d.getHours().toString().padStart(2, "0");
+      const minutes = d.getMinutes().toString().padStart(2, "0");
+      return `${hours}:${minutes}`;
+    }
+
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday =
+      d.getDate() === yesterday.getDate() &&
+      d.getMonth() === yesterday.getMonth() &&
+      d.getFullYear() === yesterday.getFullYear();
+
+    if (isYesterday) {
+      return locale === "id" ? "Kemarin" : "Yesterday";
+    }
+
+    return d.toLocaleDateString(locale === "id" ? "id-ID" : "en-US", {
+      day: "numeric",
+      month: "short",
+    });
+  } catch {
+    return "";
+  }
+};
 
 export default function OwnerMessagesPage() {
   const t = useTranslations("owner.messages");
@@ -213,12 +261,7 @@ export default function OwnerMessagesPage() {
                         <span className="flex items-center justify-between gap-2">
                           <span className="truncate text-sm font-medium text-nk-text">{c.name}</span>
                           <span className="shrink-0 text-[10px] text-nk-text-muted">
-                            {last
-                              ? new Date(last.at).toLocaleDateString(locale === "id" ? "id-ID" : "en-US", {
-                                  day: "numeric",
-                                  month: "short",
-                                })
-                              : ""}
+                            {last ? formatChatListTime(last.at, locale) : ""}
                           </span>
                         </span>
                         <span className="mt-0.5 flex items-center gap-2">
@@ -312,25 +355,39 @@ export default function OwnerMessagesPage() {
               {active.messages.map((m, i) => {
                 const prev = active.messages[i - 1];
                 const showDate = !prev || dayKey(prev.at) !== dayKey(m.at);
+                const isOwner = m.from === "owner";
                 return (
                   <Fragment key={m.id}>
                     {showDate && (
                       <div className="flex justify-center py-1">
-                        <span className="rounded-full bg-nk-warm px-3 py-1 text-[11px] text-nk-text-muted">
+                        <span className="rounded-full bg-nk-warm px-3 py-1 text-[11px] font-medium text-nk-text-muted shadow-xs">
                           {formatDay(m.at)}
                         </span>
                       </div>
                     )}
-                    <div className={cn("flex", m.from === "owner" ? "justify-end" : "justify-start")}>
+                    <div className={cn("flex", isOwner ? "justify-end" : "justify-start")}>
                       <div
                         className={cn(
-                          "max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm",
-                          m.from === "owner"
-                            ? "rounded-br-md bg-nk-accent text-nk-text-inverse"
-                            : "rounded-bl-md bg-nk-warm text-nk-text"
+                          "relative min-w-[76px] max-w-[82%] sm:max-w-[70%] rounded-2xl px-3.5 pt-2 pb-1.5 shadow-sm",
+                          isOwner
+                            ? "rounded-br-sm bg-nk-accent text-nk-text-inverse"
+                            : "rounded-bl-sm bg-nk-warm text-nk-text"
                         )}
                       >
-                        <p className="whitespace-pre-wrap">{m.text}</p>
+                        <p className="whitespace-pre-wrap leading-relaxed break-words text-xs sm:text-sm pr-1">
+                          {m.text}
+                        </p>
+                        <div
+                          className={cn(
+                            "mt-1 flex items-center justify-end gap-1 select-none text-[10px] leading-none",
+                            isOwner ? "text-nk-text-inverse/70" : "text-nk-text-muted"
+                          )}
+                        >
+                          <span>{formatTime(m.at)}</span>
+                          {isOwner && (
+                            <CheckCheck className="size-3.5 text-sky-400 shrink-0" aria-label="Terkirim" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </Fragment>

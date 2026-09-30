@@ -3,7 +3,7 @@
 import { Fragment, Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowLeft, MessageSquare, Send, BellRing, Sparkles, Building2 } from "lucide-react";
+import { ArrowLeft, CheckCheck, MessageSquare, Send, BellRing, Sparkles, Building2 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,54 @@ interface ConversationItem {
 }
 
 const dayKey = (iso: string) => iso.slice(0, 10);
+
+const formatTime = (iso: string) => {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const hours = d.getHours().toString().padStart(2, "0");
+    const minutes = d.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  } catch {
+    return "";
+  }
+};
+
+const formatChatListTime = (iso: string, locale: string) => {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const now = new Date();
+    const isToday =
+      d.getDate() === now.getDate() &&
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear();
+
+    if (isToday) {
+      const hours = d.getHours().toString().padStart(2, "0");
+      const minutes = d.getMinutes().toString().padStart(2, "0");
+      return `${hours}:${minutes}`;
+    }
+
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday =
+      d.getDate() === yesterday.getDate() &&
+      d.getMonth() === yesterday.getMonth() &&
+      d.getFullYear() === yesterday.getFullYear();
+
+    if (isYesterday) {
+      return locale === "id" ? "Kemarin" : "Yesterday";
+    }
+
+    return d.toLocaleDateString(locale === "id" ? "id-ID" : "en-US", {
+      day: "numeric",
+      month: "short",
+    });
+  } catch {
+    return "";
+  }
+};
 
 function UserMessagesContent() {
   const t = useTranslations("userDash");
@@ -228,7 +276,7 @@ function UserMessagesContent() {
                           <div className="flex items-center justify-between gap-1">
                             <span className="truncate text-xs font-medium text-nk-text">{c.name}</span>
                             <span className="shrink-0 text-[10px] text-nk-text-muted">
-                              {last ? new Date(last.at).toLocaleDateString(locale === "id" ? "id-ID" : "en-US", { month: "short", day: "numeric" }) : ""}
+                              {last ? formatChatListTime(last.at, locale) : ""}
                             </span>
                           </div>
                           {c.propertyName && (
@@ -295,7 +343,7 @@ function UserMessagesContent() {
                   <Fragment key={m.id}>
                     {showDate && (
                       <div className="flex justify-center py-1">
-                        <span className="rounded-full bg-nk-warm px-3 py-1 text-[10px] text-nk-text-muted">
+                        <span className="rounded-full bg-nk-warm px-3 py-1 text-[11px] font-medium text-nk-text-muted shadow-xs">
                           {formatDay(m.at)}
                         </span>
                       </div>
@@ -303,24 +351,26 @@ function UserMessagesContent() {
                     <div className={cn("flex", isMyMessage ? "justify-end" : "justify-start")}>
                       <div
                         className={cn(
-                          "max-w-[75%] rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm",
+                          "relative min-w-[76px] max-w-[82%] sm:max-w-[70%] rounded-2xl px-3.5 pt-2 pb-1.5 shadow-sm",
                           isMyMessage
-                            ? "rounded-br-md bg-nk-accent text-nk-text-inverse"
-                            : "rounded-bl-md bg-nk-warm text-nk-text"
+                            ? "rounded-br-sm bg-nk-accent text-nk-text-inverse"
+                            : "rounded-bl-sm bg-nk-warm text-nk-text"
                         )}
                       >
-                        <p className="whitespace-pre-wrap leading-relaxed">{m.text}</p>
-                        <span
+                        <p className="whitespace-pre-wrap leading-relaxed break-words text-xs sm:text-sm pr-1">
+                          {m.text}
+                        </p>
+                        <div
                           className={cn(
-                            "mt-1 block text-right text-[10px]",
-                            isMyMessage ? "text-nk-text-inverse/75" : "text-nk-text-muted"
+                            "mt-1 flex items-center justify-end gap-1 select-none text-[10px] leading-none",
+                            isMyMessage ? "text-nk-text-inverse/70" : "text-nk-text-muted"
                           )}
                         >
-                          {new Date(m.at).toLocaleTimeString(locale === "id" ? "id-ID" : "en-US", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                          <span>{formatTime(m.at)}</span>
+                          {isMyMessage && (
+                            <CheckCheck className="size-3.5 text-sky-400 shrink-0" aria-label="Terkirim" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </Fragment>
