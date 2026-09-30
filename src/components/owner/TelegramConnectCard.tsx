@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale } from "next-intl";
 import { CheckCircle2, ExternalLink, RefreshCw, Send, Unlink } from "lucide-react";
 
 interface TelegramStatus {
@@ -16,6 +17,9 @@ export default function TelegramConnectCard({
   onStatusChange?: (status: TelegramStatus) => void;
   isOwner?: boolean;
 }) {
+  const locale = useLocale();
+  const isEn = locale === "en";
+
   const [status, setStatus] = useState<TelegramStatus>({
     connected: false,
     username: null,
@@ -63,16 +67,18 @@ export default function TelegramConnectCard({
         window.open(json.data.url, "_blank", "noopener,noreferrer");
         setMessage({
           type: "success",
-          text: "Tautan Telegram baru telah dibuka di tab baru! Tekan 'START' di aplikasi Telegram untuk menghubungkan ulang, lalu klik 'Perbarui Status' di bawah.",
+          text: isEn
+            ? "New Telegram link opened in a new tab! Press 'START' in the Telegram app to reconnect, then click 'Refresh Status' below."
+            : "Tautan Telegram baru telah dibuka di tab baru! Tekan 'START' di aplikasi Telegram untuk menghubungkan ulang, lalu klik 'Perbarui Status' di bawah.",
         });
       } else {
         setMessage({
           type: "error",
-          text: json?.error?.message || "Gagal membuat tautan koneksi Telegram.",
+          text: json?.error?.message || (isEn ? "Failed to generate Telegram connection link." : "Gagal membuat tautan koneksi Telegram."),
         });
       }
     } catch {
-      setMessage({ type: "error", text: "Terjadi kesalahan jaringan." });
+      setMessage({ type: "error", text: isEn ? "Network error occurred." : "Terjadi kesalahan jaringan." });
     } finally {
       setConnecting(false);
     }
@@ -98,46 +104,58 @@ export default function TelegramConnectCard({
       const json = await res.json();
 
       if (res.ok && json?.data?.success) {
-        setMessage({ type: "success", text: "Akun Telegram berhasil dihubungkan secara manual!" });
+        setMessage({
+          type: "success",
+          text: isEn ? "Telegram account linked successfully!" : "Akun Telegram berhasil dihubungkan secara manual!",
+        });
         setManualInput("");
         setShowManualReconnect(false);
         await fetchStatus();
       } else {
         setMessage({
           type: "error",
-          text: json?.error?.message || "Gagal menghubungkan Telegram.",
+          text: json?.error?.message || (isEn ? "Failed to link Telegram account." : "Gagal menghubungkan Telegram."),
         });
       }
     } catch {
-      setMessage({ type: "error", text: "Terjadi kesalahan saat menghubungkan." });
+      setMessage({ type: "error", text: isEn ? "Error while connecting." : "Terjadi kesalahan saat menghubungkan." });
     } finally {
       setManualLoading(false);
     }
   };
 
   const handleDisconnect = async () => {
-    if (!confirm("Apakah Anda yakin ingin memutuskan tautan Telegram?")) return;
+    const confirmPrompt = isEn
+      ? "Are you sure you want to disconnect your Telegram account?"
+      : "Apakah Anda yakin ingin memutuskan tautan Telegram?";
+    if (!confirm(confirmPrompt)) return;
 
     setDisconnecting(true);
     setMessage(null);
     try {
       const res = await fetch("/api/owner/telegram/disconnect", { method: "POST" });
       if (res.ok) {
-        setMessage({ type: "success", text: "Tautan Telegram berhasil diputuskan." });
+        setMessage({
+          type: "success",
+          text: isEn ? "Telegram link disconnected successfully." : "Tautan Telegram berhasil diputuskan.",
+        });
         setConnectUrl(null);
         await fetchStatus();
       } else {
-        setMessage({ type: "error", text: "Gagal memutuskan tautan Telegram." });
+        setMessage({
+          type: "error",
+          text: isEn ? "Failed to disconnect Telegram." : "Gagal memutuskan tautan Telegram.",
+        });
       }
     } catch {
-      setMessage({ type: "error", text: "Terjadi kesalahan koneksi." });
+      setMessage({ type: "error", text: isEn ? "Connection error." : "Terjadi kesalahan koneksi." });
     } finally {
       setDisconnecting(false);
     }
   };
 
   return (
-    <div className="rounded-lg border border-nk-border bg-nk-surface p-6">
+    <div className="rounded-xl border border-nk-border bg-nk-surface p-6 shadow-sm">
       <div className="flex items-center justify-between gap-4 pb-4">
         <div className="flex items-center gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#2AABEE]/15 text-[#2AABEE]">
@@ -146,26 +164,34 @@ export default function TelegramConnectCard({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-base font-medium text-nk-text">
-                {isOwner ? "Integrasi Telegram Bot" : "Notifikasi Telegram Bot"}
+                {isEn
+                  ? isOwner ? "Telegram Bot Integration" : "Telegram Bot Notifications"
+                  : isOwner ? "Integrasi Telegram Bot" : "Notifikasi Telegram Bot"}
               </h2>
               {status.connected ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800 shadow-sm">
                   <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  Sudah Konek
+                  {isEn ? "Connected" : "Sudah Konek"}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-800">
                   <span className="size-1.5 rounded-full bg-amber-500" />
-                  Belum Terhubung
+                  {isEn ? "Not Connected" : "Belum Terhubung"}
                 </span>
               )}
             </div>
             <p className="text-xs text-nk-text-muted mt-0.5">
               {status.connected
-                ? "Akun Telegram Anda sudah aktif terhubung dan siap menerima notifikasi instan."
+                ? isEn
+                  ? "Your Telegram account is actively connected and ready to receive real-time notifications."
+                  : "Akun Telegram Anda sudah aktif terhubung dan siap menerima notifikasi instan."
                 : isOwner
-                  ? "Terima chat dari calon penyewa dan balas langsung dari website."
-                  : "Terima notifikasi balasan pesan pemilik kost dan update sewa langsung di Telegram."}
+                  ? isEn
+                    ? "Receive chat messages from prospective tenants and reply directly from the dashboard."
+                    : "Terima chat dari calon penyewa dan balas langsung dari website."
+                  : isEn
+                    ? "Get instant alerts for owner replies and rental status updates on Telegram."
+                    : "Terima notifikasi balasan pesan pemilik kost dan update sewa langsung di Telegram."}
             </p>
           </div>
         </div>
@@ -174,8 +200,8 @@ export default function TelegramConnectCard({
           type="button"
           onClick={fetchStatus}
           disabled={loading}
-          title="Perbarui status"
-          className="flex size-8 shrink-0 items-center justify-center rounded-md border border-nk-border text-nk-text-muted hover:bg-nk-warm hover:text-nk-text disabled:opacity-50"
+          title={isEn ? "Refresh status" : "Perbarui status"}
+          className="flex size-8 shrink-0 items-center justify-center rounded-md border border-nk-border text-nk-text-muted hover:bg-nk-warm hover:text-nk-text disabled:opacity-50 transition-colors"
         >
           <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
         </button>
@@ -202,16 +228,23 @@ export default function TelegramConnectCard({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-emerald-950">Telegram Sudah Konek</p>
+                  <p className="text-sm font-semibold text-emerald-950">
+                    {isEn ? "Telegram Connected" : "Telegram Sudah Konek"}
+                  </p>
                   <span className="rounded bg-emerald-200/80 px-1.5 py-0.5 text-[10px] font-medium text-emerald-900">
-                    Aktif
+                    {isEn ? "Active" : "Aktif"}
                   </span>
                 </div>
                 <p className="text-xs text-emerald-800 mt-0.5">
-                  {status.username ? `@${status.username}` : "Akun Terverifikasi"}
+                  {status.username ? `@${status.username}` : (isEn ? "Verified Account" : "Akun Terverifikasi")}
                   {status.connectedAt && (
                     <span className="ml-2 text-emerald-700/80">
-                      • Terhubung sejak {new Date(status.connectedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                      • {isEn ? "Connected since " : "Terhubung sejak "}
+                      {new Date(status.connectedAt).toLocaleDateString(isEn ? "en-US" : "id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
                     </span>
                   )}
                 </p>
@@ -225,10 +258,10 @@ export default function TelegramConnectCard({
                 disabled={connecting}
                 onClick={handleStartConnect}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-[#2AABEE] bg-white px-3.5 py-1.5 text-xs font-medium text-[#2AABEE] hover:bg-[#2AABEE]/10 active:scale-[0.98] transition-all disabled:opacity-50"
-                title="Buka Telegram bot untuk menghubungkan ulang akun"
+                title={isEn ? "Open Telegram bot to reconnect your account" : "Buka Telegram bot untuk menghubungkan ulang akun"}
               >
                 <RefreshCw className={`size-3.5 ${connecting ? "animate-spin" : ""}`} />
-                <span>{connecting ? "Menyiapkan..." : "Rekonek Telegram"}</span>
+                <span>{connecting ? (isEn ? "Preparing..." : "Menyiapkan...") : (isEn ? "Reconnect Telegram" : "Rekonek Telegram")}</span>
               </button>
 
               <button
@@ -236,10 +269,10 @@ export default function TelegramConnectCard({
                 disabled={disconnecting}
                 onClick={handleDisconnect}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 active:scale-[0.98] transition-all disabled:opacity-50"
-                title="Putuskan koneksi bot Telegram"
+                title={isEn ? "Disconnect Telegram bot" : "Putuskan koneksi bot Telegram"}
               >
                 <Unlink className="size-3.5" />
-                <span>{disconnecting ? "Memutuskan..." : "Putuskan"}</span>
+                <span>{disconnecting ? (isEn ? "Disconnecting..." : "Memutuskan...") : (isEn ? "Disconnect" : "Putuskan")}</span>
               </button>
             </div>
           </div>
@@ -247,9 +280,13 @@ export default function TelegramConnectCard({
           {/* Tautan langsung jika tombol Rekonek diklik */}
           {connectUrl && (
             <div className="rounded-lg border border-[#2AABEE]/30 bg-[#2AABEE]/5 p-3.5 text-xs">
-              <p className="font-medium text-nk-text">Tautan Rekonek Telegram Telah Dibuat:</p>
+              <p className="font-medium text-nk-text">
+                {isEn ? "Telegram Reconnection Link Generated:" : "Tautan Rekonek Telegram Telah Dibuat:"}
+              </p>
               <p className="text-nk-text-muted mt-0.5">
-                Buka aplikasi Telegram dan klik tombol <b>START</b> untuk menyelesaikan proses rekonek akun Anda.
+                {isEn
+                  ? "Open Telegram and tap the START button to complete your account reconnection."
+                  : "Buka aplikasi Telegram dan klik tombol START untuk menyelesaikan proses rekonek akun Anda."}
               </p>
               <a
                 href={connectUrl}
@@ -257,7 +294,7 @@ export default function TelegramConnectCard({
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-1.5 font-medium text-[#2AABEE] underline underline-offset-2"
               >
-                <span>Buka Bot Telegram Sekarang</span>
+                <span>{isEn ? "Open Telegram Bot Now" : "Buka Bot Telegram Sekarang"}</span>
                 <ExternalLink className="size-3" />
               </a>
             </div>
@@ -265,8 +302,12 @@ export default function TelegramConnectCard({
 
           <p className="text-xs text-nk-text-muted leading-relaxed">
             {isOwner
-              ? "Setiap ada calon penyewa yang mengirim pesan, notifikasi akan otomatis masuk dan percakapan dapat dibalas langsung dari menu Pesan."
-              : "Setiap ada pesan balasan dari pemilik kost atau update sewa, bot NgeKos akan mengirim notifikasi langsung ke Telegram Anda."}
+              ? isEn
+                ? "Every time a prospective tenant sends a message, you will receive an instant Telegram alert and can reply directly from the Messages dashboard."
+                : "Setiap ada calon penyewa yang mengirim pesan, notifikasi akan otomatis masuk dan percakapan dapat dibalas langsung dari menu Pesan."
+              : isEn
+                ? "Whenever the owner replies or your rental agreement is updated, the NgeKos bot will alert you on Telegram."
+                : "Setiap ada pesan balasan dari pemilik kost atau update sewa, bot NgeKos akan mengirim notifikasi langsung ke Telegram Anda."}
           </p>
 
           {/* Opsi Rekonek Manual via Toggle */}
@@ -276,18 +317,24 @@ export default function TelegramConnectCard({
               onClick={() => setShowManualReconnect(!showManualReconnect)}
               className="text-xs text-nk-text-muted hover:text-nk-text underline underline-offset-2 flex items-center gap-1"
             >
-              <span>{showManualReconnect ? "Tutup input rekonek manual" : "Atau ganti akun Telegram via username/ID manual"}</span>
+              <span>
+                {showManualReconnect
+                  ? isEn ? "Close manual reconnect form" : "Tutup input rekonek manual"
+                  : isEn ? "Or switch Telegram account via manual username / Chat ID" : "Atau ganti akun Telegram via username/ID manual"}
+              </span>
             </button>
 
             {showManualReconnect && (
               <div className="mt-3 rounded-lg border border-nk-border bg-nk-section p-3.5">
-                <p className="mb-2 text-xs font-medium text-nk-text">Masukkan Username Baru atau Chat ID</p>
+                <p className="mb-2 text-xs font-medium text-nk-text">
+                  {isEn ? "Enter New Username or Chat ID" : "Masukkan Username Baru atau Chat ID"}
+                </p>
                 <form onSubmit={handleManualBind} className="flex gap-2">
                   <input
                     type="text"
                     value={manualInput}
                     onChange={(e) => setManualInput(e.target.value)}
-                    placeholder="Contoh: @username_baru atau Chat ID"
+                    placeholder={isEn ? "e.g. @your_username or Chat ID" : "Contoh: @username_baru atau Chat ID"}
                     className="h-9 flex-1 rounded-lg border border-nk-border bg-nk-bg px-3 text-xs text-nk-text placeholder:text-nk-text-muted focus:border-nk-accent focus:outline-none"
                   />
                   <button
@@ -295,7 +342,7 @@ export default function TelegramConnectCard({
                     disabled={manualLoading || !manualInput.trim()}
                     className="rounded-lg bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
-                    {manualLoading ? "Menyimpan..." : "Simpan Akun Baru"}
+                    {manualLoading ? (isEn ? "Saving..." : "Menyimpan...") : (isEn ? "Save Account" : "Simpan Akun Baru")}
                   </button>
                 </form>
               </div>
@@ -307,9 +354,13 @@ export default function TelegramConnectCard({
           <div className="rounded-lg border border-nk-border bg-nk-section p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-nk-text">Hubungkan Akun Telegram</p>
+                <p className="text-sm font-medium text-nk-text">
+                  {isEn ? "Connect Telegram Account" : "Hubungkan Akun Telegram"}
+                </p>
                 <p className="text-xs text-nk-text-muted">
-                  Buka bot resmi di Telegram, lalu klik <b>Start</b> untuk menautkan akun Anda.
+                  {isEn
+                    ? "Open our official bot in Telegram, then tap Start to link your account."
+                    : "Buka bot resmi di Telegram, lalu klik Start untuk menautkan akun Anda."}
                 </p>
               </div>
               <button
@@ -319,7 +370,7 @@ export default function TelegramConnectCard({
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#2AABEE] px-4 py-2.5 text-xs font-medium text-white shadow-sm transition-opacity hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
               >
                 <Send className="size-3.5" />
-                {connecting ? "Membuka..." : "Buka Telegram Bot"}
+                {connecting ? (isEn ? "Opening..." : "Membuka...") : (isEn ? "Open Telegram Bot" : "Buka Telegram Bot")}
                 <ExternalLink className="size-3" />
               </button>
             </div>
@@ -327,14 +378,14 @@ export default function TelegramConnectCard({
             {connectUrl && (
               <div className="mt-3 border-t border-nk-border pt-3">
                 <p className="text-[11px] text-nk-text-muted">
-                  Atau klik link langsung ini jika jendela tidak terbuka otomatis:{" "}
+                  {isEn ? "Or click this direct link if the window did not open automatically: " : "Atau klik link langsung ini jika jendela tidak terbuka otomatis: "}
                   <a
                     href={connectUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-[#2AABEE] underline underline-offset-2"
                   >
-                    Buka Bot Telegram
+                    {isEn ? "Open Telegram Bot" : "Buka Bot Telegram"}
                   </a>
                 </p>
               </div>
@@ -343,13 +394,15 @@ export default function TelegramConnectCard({
 
           {/* Opsi Input Manual */}
           <div className="border-t border-nk-border pt-4">
-            <p className="mb-2 text-xs font-medium text-nk-text">Atau Masukkan Username / ID Telegram Manual</p>
+            <p className="mb-2 text-xs font-medium text-nk-text">
+              {isEn ? "Or Enter Telegram Username / ID Manually" : "Atau Masukkan Username / ID Telegram Manual"}
+            </p>
             <form onSubmit={handleManualBind} className="flex gap-2">
               <input
                 type="text"
                 value={manualInput}
                 onChange={(e) => setManualInput(e.target.value)}
-                placeholder="Contoh: @ratri_owner atau Chat ID"
+                placeholder={isEn ? "e.g. @ratri_owner or Chat ID" : "Contoh: @ratri_owner atau Chat ID"}
                 className="h-9 flex-1 rounded-lg border border-nk-border bg-nk-bg px-3 text-xs text-nk-text placeholder:text-nk-text-muted focus:border-nk-accent focus:outline-none"
               />
               <button
@@ -357,11 +410,13 @@ export default function TelegramConnectCard({
                 disabled={manualLoading || !manualInput.trim()}
                 className="rounded-lg bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {manualLoading ? "Menyimpan..." : "Hubungkan"}
+                {manualLoading ? (isEn ? "Saving..." : "Menyimpan...") : (isEn ? "Connect" : "Hubungkan")}
               </button>
             </form>
             <p className="mt-1.5 text-[11px] text-nk-text-muted">
-              Gunakan opsi ini jika Anda ingin langsung menautkan username Telegram atau Chat ID Anda.
+              {isEn
+                ? "Use this option if you want to link your Telegram username or Chat ID directly."
+                : "Gunakan opsi ini jika Anda ingin langsung menautkan username Telegram atau Chat ID Anda."}
             </p>
           </div>
         </div>
