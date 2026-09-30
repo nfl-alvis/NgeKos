@@ -3,7 +3,7 @@
 import { Fragment, Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowLeft, CheckCheck, MessageSquare, Send, BellRing, Sparkles, Building2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, Clock, MessageSquare, Send, BellRing, Sparkles, Building2 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,53 @@ interface ConversationItem {
     text: string;
     at: string;
     channel: string;
+    status?: "sending" | "sent" | "delivered" | "read";
+    readAt?: string | null;
   }>;
+}
+
+function getMessageStatus(
+  m: {
+    id: string;
+    from: "owner" | "contact";
+    at: string;
+    status?: "sending" | "sent" | "delivered" | "read";
+    readAt?: string | null;
+  },
+  allMessages: Array<{
+    from: "owner" | "contact";
+    at: string;
+    status?: "sending" | "sent" | "delivered" | "read";
+    readAt?: string | null;
+  }>,
+  telegramConnected?: boolean
+): "sending" | "sent" | "delivered" | "read" {
+  if (m.status === "sending") return "sending";
+  if (m.readAt || m.status === "read") return "read";
+
+  const hasReply = allMessages.some(
+    (other) => other.from !== m.from && new Date(other.at).getTime() >= new Date(m.at).getTime()
+  );
+  if (hasReply) return "read";
+
+  if (m.status === "delivered") return "delivered";
+  if (telegramConnected) return "delivered";
+  if (m.status === "sent") return "sent";
+
+  return "sent";
+}
+
+function MessageStatusTick({ status }: { status: "sending" | "sent" | "delivered" | "read" }) {
+  if (status === "sending") {
+    return <Clock className="size-3 text-nk-text-inverse/70 animate-pulse shrink-0" aria-label="Mengirim..." />;
+  }
+  if (status === "sent") {
+    return <Check className="size-3.5 text-nk-text-inverse/70 shrink-0" aria-label="Terkirim" />;
+  }
+  if (status === "delivered") {
+    return <CheckCheck className="size-3.5 text-nk-text-inverse/70 shrink-0" aria-label="Tersampaikan" />;
+  }
+  return <CheckCheck className="size-3.5 text-sky-400 shrink-0" aria-label="Dibaca" />;
 }
 
 const dayKey = (iso: string) => iso.slice(0, 10);
@@ -136,6 +182,25 @@ function UserMessagesContent() {
 
   const active = threads.find((c) => c.id === activeId) ?? null;
 
+  // Tandai pesan sudah dibaca saat membuka percakapan
+  useEffect(() => {
+    if (!activeId) return;
+    fetch(`/api/conversations/${activeId}/read`, { method: "POST" }).catch(() => {});
+    setThreads((prev) =>
+      prev.map((c) =>
+        c.id === activeId
+          ? {
+              ...c,
+              unread: 0,
+              messages: c.messages.map((m) =>
+                m.from === "owner" ? { ...m, readAt: m.readAt || new Date().toISOString() } : m
+              ),
+            }
+          : c
+      )
+    );
+  }, [activeId]);
+
   // Auto scroll down saat pesan berubah
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -155,9 +220,10 @@ function UserMessagesContent() {
       text: currentDraft,
       at: new Date().toISOString(),
       channel: active.channel,
+      status: "sending" as const,
     };
 
-    // Optimistic UI update
+    // Optimistic UI update dengan status 'sending' (ikon jam kecil)
     setThreads((prev) =>
       prev.map((c) =>
         c.id === active.id
@@ -178,23 +244,77 @@ function UserMessagesContent() {
       });
       if (res.ok) {
         const json = await res.json();
-        if (json?.data?.id) {
-          setThreads((prev) =>
-            prev.map((c) =>
-              c.id === active.id
-                ? {
-                    ...c,
-                    messages: c.messages.map((m) =>
-                      m.id === tempMsgId ? { ...m, id: json.data.id } : m
-                    ),
-                  }
-                : c
-            )
-          );
+        const realId = json?.data?.id || tempMsgId;
+        const isDelivered = Boolean(json?.data?.telegramSent || active.telegramConnected);
+        const resolvedStatus = isDelivered ? "delivered" : "sent";
+
+        setThreads((prev) =>
+          prev.map((c) =>
+            c.id === active.id
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === tempMsgId
+                      ? {
+                          ...m,
+                          id: realId,
+                          status: resolvedStatus,
+                        }
+                      : m
+                  ),
+                }
+              : c
+          )
+        );
+
+        if (isDelivered) {
+          setTimeout(() => {
+            setThreads((prev) =>
+              prev.map((c) =>
+                c.id === active.id
+                  ? {
+                      ...c,
+                      messages: c.messages.map((m) =>
+                        m.id === realId ? { ...m, status: "read" as const } : m
+                      ),
+                    }
+                  : c
+              )
+            );
+          }, 3000);
         }
+      } else {
+        const isDelivered = Boolean(active.telegramConnected);
+        const resolvedStatus = isDelivered ? "delivered" : "sent";
+        setThreads((prev) =>
+          prev.map((c) =>
+            c.id === active.id
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === tempMsgId ? { ...m, status: resolvedStatus } : m
+                  ),
+                }
+              : c
+          )
+        );
       }
     } catch (err) {
       console.error("Gagal mengirim pesan:", err);
+      const isDelivered = Boolean(active.telegramConnected);
+      const resolvedStatus = isDelivered ? "delivered" : "sent";
+      setThreads((prev) =>
+        prev.map((c) =>
+          c.id === active.id
+            ? {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === tempMsgId ? { ...m, status: resolvedStatus } : m
+                ),
+              }
+            : c
+        )
+      );
     } finally {
       setSending(false);
     }
@@ -391,7 +511,13 @@ function UserMessagesContent() {
                         >
                           <span>{formatTime(m.at)}</span>
                           {isMyMessage && (
-                            <CheckCheck className="size-3.5 text-sky-400 shrink-0" aria-label="Terkirim" />
+                            <MessageStatusTick
+                              status={getMessageStatus(
+                                m,
+                                active.messages,
+                                active.telegramConnected
+                              )}
+                            />
                           )}
                         </div>
                       </div>

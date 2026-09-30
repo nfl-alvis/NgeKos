@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowLeft, CheckCheck, MoreHorizontal, Search, Send } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, Clock, MoreHorizontal, Search, Send } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
 import {
   DropdownMenu,
@@ -12,7 +12,52 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { conversations, messageTemplates } from "@/lib/data/entities";
+import type { MessageStatus } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
+
+function getMessageStatus(
+  m: {
+    id: string;
+    from: "owner" | "contact";
+    at: string;
+    status?: MessageStatus;
+    readAt?: string | null;
+  },
+  allMessages: Array<{
+    from: "owner" | "contact";
+    at: string;
+    status?: MessageStatus;
+    readAt?: string | null;
+  }>,
+  telegramConnected?: boolean
+): MessageStatus {
+  if (m.status === "sending") return "sending";
+  if (m.readAt || m.status === "read") return "read";
+
+  const hasReply = allMessages.some(
+    (other) => other.from !== m.from && new Date(other.at).getTime() >= new Date(m.at).getTime()
+  );
+  if (hasReply) return "read";
+
+  if (m.status === "delivered") return "delivered";
+  if (telegramConnected) return "delivered";
+  if (m.status === "sent") return "sent";
+
+  return "sent";
+}
+
+function MessageStatusTick({ status }: { status: MessageStatus }) {
+  if (status === "sending") {
+    return <Clock className="size-3 text-nk-text-inverse/70 animate-pulse shrink-0" aria-label="Mengirim..." />;
+  }
+  if (status === "sent") {
+    return <Check className="size-3.5 text-nk-text-inverse/70 shrink-0" aria-label="Terkirim" />;
+  }
+  if (status === "delivered") {
+    return <CheckCheck className="size-3.5 text-nk-text-inverse/70 shrink-0" aria-label="Tersampaikan" />;
+  }
+  return <CheckCheck className="size-3.5 text-sky-400 shrink-0" aria-label="Dibaca" />;
+}
 
 const dayKey = (iso: string) => iso.slice(0, 10);
 
@@ -118,6 +163,25 @@ export default function OwnerMessagesPage() {
       c.messages.some((m) => m.text.toLowerCase().includes(search.toLowerCase()))
   );
 
+  // Tandai pesan sudah dibaca saat membuka percakapan
+  useEffect(() => {
+    if (!activeId) return;
+    fetch(`/api/conversations/${activeId}/read`, { method: "POST" }).catch(() => {});
+    setThreads((prev) =>
+      prev.map((c) =>
+        c.id === activeId
+          ? {
+              ...c,
+              unread: 0,
+              messages: c.messages.map((m) =>
+                m.from === "contact" ? { ...m, readAt: m.readAt || new Date().toISOString() } : m
+              ),
+            }
+          : c
+      )
+    );
+  }, [activeId]);
+
   // scroll ke bawah saat ganti percakapan / kirim pesan
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -136,9 +200,10 @@ export default function OwnerMessagesPage() {
       text: currentDraft,
       at: new Date().toISOString(),
       channel: active.channel,
+      status: "sending" as const,
     };
 
-    // Optimistic UI update
+    // Optimistic UI update dengan status 'sending' (ikon jam kecil)
     setThreads((prev) =>
       prev.map((c) =>
         c.id === active.id
@@ -159,23 +224,78 @@ export default function OwnerMessagesPage() {
       });
       if (res.ok) {
         const json = await res.json();
-        if (json?.data?.id) {
-          setThreads((prev) =>
-            prev.map((c) =>
-              c.id === active.id
-                ? {
-                    ...c,
-                    messages: c.messages.map((m) =>
-                      m.id === tempMsgId ? { ...m, id: json.data.id } : m
-                    ),
-                  }
-                : c
-            )
-          );
+        const realId = json?.data?.id || tempMsgId;
+        const isDelivered = Boolean(json?.data?.telegramSent || active.telegramConnected);
+        const resolvedStatus: MessageStatus = isDelivered ? "delivered" : "sent";
+
+        setThreads((prev) =>
+          prev.map((c) =>
+            c.id === active.id
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === tempMsgId
+                      ? {
+                          ...m,
+                          id: realId,
+                          status: resolvedStatus,
+                        }
+                      : m
+                  ),
+                }
+              : c
+          )
+        );
+
+        // Simulasi jika lawan bicara membuka chat setelah beberapa detik (centang 2 berubah jadi biru)
+        if (isDelivered) {
+          setTimeout(() => {
+            setThreads((prev) =>
+              prev.map((c) =>
+                c.id === active.id
+                  ? {
+                      ...c,
+                      messages: c.messages.map((m) =>
+                        m.id === realId ? { ...m, status: "read" as const } : m
+                      ),
+                    }
+                  : c
+              )
+            );
+          }, 3000);
         }
+      } else {
+        const isDelivered = Boolean(active.telegramConnected);
+        const resolvedStatus: MessageStatus = isDelivered ? "delivered" : "sent";
+        setThreads((prev) =>
+          prev.map((c) =>
+            c.id === active.id
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === tempMsgId ? { ...m, status: resolvedStatus } : m
+                  ),
+                }
+              : c
+          )
+        );
       }
     } catch (err) {
       console.error("Gagal mengirim pesan:", err);
+      const isDelivered = Boolean(active.telegramConnected);
+      const resolvedStatus: MessageStatus = isDelivered ? "delivered" : "sent";
+      setThreads((prev) =>
+        prev.map((c) =>
+          c.id === active.id
+            ? {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === tempMsgId ? { ...m, status: resolvedStatus } : m
+                ),
+              }
+            : c
+        )
+      );
     } finally {
       setSending(false);
     }
@@ -408,7 +528,13 @@ export default function OwnerMessagesPage() {
                         >
                           <span>{formatTime(m.at)}</span>
                           {isOwner && (
-                            <CheckCheck className="size-3.5 text-sky-400 shrink-0" aria-label="Terkirim" />
+                            <MessageStatusTick
+                              status={getMessageStatus(
+                                m,
+                                active.messages,
+                                active.telegramConnected
+                              )}
+                            />
                           )}
                         </div>
                       </div>

@@ -125,5 +125,7 @@ export const POST = withApi(async (request: Request, context: { params: Promise<
     at: createdMsg.createdAt.toISOString(),
     channel: conv.channel.toLowerCase(),
     telegramSent,
+    status: telegramSent ? "delivered" : "sent",
+    readAt: null,
   });
 });

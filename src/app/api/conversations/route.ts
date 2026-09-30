@@ -58,14 +58,23 @@ export const GET = withApi(async () => {
         propertyName: c.property?.name,
         propertySlug: c.property?.slug,
         externalChatId: c.externalChatId,
-        messages: c.messages.map((m) => ({
-          id: m.id,
-          from: (m.senderRole === "OWNER" ? "owner" : "contact") as "owner" | "contact",
-          isMe: isOwner ? m.senderRole === "OWNER" : m.senderRole === "CONTACT",
-          text: m.body,
-          at: m.createdAt.toISOString(),
-          channel: (m.channel.toLowerCase() === "telegram" ? "telegram" : "in_app") as "telegram" | "email",
-        })),
+        messages: c.messages.map((m) => {
+          const isMe = isOwner ? m.senderRole === "OWNER" : m.senderRole === "CONTACT";
+          return {
+            id: m.id,
+            from: (m.senderRole === "OWNER" ? "owner" : "contact") as "owner" | "contact",
+            isMe,
+            text: m.body,
+            at: m.createdAt.toISOString(),
+            readAt: m.readAt ? m.readAt.toISOString() : null,
+            status: (m.readAt
+              ? "read"
+              : telegramConnected || isTelegram
+              ? "delivered"
+              : "sent") as "sent" | "delivered" | "read",
+            channel: (m.channel.toLowerCase() === "telegram" ? "telegram" : "in_app") as "telegram" | "email",
+          };
+        }),
       };
     });
 
@@ -79,10 +88,18 @@ export const GET = withApi(async () => {
             propertyName: undefined,
             propertySlug: undefined,
             externalChatId: null,
-            messages: mock.messages.map((m) => ({
-              ...m,
-              isMe: m.from === "owner",
-            })),
+            messages: mock.messages.map((m) => {
+              const hasReply = mock.messages.some(
+                (other) => other.from !== m.from && new Date(other.at).getTime() >= new Date(m.at).getTime()
+              );
+              const status = m.status || (hasReply ? "read" : mock.telegramConnected ? "delivered" : "sent");
+              return {
+                ...m,
+                isMe: m.from === "owner",
+                readAt: m.readAt ?? (status === "read" ? m.at : null),
+                status: status as "sent" | "delivered" | "read",
+              };
+            }),
           });
         }
       }

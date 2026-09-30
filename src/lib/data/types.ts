@@ -149,6 +149,7 @@ export interface NotificationItem {
 }
 
 export type MessageChannel = "telegram" | "email";
+export type MessageStatus = "sending" | "sent" | "delivered" | "read";
 
 export interface Conversation {
   id: string;
@@ -156,12 +157,16 @@ export interface Conversation {
   channel: MessageChannel;
   telegramConnected: boolean;
   unread: number;
+  propertyName?: string;
+  propertySlug?: string;
   messages: {
     id: string;
     from: "owner" | "contact";
     text: string;
     at: string;
     channel: MessageChannel;
+    status?: MessageStatus;
+    readAt?: string | null;
   }[];
 }
 
