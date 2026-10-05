@@ -2,6 +2,7 @@ import createIntlMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { refreshSupabaseSession } from "./lib/supabase/proxy";
+import { SESSION_COOKIE_NAME, getSessionSecret, verifySessionToken } from "./server/session-token";
 
 const handleI18n = createIntlMiddleware(routing);
 const protectedArea = /^\/(id|en)\/(dashboard|tenant|owner|admin)(?:\/|$)/;
@@ -19,7 +20,16 @@ export default async function proxy(request: NextRequest) {
 
   const intlResponse = handleI18n(request);
   const { response, user } = await refreshSupabaseSession(request, intlResponse);
-  const hasSession = !!user || request.cookies.has("nk_session");
+
+  // PERBAIKAN F-03: `request.cookies.has()` hanya memastikan ada cookie dengan
+  // nama itu — tanpa validasi tanda tangan, attacker bisa membuat cookie ADMIN
+  // palsu dan lolos. Sekarang token diverifikasi HMAC lebih dulu; cookie yang
+  // tidak valid diperlakukan sebagai tidak ada sesi.
+  const session = verifySessionToken(
+    request.cookies.get(SESSION_COOKIE_NAME)?.value,
+    getSessionSecret(),
+  );
+  const hasSession = !!user || !!session;
 
   if (protectedArea.test(pathname) && !publicAdminLogin.test(pathname) && !hasSession) {
     const locale = pathname.split("/")[1] === "en" ? "en" : "id";

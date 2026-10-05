@@ -89,11 +89,65 @@ export async function parseJson<T>(request: Request, schema: ZodType<T>): Promis
   return schema.parse(body);
 }
 
+/**
+ * PERBAIKAN F-02 — validasi Origin untuk mencegah CSRF.
+ *
+ * Endpoint yang bergantung pada cookie `nk_session` (sameSite=lax) masih dapat
+ * dipicu form lintas situs, jadi cookie saja tidak cukup. Aturan:
+ * - Method aman (GET/HEAD/OPTIONS) tidak diperiksa.
+ * - Origin HARUS ada dan HARUS cocok dengan allowlist. Origin yang hilang
+ *   ditolak (fail-closed): browser selalu mengirimnya untuk POST lintas situs.
+ * - Allowlist = APP_ORIGIN dari env + origin dari request itu sendiri
+ *   (reverse proxy / localhost dev), sehingga instalasi self-hosted di
+ *   domain mana pun tetap jalan tanpa konfigurasi tambahan.
+ */
+function allowedOrigins(request: Request): Set<string> {
+  const origins = new Set<string>();
+  const push = (value: string | null | undefined) => {
+    if (!value) return;
+    try {
+      origins.add(new URL(value).origin);
+    } catch {
+      /* abaikan nilai yang bukan URL */
+    }
+  };
+
+  push(process.env.APP_ORIGIN);
+  push(process.env.NEXT_PUBLIC_SITE_URL);
+  push(new URL(request.url).origin);
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  if (forwardedHost) {
+    const proto = request.headers.get("x-forwarded-proto") ?? "https";
+    push(`${proto}://${forwardedHost}`);
+  }
+  return origins;
+}
+
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+function assertSameOrigin(request: unknown) {
+  if (!(request instanceof Request)) {
+    // Handler tidak menerima Request sebagai argumen pertama, jadi method-nya
+    // tidak diketahui. Gagal tertutup: jangan izinkan perubahan data buta.
+    throw new ApiError(403, "INVALID_ORIGIN", "Permintaan ditolak: handler tidak menerima objek Request");
+  }
+  if (SAFE_METHODS.has(request.method.toUpperCase())) return;
+
+  const origin = request.headers.get("origin");
+  if (!origin) {
+    throw new ApiError(403, "INVALID_ORIGIN", "Permintaan ditolak: header Origin wajib untuk perubahan data");
+  }
+  if (!allowedOrigins(request).has(origin)) {
+    throw new ApiError(403, "INVALID_ORIGIN", "Permintaan ditolak: asal tidak diizinkan");
+  }
+}
+
 export function withApi<TArgs extends unknown[]>(
   handler: (...args: TArgs) => Promise<Response>,
 ): (...args: TArgs) => Promise<Response> {
   return async (...args: TArgs) => {
     try {
+      assertSameOrigin(args[0] as Request);
       return await handler(...args);
     } catch (error) {
       if (!(error instanceof ApiError) && !(error instanceof ZodError)) {

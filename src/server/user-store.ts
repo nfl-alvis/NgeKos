@@ -1,6 +1,14 @@
 import "server-only";
 import { cookies } from "next/headers";
 import type { Profile, UserRole, AdminRole } from "@prisma/client";
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_TTL_SECONDS,
+  createSessionToken,
+  getSessionSecret,
+  verifySessionToken,
+  type SessionTokenPayload,
+} from "@/server/session-token";
 
 export interface StoredUser {
   id: string;
@@ -101,11 +109,19 @@ export function verifyLocalPassword(email: string, password: string): StoredUser
   return null;
 }
 
+/**
+ * Data yang dikirim ke `setSessionCookie`.
+ *
+ * PERINGATAN KEAMANAN: `role` dan `adminRole` TIDAK lagi masuk ke cookie — token yang
+ * ditulis hanya berisi userId + email + waktu kedaluwarsa (lihat session-token.ts).
+ * Field di sini hanya dipakai server-side sebagai sumber data display, dan role
+ * otoritatif selalu diambil ulang dari database / store lokal.
+ */
 export interface SessionPayload {
   userId: string;
   email: string;
-  fullName: string;
-  role: UserRole;
+  fullName?: string;
+  role?: UserRole;
   adminRole?: AdminRole | null;
   phone?: string | null;
   telegramChatId?: string | null;
@@ -113,25 +129,35 @@ export interface SessionPayload {
   telegramConnectedAt?: string | null;
 }
 
+/** Identitas terautentikasi hasil pembacaan + verifikasi cookie. */
+export type VerifiedSession = SessionTokenPayload;
+
+/**
+ * Menulis cookie sesi bertanda tangan (perbaikan F-01).
+ * Token berisi HANYA userId + email + exp, ditandatangani HMAC-SHA256 dengan
+ * rahasia server. Nilai `role` dari argumen diabaikan untuk keperluan cookie.
+ */
 export async function setSessionCookie(user: SessionPayload) {
   const cookieStore = await cookies();
-  const encoded = Buffer.from(JSON.stringify(user)).toString("base64url");
-  cookieStore.set("nk_session", encoded, {
+  const token = createSessionToken({ userId: user.userId, email: user.email });
+  cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: SESSION_TTL_SECONDS,
   });
 }
 
-export async function getSessionCookie(): Promise<SessionPayload | null> {
+/**
+ * Membaca cookie sesi dan MEMVERIFIKASI tanda tangannya.
+ * Mengembalikan null untuk cookie yang tidak bertanda tangan, buatan penetran,
+ * salah tanda tangan, atau sudah kedaluwarsa.
+ */
+export async function getSessionCookie(): Promise<VerifiedSession | null> {
   try {
     const cookieStore = await cookies();
-    const cookie = cookieStore.get("nk_session");
-    if (!cookie?.value) return null;
-    const json = Buffer.from(cookie.value, "base64url").toString("utf-8");
-    return JSON.parse(json) as SessionPayload;
+    return verifySessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value, getSessionSecret());
   } catch {
     return null;
   }
@@ -139,28 +165,39 @@ export async function getSessionCookie(): Promise<SessionPayload | null> {
 
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete("nk_session");
+  cookieStore.delete(SESSION_COOKIE_NAME);
 }
 
-export function profileFromSession(session: SessionPayload): Profile {
+/**
+ * Membangun `Profile` dari sesi terverifikasi.
+ *
+ * `role` TIDAK pernah diambil dari cookie. When profil ditemukan di store
+ * server-side, role otoritatif dari sana yang dipakai; `session` hanya menyumbang
+ * id dan email. `authoritative` WAJIB diisi untuk sesi non-database; tanpa itu
+ * peran default SEEKER yang diberikan (fail-closed), bukan escalate.
+ */
+export function profileFromSession(
+  session: VerifiedSession,
+  authoritative?: Pick<StoredUser, "role" | "adminRole" | "fullName" | "phone"> | null,
+): Profile {
   return {
     id: session.userId,
     email: session.email,
-    fullName: session.fullName,
-    phone: session.phone ?? null,
+    fullName: authoritative?.fullName ?? "",
+    phone: authoritative?.phone ?? null,
     avatarUrl: null,
     birthPlace: null,
     occupation: null,
-    role: session.role,
-    adminRole: session.adminRole ?? (session.role === "ADMIN" ? "SUPER" : null),
+    role: authoritative?.role ?? "SEEKER",
+    adminRole: authoritative?.adminRole ?? null,
     status: "ACTIVE",
     locale: "id",
     emailNotifications: true,
     pushNotifications: true,
     marketingNotifications: false,
-    telegramChatId: session.telegramChatId ?? null,
-    telegramUsername: session.telegramUsername ?? null,
-    telegramConnectedAt: session.telegramConnectedAt ? new Date(session.telegramConnectedAt) : null,
+    telegramChatId: null,
+    telegramUsername: null,
+    telegramConnectedAt: null,
     telegramConnectToken: null,
     telegramConnectTokenExpiresAt: null,
     lastSeenAt: new Date(),

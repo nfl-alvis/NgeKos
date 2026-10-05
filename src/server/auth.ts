@@ -4,6 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { ApiError } from "@/server/http";
+import type { VerifiedSession } from "@/server/user-store";
 
 export type AuthContext = { authUser: User; profile: Profile };
 
@@ -11,37 +12,70 @@ function requestedRole(user: User): UserRole {
   return user.user_metadata?.role === "owner" ? "OWNER" : "SEEKER";
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function authUserFromProfile(profile: Profile): User {
+  return {
+    id: profile.id,
+    email: profile.email,
+    user_metadata: {
+      full_name: profile.fullName,
+      role: profile.role.toLowerCase(),
+    },
+  } as unknown as User;
+}
+
+/**
+ * Resolusi profil OTORITATIF untuk cookie sesi yang sudah terverifikasi.
+ *
+ * PERBAIKAN F-01: `role` hanya boleh berasal dari database atau store akun lokal.
+ * Nilai role dari cookie tidak pernah dipercaya. Sumber yang tidak ditemukan
+ * menghasilkan `null` (gagal tertutup), bukan profil SEEKER dari cookie.
+ */
+async function resolveAuthoritativeProfile(session: VerifiedSession) {
+  const { findLocalUser, profileFromSession } = await import("@/server/user-store");
+
+  if (UUID_RE.test(session.userId)) {
+    const byId = await prisma.profile.findUnique({ where: { id: session.userId } });
+    if (byId) return byId;
+  }
+
+  const byEmail = await prisma.profile.findUnique({
+    where: { email: session.email.toLowerCase() },
+  });
+  if (byEmail) return byEmail;
+
+  // Akun demo lokal (mis. admin@ngekost.id) tidak selalu ada di tabel profiles.
+  // Role-nya tetap otoritatif karena berasal dari source, bukan dari cookie.
+  const local = findLocalUser(session.email);
+  if (local && local.id === session.userId) {
+    return profileFromSession(session, local);
+  }
+  return null;
+}
+
 export async function getAuthContext(): Promise<AuthContext | null> {
-  const { getSessionCookie, profileFromSession } = await import("@/server/user-store");
+  const { getSessionCookie } = await import("@/server/user-store");
   const session = await getSessionCookie();
   if (session) {
-    let profile = profileFromSession(session);
-    try {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(session.userId);
-      const dbProfile = isUuid
-        ? await prisma.profile.findUnique({ where: { id: session.userId } })
-        : await prisma.profile.findUnique({ where: { email: session.email.toLowerCase() } });
+    let profile: Profile | null = null;
 
-      if (dbProfile) {
-        if (dbProfile.status !== "ACTIVE") {
-          throw new ApiError(403, "ACCOUNT_DISABLED", "Akun tidak aktif");
-        }
-        profile = dbProfile;
-      }
-    } catch (err) {
-      if (err instanceof ApiError) throw err;
-      // DB connection failed or fallback: use profileFromSession
+    try {
+      profile = await resolveAuthoritativeProfile(session);
+    } catch {
+      // Database tidak terjangkau. PERBAIKAN F-01: JANGAN jatuh kembali ke
+      // kredensial dari cookie — cookie tanpa profil otoritatif tidak cukup.
+      profile = null;
     }
 
-    const authUser = {
-      id: profile.id || session.userId,
-      email: profile.email || session.email,
-      user_metadata: {
-        full_name: profile.fullName || session.fullName,
-        role: profile.role.toLowerCase(),
-      },
-    } as unknown as User;
-    return { authUser, profile };
+    if (profile) {
+      if (profile.status !== "ACTIVE") {
+        throw new ApiError(403, "ACCOUNT_DISABLED", "Akun tidak aktif");
+      }
+      return { authUser: authUserFromProfile(profile), profile };
+    }
+    // Sesi tidak dapat diverifikasi ke sumber otoritatif: continue ke Supabase
+    // atau berakhir sebagai tidak terautentikasi (fail-closed).
   }
 
   try {
@@ -88,7 +122,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
         birthPlace: null,
         occupation: null,
         role: requestedRole(user),
-        adminRole: requestedRole(user) === "ADMIN" ? "SUPER" : null,
+        adminRole: null,
         status: "ACTIVE",
         locale: "id",
         emailNotifications: true,
