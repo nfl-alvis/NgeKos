@@ -79,6 +79,32 @@ POST tanpa header Origin         -> 403 INVALID_ORIGIN
 
 Regresi register: register seeker baru -> 201 + cookie; `/api/me` langsung -> 200 SEEKER; login ulang -> 200; logout -> 200.
 
+### Status deploy (diperbarui 2026-10-05)
+
+`SESSION_SECRET` sudah diisi di `.env.local` (64 karakter) dan terverifikasi benar-benar
+dipakai menandatangani cookie, bukan turunan `SUPABASE_SECRET_KEY`:
+
+```
+matches SESSION_SECRET (explicit): True
+matches sha256(...SUPABASE_SECRET_KEY): False
+matches sha256(...dev-only fallback): False
+nk_session=<redacted>; Path=/; Max-Age=604800; HttpOnly; SameSite=lax
+```
+
+Flag `Secure` tidak muncul pada respons di atas karena verifikasi berjalan di HTTP
+localhost. Di produksi HTTPS flag itu otomatis aktif lewat
+`secure: process.env.NODE_ENV === "production"`.
+
+Yang masih perlu dibereskan sebelum produksi:
+
+| Item | Kondisi sekarang | Dampak |
+|------|------------------|--------|
+| `APP_ORIGIN` | belum diisi | CSRF allowlist jatuh ke `NEXT_PUBLIC_SITE_URL` + origin request. Untuk single-origin ini tetap aman, tapi isi env ini agar origin dikunci eksplisit. |
+| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | Dipakai untuk link verifikasi email (`src/app/api/auth/register/route.ts:43`), `robots.txt`, dan `sitemap.xml`. Kalau tidak diubah ke domain produksi, email konfirmasi mengarah ke localhost. |
+| `TELEGRAM_WEBHOOK_SECRET` | belum diisi | F-07 tetap terbuka penuh di produksi. Bot Telegram bisa diperintah siapa pun. |
+| `MIDTRANS_IS_PRODUCTION` | `false` | Endpoint masih sandbox. Wajib `true` + key produksi saat itu. |
+| `NODE_ENV` | tidak di-set di file | Pastikan platform deploy menyetel `NODE_ENV=production`, kalau tidak flag `Secure` pada cookie tidak aktif. |
+
 ### Catatan penting
 
 - **SESSION_SECRET belum diisi di `.env.local`.** Sesi saat ini ditandatangani dengan rahasia turunan dari `SUPABASE_SECRET_KEY`, jadi tetap berfungsi, tapi setiap kali `SUPABASE_SECRET_KEY` dirotasi semua sesi ikut mati. Isi `SESSION_SECRET` dengan `openssl rand -base64 48` sebelum produksi.
@@ -242,7 +268,7 @@ $ for i in $(seq 1 12); do curl -s -o /dev/null -w "%{http_code} " \
 422 422 422 422 422 422 422 422 422 401 401 401
 ```
 
-Dengan kredensial demo yang diketahui (F-05), brute force seperti ini tidak perluGIAT dihinder. `resend-otp` juga tidak dibatasi → email bombing ke nomor pihak ketiga.
+Dengan kredensial demo yang diketahui (F-05), brute force seperti ini tidak perlu dihinder. `resend-otp` juga tidak dibatasi sehingga bisa dipakai untuk membanjiri email ke alamat pihak ketiga.
 
 ---
 
