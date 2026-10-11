@@ -185,11 +185,11 @@ export default function PropertyGallery({
   return (
     <>
       {/* ===== 1. DESKTOP GALLERY GRID (lg screens) ===== */}
-      <div className="hidden lg:grid grid-cols-[2fr_1fr] gap-1.5 overflow-hidden rounded-xl bg-nk-border/40 p-1.5 shadow-sm">
-        {/* Main large photo (Left) */}
+      <div className="hidden lg:grid grid-cols-[2fr_1fr] gap-2 w-full h-[400px] lg:h-[450px] xl:h-[480px]">
+        {/* Main large photo (Left) - full height to the bottom, zero space */}
         <div
           onClick={() => openLightbox(0)}
-          className="group relative aspect-[16/10] overflow-hidden rounded-lg bg-nk-section cursor-pointer transition-transform"
+          className="group relative h-full w-full overflow-hidden bg-nk-section cursor-pointer"
           role="button"
           tabIndex={0}
           aria-label={`Buka foto utama ${propertyName}`}
@@ -201,7 +201,7 @@ export default function PropertyGallery({
           />
           <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/15" />
           <div className="absolute top-3 left-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+            <span className="inline-flex items-center gap-1.5 border border-white/20 bg-black/70 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
               <Maximize2 className="size-3.5" />
               Perbesar
             </span>
@@ -209,11 +209,11 @@ export default function PropertyGallery({
         </div>
 
         {/* 2 stacked photos (Right) */}
-        <div className="grid grid-rows-2 gap-1.5">
+        <div className="grid grid-rows-2 gap-2 h-full">
           {/* Top photo (index 1) */}
           <div
             onClick={() => openLightbox(1)}
-            className="group relative overflow-hidden rounded-lg bg-nk-section cursor-pointer"
+            className="group relative h-full w-full overflow-hidden bg-nk-section cursor-pointer"
             role="button"
             tabIndex={0}
             aria-label={`Buka foto kedua ${propertyName}`}
@@ -229,7 +229,7 @@ export default function PropertyGallery({
           {/* Bottom photo (index 2) WITH "Lihat Semua Foto" button */}
           <div
             onClick={() => openLightbox(2)}
-            className="group relative overflow-hidden rounded-lg bg-nk-section cursor-pointer"
+            className="group relative h-full w-full overflow-hidden bg-nk-section cursor-pointer"
             role="button"
             tabIndex={0}
             aria-label={`Buka foto ketiga ${propertyName}`}
@@ -248,7 +248,7 @@ export default function PropertyGallery({
                 e.stopPropagation();
                 openLightbox(0);
               }}
-              className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-10 inline-flex items-center gap-2 rounded-lg border border-nk-border/60 bg-nk-surface/95 px-3.5 py-2 text-xs sm:text-sm font-medium text-nk-text shadow-md backdrop-blur-sm transition-all hover:border-nk-accent hover:bg-nk-surface hover:text-nk-accent hover:shadow-lg active:scale-95"
+              className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-10 inline-flex items-center gap-2 border border-nk-border bg-nk-surface/95 px-3.5 py-2 text-xs sm:text-sm font-medium text-nk-text shadow-sm backdrop-blur-sm transition-all hover:border-nk-accent hover:bg-nk-surface hover:text-nk-accent active:scale-95"
             >
               <Images className="size-4 text-nk-accent" />
               <span>{tViewAll} ({images.length})</span>
@@ -259,7 +259,7 @@ export default function PropertyGallery({
 
       {/* ===== 2. MOBILE INLINE SLIDER / CAROUSEL (< lg screens) ===== */}
       <div
-        className="relative lg:hidden overflow-hidden rounded-xl bg-nk-section select-none shadow-sm border border-nk-border/60"
+        className="relative lg:hidden overflow-hidden bg-nk-section select-none"
         onTouchStart={handleMobileTouchStart}
         onTouchMove={handleMobileTouchMove}
         onTouchEnd={handleMobileTouchEnd}
@@ -282,7 +282,7 @@ export default function PropertyGallery({
 
           {/* Photo caption & index counter at bottom-left */}
           <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2 pointer-events-none">
-            <span className="inline-flex items-center gap-1 rounded-md bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+            <span className="inline-flex items-center gap-1 border border-white/20 bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
               <Grid className="size-3" />
               {mobileIdx + 1} / {images.length}
             </span>
@@ -298,7 +298,7 @@ export default function PropertyGallery({
               e.stopPropagation();
               openLightbox(mobileIdx);
             }}
-            className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm shadow transition-all hover:bg-black/80 active:scale-95"
+            className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 border border-white/20 bg-black/60 px-2.5 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-95"
           >
             <Images className="size-3.5 text-nk-warm" />
             <span>{tViewAll} ({images.length})</span>
@@ -314,7 +314,7 @@ export default function PropertyGallery({
                 e.stopPropagation();
                 prevMobile();
               }}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 grid size-8 sm:size-9 place-items-center rounded-full bg-black/40 text-white/90 backdrop-blur-sm transition-all hover:bg-black/70 active:scale-90"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 grid size-8 sm:size-9 place-items-center border border-white/20 bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-90"
               aria-label="Foto sebelumnya"
             >
               <ChevronLeft className="size-4 sm:size-5" />
@@ -325,7 +325,7 @@ export default function PropertyGallery({
                 e.stopPropagation();
                 nextMobile();
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10 grid size-8 sm:size-9 place-items-center rounded-full bg-black/40 text-white/90 backdrop-blur-sm transition-all hover:bg-black/70 active:scale-90"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10 grid size-8 sm:size-9 place-items-center border border-white/20 bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-90"
               aria-label="Foto berikutnya"
             >
               <ChevronRight className="size-4 sm:size-5" />
@@ -364,10 +364,10 @@ export default function PropertyGallery({
                     setActiveIdx(0);
                   }}
                   className={cn(
-                    "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                    "border px-3 py-1 text-xs font-medium transition-colors",
                     activeCategory === cat.key
-                      ? "bg-nk-accent text-white"
-                      : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+                      ? "border-nk-accent bg-nk-accent text-white"
+                      : "border-white/15 bg-white/5 text-white/70 hover:bg-white/15 hover:text-white"
                   )}
                 >
                   {cat.label}
@@ -377,13 +377,13 @@ export default function PropertyGallery({
 
             {/* Counter + Close Button */}
             <div className="flex items-center gap-3 shrink-0">
-              <span className="rounded-md bg-white/10 px-2.5 py-1 text-xs font-medium text-white/80">
+              <span className="border border-white/10 bg-white/10 px-2.5 py-1 text-xs font-medium text-white/80">
                 {currentModalIndex + 1} / {filteredImages.length}
               </span>
               <button
                 type="button"
                 onClick={closeLightbox}
-                className="grid size-9 place-items-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/25 hover:text-white active:scale-95"
+                className="grid size-9 place-items-center border border-white/10 bg-white/10 text-white/80 transition-colors hover:bg-white/25 hover:text-white active:scale-95"
                 aria-label={tClose}
               >
                 <X className="size-5" />
@@ -409,7 +409,7 @@ export default function PropertyGallery({
                   e.stopPropagation();
                   prevPhoto();
                 }}
-                className="absolute left-3 sm:left-6 z-20 grid size-10 sm:size-12 place-items-center rounded-full border border-white/20 bg-black/60 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 hover:scale-105 active:scale-95"
+                className="absolute left-3 sm:left-6 z-20 grid size-10 sm:size-12 place-items-center border border-white/20 bg-black/60 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 active:scale-95"
                 aria-label="Foto sebelumnya"
               >
                 <ChevronLeft className="size-6" />
@@ -421,7 +421,7 @@ export default function PropertyGallery({
               <img
                 src={currentPhoto?.url}
                 alt={currentPhoto?.title || propertyName}
-                className="max-h-[70vh] sm:max-h-[76vh] w-auto max-w-full rounded-md object-contain shadow-2xl transition-all duration-300"
+                className="max-h-[70vh] sm:max-h-[76vh] w-auto max-w-full object-contain shadow-2xl transition-all duration-300"
               />
             </div>
 
@@ -433,7 +433,7 @@ export default function PropertyGallery({
                   e.stopPropagation();
                   nextPhoto();
                 }}
-                className="absolute right-3 sm:right-6 z-20 grid size-10 sm:size-12 place-items-center rounded-full border border-white/20 bg-black/60 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 hover:scale-105 active:scale-95"
+                className="absolute right-3 sm:right-6 z-20 grid size-10 sm:size-12 place-items-center border border-white/20 bg-black/60 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 active:scale-95"
                 aria-label="Foto berikutnya"
               >
                 <ChevronRight className="size-6" />
@@ -457,10 +457,10 @@ export default function PropertyGallery({
                   type="button"
                   onClick={() => setActiveIdx(idx)}
                   className={cn(
-                    "relative size-14 sm:size-16 shrink-0 overflow-hidden rounded-md border-2 transition-all",
+                    "relative size-14 sm:size-16 shrink-0 overflow-hidden border transition-all",
                     idx === currentModalIndex
-                      ? "border-nk-accent scale-105 opacity-100 shadow-md ring-2 ring-nk-accent/40"
-                      : "border-transparent opacity-50 hover:opacity-85 hover:border-white/30"
+                      ? "border-2 border-nk-accent opacity-100 ring-1 ring-nk-accent"
+                      : "border-white/20 opacity-50 hover:opacity-85 hover:border-white/50"
                   )}
                   aria-label={`Lihat foto ${idx + 1}`}
                 >
