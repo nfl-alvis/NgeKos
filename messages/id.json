@@ -129,7 +129,11 @@
     "gender": "Jenis Kost",
     "share": "Bagikan",
     "verified": "Terverifikasi",
-    "pickRoom": "Pilih Kamar"
+    "pickRoom": "Pilih Kamar",
+    "viewAllPhotos": "Lihat semua foto",
+    "photoCount": "{count} Foto",
+    "allPhotos": "Semua Foto",
+    "closeGallery": "Tutup galeri"
   },
   "footer": {
     "tagline": "Platform kost terverifikasi untuk anak kos Indonesia.",

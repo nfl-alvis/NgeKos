@@ -129,7 +129,11 @@
     "gender": "Boarding Type",
     "share": "Share",
     "verified": "Verified",
-    "pickRoom": "Pick This Room"
+    "pickRoom": "Pick This Room",
+    "viewAllPhotos": "View all photos",
+    "photoCount": "{count} Photos",
+    "allPhotos": "All Photos",
+    "closeGallery": "Close gallery"
   },
   "footer": {
     "tagline": "Verified boarding house platform for Indonesian students.",

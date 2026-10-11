@@ -128,6 +128,38 @@ export function getKosImage(
   return set.main;
 }
 
+export interface KosGalleryItem {
+  url: string;
+  title: string;
+  category: "all" | "facade" | "room" | "bathroom" | "common";
+}
+
+export function getKosGalleryItems(
+  slugOrSeed?: string,
+  propertyName = "Kost"
+): KosGalleryItem[] {
+  let cleanKey = (slugOrSeed || "").toLowerCase().replace(/(-main|-b|-c|-room)$/, "");
+  if (!cleanKey.startsWith("kost-")) {
+    const withPrefix = `kost-${cleanKey}`;
+    if (KOS_IMAGES[withPrefix]) {
+      cleanKey = withPrefix;
+    }
+  }
+
+  const set = KOS_IMAGES[cleanKey] ?? DEFAULT_KOS_IMAGES;
+  const items: KosGalleryItem[] = [
+    { url: set.main, title: `${propertyName} - Tampak Depan`, category: "facade" },
+    { url: set.room, title: `${propertyName} - Kamar Tidur`, category: "room" },
+  ];
+  if (set.bathroom) {
+    items.push({ url: set.bathroom, title: `${propertyName} - Kamar Mandi`, category: "bathroom" });
+  }
+  if (set.common) {
+    items.push({ url: set.common, title: `${propertyName} - Area Bersama & Fasilitas`, category: "common" });
+  }
+  return items;
+}
+
 export const CITY_IMAGES: Record<string, string> = {
   bandung: "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&w=1000&q=80",
   yogyakarta: "https://images.unsplash.com/photo-1584810359583-96fc3448beaa?auto=format&fit=crop&w=1000&q=80",

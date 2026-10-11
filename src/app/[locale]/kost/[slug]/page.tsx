@@ -12,8 +12,9 @@ import { BookingFlowProvider } from "@/components/BookingFlowProvider";
 import FavoriteButton from "@/components/FavoriteButton";
 import PropertyReviewsSection from "@/components/PropertyReviewsSection";
 import ReportPropertyModal from "@/components/ReportPropertyModal";
+import PropertyGallery from "@/components/PropertyGallery";
 import { getProperty, propertyDto } from "@/server/property-service";
-import { getKosImage } from "@/lib/kosImages";
+import { getKosImage, getKosGalleryItems } from "@/lib/kosImages";
 import type { Property, Gender, Facility } from "@/lib/data/types";
 
 function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
@@ -113,31 +114,13 @@ export default async function DetailPage({
 
       <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-10 lg:py-12">
         {/* Gallery */}
-        <div className="grid grid-cols-1 gap-[1px] bg-nk-border lg:grid-cols-[2fr_1fr]">
-          <div className="overflow-hidden bg-nk-section">
-            <img
-              src={getKosImage(p.slug || p.imageSeed, "main")}
-              alt={p.name}
-              className="aspect-[16/10] w-full object-cover lg:aspect-auto lg:h-full"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-[1px] bg-nk-border lg:grid-cols-1">
-            <div className="overflow-hidden bg-nk-section">
-              <img
-                src={getKosImage(p.slug || p.imageSeed, "b")}
-                alt={`${p.name} - interior`}
-                className="aspect-[3/2] w-full object-cover"
-              />
-            </div>
-            <div className="overflow-hidden bg-nk-section">
-              <img
-                src={getKosImage(p.slug || p.imageSeed, "c")}
-                alt={`${p.name} - fasilitas`}
-                className="aspect-[3/2] w-full object-cover"
-              />
-            </div>
-          </div>
-        </div>
+        <PropertyGallery
+          propertyName={p.name}
+          propertySlug={p.slug}
+          images={getKosGalleryItems(p.slug || p.imageSeed, p.name)}
+          tViewAll={t("detail.viewAllPhotos")}
+          tClose={t("detail.closeGallery")}
+        />
 
         {/* Body */}
         <div className="mt-12 grid grid-cols-1 gap-12 lg:grid-cols-[1fr_380px]">
