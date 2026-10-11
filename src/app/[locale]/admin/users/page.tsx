@@ -34,13 +34,13 @@ export default function AdminUsersPage() {
   const { user } = useSession();
   const ops = useAdminOps();
   const [search, setSearch] = useState("");
-  const [usersList, setUsersList] = useState<any[]>(seekerAccounts);
+  const [usersList, setUsersList] = useState<any[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/users")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const mapped = json.data.map((u: any) => ({
             id: u.id,
             name: u.fullName || u.email.split("@")[0],
@@ -53,10 +53,11 @@ export default function AdminUsersPage() {
                   ? "Pemilik Kos"
                   : "Admin",
             status: u.status === "ACTIVE" ? "aktif" : "diblokir",
+            bookingCount: u._count?.bookings ?? 0,
             joinedAt:
               typeof u.createdAt === "string"
                 ? u.createdAt.slice(0, 10)
-                : "2026-09-01",
+                : "",
           }));
           setUsersList(mapped);
         }
@@ -137,15 +138,22 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map(({ u, st }) => (
-                <TableRow key={u.id} className="border-b border-nk-border last:border-b-0">
-                  <TableCell className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="size-8">
-                        <AvatarFallback className="bg-nk-warm text-xs font-semibold text-nk-text-muted">
-                          {u.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-8 text-center text-sm text-nk-text-muted">
+                    {t("noUsers") || "Belum ada akun pengguna terdaftar."}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rows.map(({ u, st }) => (
+                  <TableRow key={u.id} className="border-b border-nk-border last:border-b-0">
+                    <TableCell className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-8">
+                          <AvatarFallback className="bg-nk-warm text-xs font-semibold text-nk-text-muted">
+                            {u.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                       <div className="min-w-0">
                         <p className="truncate font-medium text-nk-text">{u.name}</p>
                         <p className="truncate text-xs text-nk-text-muted">{u.email}</p>
@@ -184,7 +192,8 @@ export default function AdminUsersPage() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+            )}
             </TableBody>
           </Table>
           {rows.length === 0 && <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>}

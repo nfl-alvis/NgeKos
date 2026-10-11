@@ -24,10 +24,32 @@ export default function TenantPropertyPage() {
   const { tenant } = useTenantSession();
   const property = tenant.property;
 
+  if (!tenant.hasActiveBooking) {
+    return (
+      <UserDashboardShell role="tenant" title={t("title")}>
+        <div className="rounded-xl border border-nk-border bg-nk-surface p-8 text-center sm:p-12">
+          <h3 className="text-base font-semibold text-nk-text">Belum Ada Kos Aktif</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-nk-text-muted">
+            Anda belum memiliki hunian kos aktif saat ini. Cari kamar impian dan ajukan sewa untuk melihat profil kos di sini.
+          </p>
+          <div className="mt-6">
+            <Link
+              href="/kost"
+              className="inline-flex items-center gap-2 rounded-lg bg-nk-accent px-5 py-2.5 text-sm font-semibold text-nk-text-inverse hover:opacity-90"
+            >
+              Jelajahi Kos
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
+        </div>
+      </UserDashboardShell>
+    );
+  }
+
   const rows = [
-    { k: t("fAddress"), v: property.address, icon: MapPin },
-    { k: t("fOwner"), v: ownerContact.name, icon: null },
-    { k: t("fRoom"), v: t("roomValue", { room: tenant.roomNumber }), icon: null },
+    { k: t("fAddress"), v: property.address || "-", icon: MapPin },
+    { k: t("fOwner"), v: (property as any).owner?.fullName || ownerContact.name, icon: null },
+    { k: t("fRoom"), v: t("roomValue", { room: tenant.roomNumber || "-" }), icon: null },
     { k: t("fRent"), v: `${formatIDR(tenant.monthlyRent)} ${t("perMonth")}`, icon: null },
   ];
 

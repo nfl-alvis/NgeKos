@@ -55,6 +55,8 @@ export interface Property {
   dpAmount?: number;
   /** subscription limit rule per owner tier */
   maxRooms?: number;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 /* ===== booking & tenant domain (dummy, mirrors future API shapes) ===== */

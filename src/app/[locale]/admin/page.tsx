@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   Building2,
@@ -115,6 +115,29 @@ export default function AdminDashboardPage() {
   const locale = useLocale();
   const { queue } = useAdminReviewData();
 
+  const [dbUsersCount, setDbUsersCount] = useState<number | null>(null);
+  const [dbBookingsCount, setDbBookingsCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/users")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          setDbUsersCount(json.data.length);
+        }
+      })
+      .catch(() => {});
+
+    fetch("/api/bookings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          setDbBookingsCount(json.data.length);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const rooms = useMemo(() => Object.values(roomUnits).flat(), []);
   const occupancyPct = rooms.length
     ? Math.round((rooms.filter((r) => r.status === "terisi").length / rooms.length) * 100)
@@ -125,11 +148,11 @@ export default function AdminDashboardPage() {
   const pendingVerif = queue.length;
   const oldestWait = queue.length ? Math.max(...queue.map((p) => ageInDays(p.submittedAt))) : 0;
 
-  const revenueMonth = monthlyRevenue[monthlyRevenue.length - 1];
+  const revenueMonth = monthlyRevenue[monthlyRevenue.length - 1] ?? { gross: 0, fee: 0, net: 0, count: 0 };
   const feeMonth = monthlyRevenue.reduce((a, m) => a + m.fee, 0);
   const last6 = monthlyRevenue.slice(-6);
   const chartData = last6.map((m, i) => ({
-    label: tu(`m${monthlyRevenue.length - 5 + i}`),
+    label: tu(`m${Math.max(1, monthlyRevenue.length - 5 + i)}`),
     fee: Math.round(m.fee / 100_000) / 10,
   }));
 
@@ -171,7 +194,7 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           label={t("statBookings")}
-          value={String(activeBookings + 41)}
+          value={String(dbBookingsCount ?? activeBookings)}
           note={t("statBookingsNote")}
           icon={Building2}
           tint={{ card: "bg-[#E8EFF8]", icon: "bg-[#D3E0F0] text-[#33517C]" }}
@@ -189,7 +212,7 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           label={t("statUsers")}
-          value={String(ownerAccounts.length + seekerAccounts.length + 18_904)}
+          value={String(dbUsersCount ?? (ownerAccounts.length + seekerAccounts.length))}
           note={t("statUsersNote", { owners: ownerAccounts.length, seekers: seekerAccounts.length })}
           icon={Users}
           tint={{ card: "bg-nk-section", icon: "bg-nk-warm text-nk-text-muted" }}

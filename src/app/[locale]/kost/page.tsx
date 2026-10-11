@@ -130,8 +130,7 @@ export default async function ListPage({
     } else if (!sp.q && !sp.kota && !sp.max && !sp.fas && !sp.gender) {
       filtered = getVerifiedProperties();
     } else {
-      const all = getVerifiedProperties();
-      filtered = filterAndSort(all, filterState, sp.q);
+      filtered = [];
     }
   } catch (e) {
     console.error("Failed to load properties from database, falling back to static seed:", e);

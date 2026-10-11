@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/components/SessionProvider";
 import { tenants } from "@/lib/data/entities";
-import { getPropertyBySlug } from "@/lib/data/properties";
+import { getPropertyBySlug, properties } from "@/lib/data/properties";
 import { contractInfo, tenantRoomInfo, ownerContact } from "@/lib/data/userData";
 import type { Property } from "@/lib/data/types";
 
@@ -37,36 +37,35 @@ export interface TenantData {
   hasActiveBooking: boolean;
 }
 
-const DEFAULT_DEMO_TENANT = tenants.find((tn) => tn.id === "t-1")!;
-const DEFAULT_DEMO_PROPERTY = getPropertyBySlug(DEFAULT_DEMO_TENANT.propertySlug)!;
+const fallbackProperty = properties[0];
 
 const initialTenantData: TenantData = {
-  id: DEFAULT_DEMO_TENANT.id,
-  name: DEFAULT_DEMO_TENANT.name,
-  email: DEFAULT_DEMO_TENANT.email,
-  phone: DEFAULT_DEMO_TENANT.phone,
-  roomNumber: DEFAULT_DEMO_TENANT.roomNumber,
-  roomType: tenantRoomInfo.type,
-  floor: tenantRoomInfo.floor,
-  sizeM2: tenantRoomInfo.sizeM2,
-  monthlyRent: DEFAULT_DEMO_TENANT.monthlyRent,
-  startDate: contractInfo.startDate,
-  endDate: contractInfo.endDate,
-  durationMonths: contractInfo.durationMonths,
-  depositAmount: DEFAULT_DEMO_PROPERTY.depositAmount ?? 0,
-  depositInfo: DEFAULT_DEMO_PROPERTY.depositInfo,
+  id: "",
+  name: "",
+  email: "",
+  phone: "",
+  roomNumber: "",
+  roomType: "",
+  floor: 1,
+  sizeM2: 0,
+  monthlyRent: 0,
+  startDate: "",
+  endDate: "",
+  durationMonths: 1,
+  depositAmount: 0,
+  depositInfo: "",
   noticePeriodId: contractInfo.noticePeriodId,
   noticePeriodEn: contractInfo.noticePeriodEn,
-  joinedAt: DEFAULT_DEMO_TENANT.joinedAt || contractInfo.startDate,
-  propertyName: DEFAULT_DEMO_PROPERTY.name,
-  propertySlug: DEFAULT_DEMO_PROPERTY.slug,
-  propertyAddress: DEFAULT_DEMO_PROPERTY.address,
-  propertyCity: DEFAULT_DEMO_PROPERTY.city,
-  property: DEFAULT_DEMO_PROPERTY,
-  ownerName: ownerContact.name,
-  ownerPhone: ownerContact.phone,
-  ownerEmail: ownerContact.email,
-  isDemo: true,
+  joinedAt: "",
+  propertyName: "",
+  propertySlug: "",
+  propertyAddress: "",
+  propertyCity: "",
+  property: fallbackProperty,
+  ownerName: "",
+  ownerPhone: "",
+  ownerEmail: "",
+  isDemo: false,
   hasActiveBooking: false,
 };
 
@@ -101,13 +100,13 @@ export function useTenantSession() {
           const propSlug =
             activeBooking.property?.slug ||
             activeBooking.propertyId ||
-            DEFAULT_DEMO_TENANT.propertySlug;
+            fallbackProperty.slug;
 
           const prop = getPropertyBySlug(propSlug) || {
-            ...DEFAULT_DEMO_PROPERTY,
-            name: activeBooking.property?.name || DEFAULT_DEMO_PROPERTY.name,
-            address: activeBooking.property?.address || DEFAULT_DEMO_PROPERTY.address,
-            city: activeBooking.property?.city || DEFAULT_DEMO_PROPERTY.city,
+            ...fallbackProperty,
+            name: activeBooking.property?.name || fallbackProperty.name,
+            address: activeBooking.property?.address || fallbackProperty.address,
+            city: activeBooking.property?.city || fallbackProperty.city,
             slug: propSlug,
           };
 
@@ -122,14 +121,14 @@ export function useTenantSession() {
 
           setData({
             id: activeBooking.id,
-            name: user?.name || activeBooking.applicant?.fullName || DEFAULT_DEMO_TENANT.name,
-            email: user?.email || activeBooking.applicant?.email || DEFAULT_DEMO_TENANT.email,
-            phone: activeBooking.applicant?.phone || DEFAULT_DEMO_TENANT.phone,
-            roomNumber: activeBooking.roomUnit?.number || activeBooking.roomNumber || "A-101",
+            name: user?.name || activeBooking.applicant?.fullName || "",
+            email: user?.email || activeBooking.applicant?.email || "",
+            phone: activeBooking.applicant?.phone || "",
+            roomNumber: activeBooking.roomUnit?.number || activeBooking.roomNumber || "-",
             roomType: activeBooking.roomType?.name || tenantRoomInfo.type,
             floor: 1,
             sizeM2: activeBooking.roomType?.sizeM2 ?? tenantRoomInfo.sizeM2,
-            monthlyRent: Number(activeBooking.monthlyPriceSnapshot) || DEFAULT_DEMO_TENANT.monthlyRent,
+            monthlyRent: Number(activeBooking.monthlyPriceSnapshot) || 0,
             startDate: sDate,
             endDate: eDate,
             durationMonths: dMonths,

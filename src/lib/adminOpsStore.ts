@@ -104,7 +104,7 @@ let opSeq = 0;
 export function adminNameFor(email: string | undefined): string {
   return (
     adminAccounts.find((a) => a.email === (email ?? CURRENT_ADMIN_EMAIL))?.name ??
-    "Bayu Pratama"
+    "Admin"
   );
 }
 

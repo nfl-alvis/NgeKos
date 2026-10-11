@@ -15,18 +15,16 @@ import { formatIDR } from "@/lib/utils";
 export default function OwnerInvoicesPage() {
   const t = useTranslations("owner.invoices");
   const [filter, setFilter] = useState<"all" | "lunas" | "belum">("all");
-  const [rows, setRows] = useState<Invoice[]>(seedInvoices);
+  const [rows, setRows] = useState<Invoice[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [newInv, setNewInv] = useState({ tenant: "", period: "", amount: "" });
-  const [tenantList, setTenantList] = useState<Array<{ id: string; name: string; agreementId?: string; monthlyPrice?: number }>>(
-    tenants.map((tn) => ({ id: tn.id, name: tn.name, monthlyPrice: tn.monthlyRent }))
-  );
+  const [tenantList, setTenantList] = useState<Array<{ id: string; name: string; agreementId?: string; monthlyPrice?: number }>>([]);
 
   useEffect(() => {
     fetch("/api/invoices")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const mapped: Invoice[] = json.data.map((item: any) => ({
             id: item.code || item.id,
             tenantName: item.tenant?.fullName || item.tenantName || "Penyewa",
@@ -38,9 +36,7 @@ export default function OwnerInvoicesPage() {
                 ? item.dueDate.slice(0, 10)
                 : "2026-09-20",
           }));
-          const existingIds = new Set(mapped.map((m: any) => m.id));
-          const merged = [...mapped, ...seedInvoices.filter((s) => !existingIds.has(s.id))];
-          setRows(merged);
+          setRows(mapped);
         }
       })
       .catch(() => {});
@@ -50,18 +46,13 @@ export default function OwnerInvoicesPage() {
       .then((json) => {
         if (json?.data && Array.isArray(json.data)) {
           const activeBookings = json.data.filter((b: any) => b.status === "ACTIVE");
-          if (activeBookings.length > 0) {
-            const mapped = activeBookings.map((b: any) => ({
-              id: b.id,
-              name: b.applicant?.fullName || b.applicantName || "Penyewa",
-              agreementId: b.agreement?.id || b.id,
-              monthlyPrice: Number(b.monthlyPriceSnapshot || 0),
-            }));
-            const existingTenantIds = new Set(mapped.map((m: any) => m.id));
-            const initialTenants = tenants.map((tn) => ({ id: tn.id, name: tn.name, monthlyPrice: tn.monthlyRent }));
-            const merged = [...mapped, ...initialTenants.filter((t) => !existingTenantIds.has(t.id))];
-            setTenantList(merged);
-          }
+          const mapped = activeBookings.map((b: any) => ({
+            id: b.id,
+            name: b.applicant?.fullName || b.applicantName || "Penyewa",
+            agreementId: b.agreement?.id || b.id,
+            monthlyPrice: Number(b.monthlyPriceSnapshot || 0),
+          }));
+          setTenantList(mapped);
         }
       })
       .catch(() => {});
@@ -74,7 +65,7 @@ export default function OwnerInvoicesPage() {
   }, [filter, rows]);
 
   const unpaidThisMonth = rows.filter((r) => r.status !== "lunas").length;
-  const arrears = tenants.filter((tn) => tn.paymentStatus === "menunggak").length;
+  const arrears = rows.filter((r) => r.status !== "lunas" && new Date(r.dueDate) < new Date()).length;
 
   const markPaid = async (id: string) => {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: "lunas" as const } : r)));
@@ -175,59 +166,73 @@ export default function OwnerInvoicesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((inv) => (
-              <TableRow key={inv.id} className="border-b border-nk-border last:border-b-0">
-                <TableCell className="px-4 py-3 font-medium text-nk-text">{inv.tenantName}</TableCell>
-                <TableCell className="px-4 py-3 text-nk-text">{inv.period}</TableCell>
-                <TableCell className="px-4 py-3 text-nk-text">{formatIDR(inv.amount)}</TableCell>
-                <TableCell className="px-4 py-3">{badge(inv)}</TableCell>
-                <TableCell className="px-4 py-3 text-nk-text-muted">{inv.dueDate}</TableCell>
-                <TableCell className="px-4 py-3">
-                  {inv.status === "lunas" ? (
-                    <span className="text-xs text-nk-text-muted">
-                      {t("paidOn", { date: inv.paidAt ?? "" })}
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => markPaid(inv.id)}
-                      className="rounded-md border border-nk-border px-3 py-1.5 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.98]"
-                    >
-                      {t("markPaid")}
-                    </button>
-                  )}
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-8 text-center text-xs text-nk-text-muted">
+                  Belum ada tagihan.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filtered.map((inv) => (
+                <TableRow key={inv.id} className="border-b border-nk-border last:border-b-0">
+                  <TableCell className="px-4 py-3 font-medium text-nk-text">{inv.tenantName}</TableCell>
+                  <TableCell className="px-4 py-3 text-nk-text">{inv.period}</TableCell>
+                  <TableCell className="px-4 py-3 text-nk-text">{formatIDR(inv.amount)}</TableCell>
+                  <TableCell className="px-4 py-3">{badge(inv)}</TableCell>
+                  <TableCell className="px-4 py-3 text-nk-text-muted">{inv.dueDate}</TableCell>
+                  <TableCell className="px-4 py-3">
+                    {inv.status === "lunas" ? (
+                      <span className="text-xs text-nk-text-muted">
+                        {t("paidOn", { date: inv.paidAt ?? "" })}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => markPaid(inv.id)}
+                        className="rounded-md border border-nk-border px-3 py-1.5 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.98]"
+                      >
+                        {t("markPaid")}
+                      </button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
 
       {/* mobile cards */}
       <div className="flex flex-col gap-3 lg:hidden">
-        {filtered.map((inv) => (
-          <article key={inv.id} className="rounded-lg border border-nk-border bg-nk-surface p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-nk-text">{inv.tenantName}</p>
-                <p className="text-xs text-nk-text-muted">
-                  {inv.period} · {formatIDR(inv.amount)}
-                </p>
-                <p className="mt-0.5 text-xs text-nk-text-muted">{inv.dueDate}</p>
+        {filtered.length === 0 ? (
+          <div className="rounded-lg border border-nk-border bg-nk-surface p-8 text-center text-xs text-nk-text-muted">
+            Belum ada tagihan.
+          </div>
+        ) : (
+          filtered.map((inv) => (
+            <article key={inv.id} className="rounded-lg border border-nk-border bg-nk-surface p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-nk-text">{inv.tenantName}</p>
+                  <p className="text-xs text-nk-text-muted">
+                    {inv.period} · {formatIDR(inv.amount)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-nk-text-muted">{inv.dueDate}</p>
+                </div>
+                {badge(inv)}
               </div>
-              {badge(inv)}
-            </div>
-            {inv.status !== "lunas" && (
-              <button
-                type="button"
-                onClick={() => markPaid(inv.id)}
-                className="mt-3 w-full rounded-md border border-nk-border px-3 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm"
-              >
-                {t("markPaid")}
-              </button>
-            )}
-          </article>
-        ))}
+              {inv.status !== "lunas" && (
+                <button
+                  type="button"
+                  onClick={() => markPaid(inv.id)}
+                  className="mt-3 w-full rounded-md border border-nk-border px-3 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm"
+                >
+                  {t("markPaid")}
+                </button>
+              )}
+            </article>
+          ))
+        )}
       </div>
 
       {/* modal buat tagihan manual */}

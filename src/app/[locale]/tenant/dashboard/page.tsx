@@ -87,7 +87,7 @@ export default function TenantDashboardPage() {
   const invStatus = (inv: (typeof invoices)[number]) =>
     inv.status === "lunas" || ops.paidInvoiceIds.includes(inv.id) ? "lunas" : inv.status;
   const myInvoices = invoices
-    .filter((inv) => inv.tenantName === tenant.name || inv.tenantName === "I Made Sudiarta")
+    .filter((inv) => inv.tenantName === tenant.name)
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const thisMonth = myInvoices.find((inv) => inv.period === "September 2026");
   const thisMonthPaid = thisMonth ? invStatus(thisMonth) === "lunas" : false;
@@ -198,6 +198,26 @@ export default function TenantDashboardPage() {
         </p>
       </div>
 
+      {!activeBooking && !sessionTenant.hasActiveBooking ? (
+        <div className="rounded-xl border border-nk-border bg-nk-surface p-12 text-center shadow-sm">
+          <CalendarClock className="mx-auto size-12 text-nk-text-muted opacity-40 mb-3" />
+          <h2 className="text-lg font-semibold text-nk-text">
+            {locale === "id" ? "Belum Ada Sewa Aktif" : "No Active Rental"}
+          </h2>
+          <p className="mt-1 text-sm text-nk-text-muted max-w-md mx-auto">
+            {locale === "id"
+              ? "Anda belum memiliki sewa kost yang aktif saat ini. Jelajahi kost pilihan dan ajukan sewa sekarang."
+              : "You do not have an active room rental at the moment. Explore available rooms and submit a booking."}
+          </p>
+          <Link
+            href="/kost"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-nk-accent px-5 py-2.5 text-sm font-medium text-nk-text-inverse hover:opacity-95"
+          >
+            {locale === "id" ? "Jelajahi Kost" : "Explore Rooms"}
+          </Link>
+        </div>
+      ) : (
+        <>
       {/* kartu kamar aktif - padanan spotlight referensi */}
       <section className="mb-6 flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#E9F4EC]">
         <div className="flex items-center justify-between px-4 pb-1 pt-3">
@@ -491,6 +511,8 @@ export default function TenantDashboardPage() {
           </section>
         </div>
       </div>
+        </>
+      )}
     </DashboardShell>
   );
 }

@@ -103,7 +103,7 @@ export default function AdminVerificationPage() {
   const adminName =
     user?.role === "admin" && user.name ? user.name : ADMIN_PROFILE.name;
   const { queue: initialQueue, history } = useAdminReviewData();
-  const [queue, setQueue] = useState<AdminReviewEntry[]>(initialQueue);
+  const [queue, setQueue] = useState<AdminReviewEntry[]>([]);
   const [review, setReview] = useState<AdminReviewEntry | null>(null);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"oldest" | "newest">("oldest");
@@ -133,16 +133,12 @@ export default function AdminVerificationPage() {
           }));
 
           const decidedIds = new Set(history.map((h) => h.id).concat(history.map((h) => h.propertySlug)));
-          const dbIds = new Set(mapped.map((m) => m.id).concat(mapped.map((m) => m.propertySlug)));
-          const remainingDemo = initialQueue.filter(
-            (q) => !decidedIds.has(q.id) && !decidedIds.has(q.propertySlug) && !dbIds.has(q.id) && !dbIds.has(q.propertySlug)
-          );
-
-          setQueue([...mapped, ...remainingDemo]);
+          const pending = mapped.filter((m) => !decidedIds.has(m.id) && !decidedIds.has(m.propertySlug));
+          setQueue(pending);
         }
       })
       .catch(() => {});
-  }, [initialQueue, history]);
+  }, [history]);
 
   const decidedToday = history.filter((h) => {
     const d = h.decidedAt ?? "";

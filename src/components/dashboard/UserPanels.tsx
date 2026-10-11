@@ -33,7 +33,7 @@ export function ActiveBookingPanel({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const ops = useUserOps();
 
-  const [items, setItems] = useState<Booking[]>(bookings);
+  const [items, setItems] = useState<Booking[]>([]);
 
   useEffect(() => {
     fetch("/api/bookings")
@@ -74,9 +74,7 @@ export function ActiveBookingPanel({ compact = false }: { compact?: boolean }) {
             timeline: [],
             payments: [],
           }));
-          const existingIds = new Set(mapped.map((d) => d.id));
-          const merged = [...mapped, ...bookings.filter((b) => !existingIds.has(b.id))];
-          setItems(merged);
+          setItems(mapped);
         }
       })
       .catch(() => {});
@@ -237,8 +235,7 @@ export function PaymentsPanel({ limit }: { limit?: number }) {
       .catch(() => {});
   }, []);
 
-  const existingPaymentIds = new Set(dbPayments.map((p) => p.id));
-  const combined = [...dbPayments, ...ops.payments.filter((p) => !existingPaymentIds.has(p.id))];
+  const combined = dbPayments;
   const rows = limit ? combined.slice(0, limit) : combined;
   const pending = combined.find((p) => p.status === "pending");
 
@@ -420,6 +417,10 @@ export function FavoritesPanel({ limit, full = false }: { limit?: number; full?:
 export function ActiveKostCard() {
   const t = useTranslations("userDash.activeKost");
   const { tenant } = useTenantSession();
+
+  if (!tenant.hasActiveBooking) {
+    return null;
+  }
 
   return (
     <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#E9F4EC]">

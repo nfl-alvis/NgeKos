@@ -10,7 +10,7 @@ const resendOtpSchema = z
 
 export const POST = withApi(async (request: Request) => {
   const input = await parseJson(request, resendOtpSchema);
-  const supabase = await createClient();
+  const supabase = await createClient(10_000);
 
   const { error } = await supabase.auth.resend({
     type: "signup",

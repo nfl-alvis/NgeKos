@@ -16,14 +16,14 @@ interface NotificationItem {
 
 export default function OwnerNotificationsPage() {
   const t = useTranslations("owner.notif");
-  const [list, setList] = useState<NotificationItem[]>(staticNotifications);
+  const [list, setList] = useState<NotificationItem[]>([]);
   const [read, setRead] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/notifications")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const mapped: NotificationItem[] = json.data.map((n: any) => ({
             id: n.id,
             title: n.title,

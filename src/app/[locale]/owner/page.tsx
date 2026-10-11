@@ -131,6 +131,7 @@ export default function OwnerDashboardPage() {
   const { user, ready } = useSession();
 
   const [hasProperties, setHasProperties] = useState<boolean | null>(null);
+  const [dbProps, setDbProps] = useState<any[]>([]);
   const [dbBookings, setDbBookings] = useState<any[] | null>(null);
   const [dynMetrics, setDynMetrics] = useState<{
     revenue: number;
@@ -156,6 +157,7 @@ export default function OwnerDashboardPage() {
           const propJson = await propRes.json();
           const props = Array.isArray(propJson.data) ? propJson.data : [];
           if (!cancelled) {
+            setDbProps(props);
             if (user && props.length === 0) {
               setHasProperties(false);
               setDbBookings([]);
@@ -228,11 +230,7 @@ export default function OwnerDashboardPage() {
       createdAt: b.createdAt,
       status: "pending" as const,
     }));
-  const existingPendingIds = new Set(dbPending.map((p) => p.id));
-  const pending = [
-    ...dbPending,
-    ...ownerBookings.filter((b) => b.status === "pending" && !existingPendingIds.has(b.id)),
-  ];
+  const pending = dbPending;
 
   // Property room counts
   const allRooms = Object.values(roomUnits).flat();
@@ -251,23 +249,26 @@ export default function OwnerDashboardPage() {
   });
 
   // Property performance rows
-  const ownerProps = properties.filter((p) =>
-    [
-      "kost-griya-cemara-dago",
-      "kost-kenanga-setiabudi",
-      "kost-al-amin-wonokromo",
-      "kost-sara-theresa-cibubur",
-      "kost-zinnia-cimahi",
-    ].includes(p.slug)
-  );
+  const ownerProps = dbProps;
   const perfRows = ownerProps.map((p) => {
-    const rooms = roomUnits[p.slug] ?? [];
-    const occ = rooms.filter((r) => r.status === "terisi").length;
-    const pct = rooms.length > 0 ? Math.round((occ / rooms.length) * 100) : 0;
-    const monthly = tenants
-      .filter((tn) => tn.propertySlug === p.slug)
-      .reduce((sum, tn) => sum + tn.monthlyRent, 0);
-    return { property: p, rooms: rooms.length, occ, pct, monthly };
+    let roomsCount = 0;
+    let availCount = 0;
+    if (Array.isArray(p.roomTypes)) {
+      for (const rt of p.roomTypes) {
+        roomsCount += rt.total || 0;
+        availCount += rt.available || 0;
+      }
+    }
+    const occ = Math.max(0, roomsCount - availCount);
+    const pct = roomsCount > 0 ? Math.round((occ / roomsCount) * 100) : 0;
+    const activeForProp = (dbBookings || []).filter(
+      (b: any) => (b.property?.slug === p.slug || b.propertyId === p.id) && b.status === "ACTIVE"
+    );
+    const monthly = activeForProp.reduce(
+      (sum: number, b: any) => sum + Number(b.monthlyPriceSnapshot || b.monthlyPrice || 0),
+      0
+    );
+    return { property: p, rooms: roomsCount, occ, pct, monthly };
   });
 
   const best = [...perfRows]
@@ -306,19 +307,7 @@ export default function OwnerDashboardPage() {
       String(b.monthlyPriceSnapshot ?? b.monthlyPrice ?? 0),
       b.createdAt,
     ]);
-    const existingDbCodes = new Set((dbBookings || []).map((b: any) => b.code || b.id));
-    const dummyRows = ownerBookings
-      .filter((b) => !existingDbCodes.has(b.id))
-      .map((b) => [
-        b.id,
-        b.applicantName,
-        b.propertyName,
-        `${b.roomType} (${b.roomNumber})`,
-        b.status,
-        String(b.monthlyPrice),
-        b.createdAt,
-      ]);
-    const rows = [...dbRows, ...dummyRows];
+    const rows = dbRows;
     const csv = [header, ...rows]
       .map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(","))
       .join("\n");
@@ -343,11 +332,11 @@ export default function OwnerDashboardPage() {
     value: { label: t("chartSeries"), color: "var(--nk-accent)" },
   } satisfies ChartConfig;
 
-  const displayRevenue = dynMetrics ? dynMetrics.revenue : 33700000;
-  const displayFilled = dynMetrics ? dynMetrics.filled : filled;
+  const displayRevenue = dynMetrics ? dynMetrics.revenue : 0;
+  const displayFilled = dynMetrics ? dynMetrics.filled : 0;
   const displayTotalRooms = dynMetrics && dynMetrics.totalRooms > 0 ? dynMetrics.totalRooms : totalRooms;
-  const displayArrears = dynMetrics ? dynMetrics.arrears : arrears;
-  const displayArrearsSum = dynMetrics ? dynMetrics.arrearsSum : arrearsSum;
+  const displayArrears = dynMetrics ? dynMetrics.arrears : 0;
+  const displayArrearsSum = dynMetrics ? dynMetrics.arrearsSum : 0;
   const displayPending = dynMetrics ? dynMetrics.pendingCount : pending.length;
   const displayOccupancy = displayTotalRooms > 0 ? Math.round((displayFilled / displayTotalRooms) * 100) : 0;
 
@@ -763,11 +752,20 @@ export default function OwnerDashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {perfRows.map((r) => {
-                    const tenantCount = tenants.filter(
-                      (tn) => tn.propertySlug === r.property.slug
-                    ).length;
-                    return (
+                  {perfRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-8 text-center text-xs text-nk-text-muted">
+                        {isEn ? "No properties registered yet." : "Belum ada properti terdaftar."}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    perfRows.map((r) => {
+                      const tenantCount = (dbBookings || []).filter(
+                        (b: any) =>
+                          (b.property?.slug === r.property.slug || b.propertyId === r.property.id) &&
+                          b.status === "ACTIVE"
+                      ).length;
+                      return (
                       <TableRow
                         key={r.property.slug}
                         className="border-b border-nk-border transition-colors hover:bg-nk-warm/30 last:border-b-0"
@@ -855,7 +853,8 @@ export default function OwnerDashboardPage() {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
+                  })
+                )}
                 </TableBody>
               </Table>
             </div>
@@ -953,28 +952,42 @@ export default function OwnerDashboardPage() {
             </div>
 
             <div className="space-y-4 p-5">
-              {ACTIVITIES[isEn ? "en" : "id"].map((a) => {
-                const IconComponent =
-                  ACTIVITY_ICONS[a.type as keyof typeof ACTIVITY_ICONS] || CalendarClock;
-                const colorClass =
-                  ACTIVITY_COLORS[a.type as keyof typeof ACTIVITY_COLORS] || "bg-nk-warm text-nk-text";
-                return (
-                  <div key={a.id} className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs",
-                        colorClass
-                      )}
-                    >
-                      <IconComponent className="size-3.5" />
+              {(dbBookings || []).length === 0 ? (
+                <div className="py-6 text-center text-xs text-nk-text-muted">
+                  {isEn ? "No recent activity." : "Belum ada aktivitas terbaru."}
+                </div>
+              ) : (
+                (dbBookings || []).slice(0, 5).map((b: any) => {
+                  const isApproved = b.status === "ACTIVE" || b.status === "APPROVED_AWAITING_PAYMENT";
+                  const isRejected = b.status === "REJECTED";
+                  const IconComponent = isApproved ? CheckCircle2 : isRejected ? Clock : CalendarClock;
+                  const colorClass = isApproved
+                    ? ACTIVITY_COLORS.approved
+                    : isRejected
+                    ? ACTIVITY_COLORS.expired
+                    : ACTIVITY_COLORS.booking;
+                  const text = isEn
+                    ? `Booking #${b.code || b.id} ${isApproved ? "approved" : isRejected ? "rejected" : "submitted"}`
+                    : `Booking #${b.code || b.id} ${isApproved ? "disetujui" : isRejected ? "ditolak" : "diajukan"}`;
+                  const at = typeof b.createdAt === "string" ? b.createdAt.slice(0, 10) : "";
+                  return (
+                    <div key={b.id} className="flex items-start gap-3">
+                      <div
+                        className={cn(
+                          "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs",
+                          colorClass
+                        )}
+                      >
+                        <IconComponent className="size-3.5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-nk-text leading-snug">{text}</p>
+                        <p className="mt-0.5 text-[11px] text-nk-text-muted">{at}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-nk-text leading-snug">{a.text}</p>
-                      <p className="mt-0.5 text-[11px] text-nk-text-muted">{a.at}</p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -982,10 +995,7 @@ export default function OwnerDashboardPage() {
 
       {/* Operations & Room Insights Component */}
       <OwnerDashboardInsights
-        pendingBookingsCount={
-          (dynMetrics?.pendingCount || 0) +
-          ownerBookings.filter((b) => b.status === "pending").length
-        }
+        pendingBookingsCount={dynMetrics?.pendingCount || pending.length}
       />
     </DashboardShell>
   );

@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const tokenHash = requestUrl.searchParams.get("token_hash");
+  const type = requestUrl.searchParams.get("type") as "signup" | "email" | "recovery" | "invite" | null;
   const requestedRole: UserRole = requestUrl.searchParams.get("role") === "owner" ? UserRole.OWNER : UserRole.SEEKER;
   const intent = requestUrl.searchParams.get("intent") === "register" ? "register" : "login";
   const locale = requestUrl.searchParams.get("locale") === "en" ? "en" : "id";
@@ -16,8 +18,8 @@ export async function GET(request: Request) {
       ? nextParam
       : `/${locale}/dashboard`;
 
-  if (oauthError || !code) {
-    console.error("Auth callback missing code or OAuth error:", oauthError);
+  if (oauthError || (!code && !tokenHash)) {
+    console.error("Auth callback missing code/token_hash or OAuth error:", oauthError);
     return NextResponse.redirect(
       new URL(`/${locale}/login?error=oauth_callback`, requestUrl.origin),
     );
@@ -25,15 +27,31 @@ export async function GET(request: Request) {
 
   try {
     const supabase = await createClient(10_000);
-    const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) {
-      console.error("Auth code exchange failed:", error.message);
-      return NextResponse.redirect(
-        new URL(`/${locale}/login?error=oauth_callback`, requestUrl.origin),
-      );
+    let user = null;
+
+    if (code) {
+      const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        console.error("Auth code exchange failed:", error.message);
+        return NextResponse.redirect(
+          new URL(`/${locale}/login?error=oauth_callback`, requestUrl.origin),
+        );
+      }
+      user = exchangeData.user;
+    } else if (tokenHash && type) {
+      const { data: verifyData, error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: type,
+      });
+      if (error) {
+        console.error("Auth email verification token failed:", error.message);
+        return NextResponse.redirect(
+          new URL(`/${locale}/login?error=verification_failed`, requestUrl.origin),
+        );
+      }
+      user = verifyData.user;
     }
 
-    const user = exchangeData.user;
     if (!user) {
       console.error("Auth user retrieval failed: user is null");
       return NextResponse.redirect(
@@ -83,7 +101,15 @@ export async function GET(request: Request) {
       console.warn("Profile sync failed in auth callback, using session fallback:", dbErr);
     }
 
-    const { setSessionCookie } = await import("@/server/user-store");
+    const { setSessionCookie, registerLocalUser } = await import("@/server/user-store");
+    registerLocalUser({
+      id: user.id,
+      email: profile.email || user.email || "",
+      password: "",
+      fullName: profile.fullName || fullName,
+      phone: "",
+      role: profile.role === "OWNER" ? "owner" : "seeker",
+    });
     await setSessionCookie({
       userId: user.id,
       email: profile.email || user.email || "",

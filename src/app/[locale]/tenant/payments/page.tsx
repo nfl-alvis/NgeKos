@@ -26,27 +26,25 @@ export default function TenantPaymentsPage() {
   const locale = useLocale();
   const ops = useTenantOps();
   const { tenant } = useTenantSession();
-  const [bills, setBills] = useState<(typeof invoices)>(
-    invoices.filter((i) => i.tenantName === tenant.name || i.tenantName === "I Made Sudiarta")
-  );
+  const [bills, setBills] = useState<(typeof invoices)>([]);
 
   useEffect(() => {
     fetch("/api/invoices")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const mapped = json.data.map((item: any) => ({
             id: item.code || item.id,
             tenantName: item.tenant?.fullName || item.tenantName || tenant.name,
             period: item.period || "Periode Berjalan",
-            amount: Number(item.amountSnapshot || item.amount || tenant.monthlyRent),
+            amount: Number(item.amountSnapshot || item.amount || tenant.monthlyRent || 0),
             status: (item.status === "PAID" ? "lunas" : "belum-lunas") as
               | "lunas"
               | "belum-lunas",
             dueDate:
               typeof item.dueDate === "string"
                 ? item.dueDate.slice(0, 10)
-                : "2026-09-20",
+                : "",
             paidAt: item.paidAt
               ? typeof item.paidAt === "string"
                 ? item.paidAt.slice(0, 10)
@@ -72,7 +70,6 @@ export default function TenantPaymentsPage() {
     .sort((a, b) => (b.paidAt ?? b.dueDate).localeCompare(a.paidAt ?? a.dueDate));
 
   const totalPaid = rows.filter((r) => r.status === "lunas").reduce((s, r) => s + r.amount, 0);
-  const methods = ["QRIS", "BCA Virtual Account", "GoPay", "Mandiri VA", "QRIS", "BCA Virtual Account", "transfer bank"];
 
   const exportCsv = () => {
     const header = [t("colPeriod"), t("colPaid"), t("colAmount"), t("colStatus")];
@@ -137,30 +134,38 @@ export default function TenantPaymentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r, idx) => (
-                <TableRow key={r.id} className="border-b border-nk-border last:border-b-0">
-                  <TableCell className="px-4 py-3">
-                    <p className="font-medium text-nk-text">{r.period}</p>
-                    <p className="font-mono text-xs text-nk-text-muted">{r.id}</p>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text">
-                    {formatIDR(r.amount)}
-                  </TableCell>
-                  <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text-muted">
-                    {r.status === "lunas" ? fmt(r.paidAt ?? r.dueDate) : "-"}
-                  </TableCell>
-                  <TableCell className="px-4 py-3 whitespace-nowrap text-nk-text-muted">
-                    {r.status === "lunas" ? methods[idx % methods.length] : "-"}
-                  </TableCell>
-                  <TableCell className="px-4 py-3">
-                    {r.status === "lunas" ? (
-                      <StatusBadge color="green">{t("paid")}</StatusBadge>
-                    ) : (
-                      <StatusBadge color="yellow">{t("unpaid")}</StatusBadge>
-                    )}
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-8 text-center text-sm text-nk-text-muted">
+                    {t("noPayments") || "Belum ada riwayat pembayaran"}
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                rows.map((r) => (
+                  <TableRow key={r.id} className="border-b border-nk-border last:border-b-0">
+                    <TableCell className="px-4 py-3">
+                      <p className="font-medium text-nk-text">{r.period}</p>
+                      <p className="font-mono text-xs text-nk-text-muted">{r.id}</p>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text">
+                      {formatIDR(r.amount)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text-muted">
+                      {r.status === "lunas" ? fmt(r.paidAt ?? r.dueDate) : "-"}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 whitespace-nowrap text-nk-text-muted">
+                      {r.status === "lunas" ? "Transfer Bank / QRIS" : "-"}
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      {r.status === "lunas" ? (
+                        <StatusBadge color="green">{t("paid")}</StatusBadge>
+                      ) : (
+                        <StatusBadge color="yellow">{t("unpaid")}</StatusBadge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>

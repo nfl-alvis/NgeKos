@@ -111,7 +111,7 @@ export default function OwnerMessagesPage() {
   const t = useTranslations("owner.messages");
   const locale = useLocale();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [threads, setThreads] = useState(conversations);
+  const [threads, setThreads] = useState<typeof conversations>([]);
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -127,12 +127,12 @@ export default function OwnerMessagesPage() {
       const res = await fetch("/api/conversations");
       if (res.ok) {
         const json = await res.json();
-        if (Array.isArray(json?.data) && json.data.length > 0) {
+        if (Array.isArray(json?.data)) {
           setThreads(json.data);
         }
       }
     } catch {
-      // fallback to existing mock
+      // ignore
     }
   };
 
@@ -378,8 +378,13 @@ export default function OwnerMessagesPage() {
             />
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <ul className="divide-y divide-nk-border">
-              {filtered.map((c) => {
+            {filtered.length === 0 ? (
+              <div className="py-12 text-center text-xs text-nk-text-muted">
+                {locale === "id" ? "Belum ada pesan." : "No messages yet."}
+              </div>
+            ) : (
+              <ul className="divide-y divide-nk-border">
+                {filtered.map((c) => {
                 const last = c.messages[c.messages.length - 1];
                 return (
                   <li
@@ -438,7 +443,8 @@ export default function OwnerMessagesPage() {
                 );
               })}
             </ul>
-          </div>
+          )}
+        </div>
         </aside>
 
         {/* section kanan: kartu inset rounded, full height */}

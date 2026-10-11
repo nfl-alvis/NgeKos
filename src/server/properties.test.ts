@@ -28,7 +28,7 @@ describe("property query parsing", () => {
 
 describe("property identifiers", () => {
   it("queries slugs without passing them to a UUID column", () => {
-    expect(propertyIdentifierWhere("kost-griya-cemara-dago")).toEqual({ slug: "kost-griya-cemara-dago" });
+    expect(propertyIdentifierWhere("kost-dparagon-ijen-nirwana")).toEqual({ slug: "kost-dparagon-ijen-nirwana" });
   });
 
   it("accepts UUID identifiers", () => {

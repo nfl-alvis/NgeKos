@@ -13,7 +13,7 @@ const verifyOtpSchema = z
 
 export const POST = withApi(async (request: Request) => {
   const input = await parseJson(request, verifyOtpSchema);
-  const supabase = await createClient();
+  const supabase = await createClient(10_000);
 
   const { data: initialData, error } = await supabase.auth.verifyOtp({
     email: input.email,
@@ -68,6 +68,24 @@ export const POST = withApi(async (request: Request) => {
       ...(fullName !== "Pengguna" ? { fullName } : {}),
       ...(phone ? { phone } : {}),
     },
+  });
+
+  const { registerLocalUser, setSessionCookie } = await import("@/server/user-store");
+  registerLocalUser({
+    id: user.id,
+    email: profile.email,
+    password: "",
+    fullName: profile.fullName,
+    phone: profile.phone ?? "",
+    role: profile.role === "OWNER" ? "owner" : "seeker",
+  });
+
+  await setSessionCookie({
+    userId: user.id,
+    email: profile.email,
+    fullName: profile.fullName,
+    role: profile.role,
+    phone: profile.phone ?? undefined,
   });
 
   return successResponse({

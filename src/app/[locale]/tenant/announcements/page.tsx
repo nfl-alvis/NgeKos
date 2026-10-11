@@ -27,21 +27,21 @@ export default function TenantAnnouncementsPage() {
   const t = useTranslations("tenantPages.announcements");
   const locale = useLocale();
   const { tenant } = useTenantSession();
-  const [list, setList] = useState<AnnouncementItem[]>(staticAnnouncements);
+  const [list, setList] = useState<AnnouncementItem[]>([]);
   const [seen, setSeen] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/announcements")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const mapped: AnnouncementItem[] = json.data.map((item: any) => ({
             id: item.id,
             titleId: item.title,
             titleEn: item.title,
             bodyId: item.body,
             bodyEn: item.body,
-            at: typeof item.createdAt === "string" ? item.createdAt.slice(0, 10) : "2026-09-01",
+            at: typeof item.createdAt === "string" ? item.createdAt.slice(0, 10) : "",
             read: item.isRead ?? false,
           }));
           setList(mapped);
@@ -75,40 +75,46 @@ export default function TenantAnnouncementsPage() {
         right={<span className="text-xs text-nk-text-muted">{tenant.propertyName || "Kos"}</span>}
         bodyClass="divide-y divide-nk-border"
       >
-        {list.map((a, i) => {
-          const fresh = (i === 0 || !a.read) && !seen.includes(a.id);
-          return (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => markRead(a.id)}
-              className={cn(
-                "flex w-full items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-nk-warm focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-nk-accent",
-                fresh && "bg-nk-section"
-              )}
-            >
-              <span
+        {list.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-nk-text-muted">
+            Belum ada pengumuman dari pemilik kos saat ini.
+          </p>
+        ) : (
+          list.map((a, i) => {
+            const fresh = (i === 0 || !a.read) && !seen.includes(a.id);
+            return (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => markRead(a.id)}
                 className={cn(
-                  "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full",
-                  fresh ? "bg-nk-accent text-nk-text-inverse" : "bg-nk-section text-nk-text-muted"
+                  "flex w-full items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-nk-warm focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-nk-accent",
+                  fresh && "bg-nk-section"
                 )}
-                aria-hidden="true"
               >
-                <Megaphone className="size-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-semibold text-nk-text">{locale === "id" ? a.titleId : a.titleEn}</p>
-                  {fresh && <StatusBadge color="blue">{t("new")}</StatusBadge>}
+                <span
+                  className={cn(
+                    "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full",
+                    fresh ? "bg-nk-accent text-nk-text-inverse" : "bg-nk-section text-nk-text-muted"
+                  )}
+                  aria-hidden="true"
+                >
+                  <Megaphone className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-nk-text">{locale === "id" ? a.titleId : a.titleEn}</p>
+                    {fresh && <StatusBadge color="blue">{t("new")}</StatusBadge>}
+                  </div>
+                  <p className="mt-1 text-sm leading-relaxed text-nk-text-muted">
+                    {locale === "id" ? a.bodyId : a.bodyEn}
+                  </p>
+                  <p className="mt-2 text-xs text-nk-text-muted">{relTime(a.at)}</p>
                 </div>
-                <p className="mt-1 text-sm leading-relaxed text-nk-text-muted">
-                  {locale === "id" ? a.bodyId : a.bodyEn}
-                </p>
-                <p className="mt-2 text-xs text-nk-text-muted">{relTime(a.at)}</p>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })
+        )}
       </DashSection>
     </UserDashboardShell>
   );

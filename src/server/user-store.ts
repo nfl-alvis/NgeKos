@@ -72,6 +72,18 @@ const userStore = new Map<string, StoredUser>([
       adminRole: null,
     },
   ],
+  [
+    "seeker@ngekost.id",
+    {
+      id: "b2222222-2222-2222-2222-222222222222",
+      email: "seeker@ngekost.id",
+      passwordHash: "Password123!",
+      fullName: "Budi Santoso (Seeker Demo)",
+      role: "SEEKER",
+      phone: "081234567890",
+      adminRole: null,
+    },
+  ],
 ]);
 
 export function findLocalUser(email: string): StoredUser | undefined {
@@ -79,6 +91,7 @@ export function findLocalUser(email: string): StoredUser | undefined {
 }
 
 export function registerLocalUser(data: {
+  id?: string;
   email: string;
   password: string;
   fullName: string;
@@ -88,7 +101,7 @@ export function registerLocalUser(data: {
   const email = data.email.toLowerCase().trim();
   const userRole: UserRole = data.role === "owner" ? "OWNER" : "SEEKER";
   const newUser: StoredUser = {
-    id: `u-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    id: data.id || `u-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     email,
     passwordHash: data.password,
     fullName: data.fullName.trim(),

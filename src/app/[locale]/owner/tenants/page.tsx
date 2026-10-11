@@ -21,8 +21,8 @@ export default function OwnerTenantsPage() {
   const ti = useTranslations("owner.invoices");
   const router = useRouter();
 
-  const [propsList, setPropsList] = useState<Array<{ slug: string; name: string }>>(getOwnerProperties());
-  const [tenantsList, setTenantsList] = useState<Tenant[]>(seedTenants);
+  const [propsList, setPropsList] = useState<Array<{ slug: string; name: string }>>([]);
+  const [tenantsList, setTenantsList] = useState<Tenant[]>([]);
   const [filter, setFilter] = useState<string>("all");
   const [detail, setDetail] = useState<Tenant | null>(null);
 
@@ -30,11 +30,9 @@ export default function OwnerTenantsPage() {
     fetch("/api/properties?mine=true")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const dbProps = json.data.map((p: any) => ({ slug: p.slug, name: p.name }));
-          const existingSlugs = new Set(dbProps.map((p: any) => p.slug));
-          const merged = [...dbProps, ...getOwnerProperties().filter((p) => !existingSlugs.has(p.slug))];
-          setPropsList(merged);
+          setPropsList(dbProps);
         }
       })
       .catch(() => {});
@@ -44,22 +42,18 @@ export default function OwnerTenantsPage() {
       .then((json) => {
         if (json?.data && Array.isArray(json.data)) {
           const active = json.data.filter((b: any) => b.status === "ACTIVE");
-          if (active.length > 0) {
-            const mapped: Tenant[] = active.map((b: any) => ({
-              id: b.id,
-              name: b.applicant?.fullName || b.applicantName || "Penyewa",
-              phone: b.applicant?.phone || "-",
-              propertySlug: b.property?.slug || "",
-              propertyName: b.property?.name || "Kost",
-              roomNumber: b.roomUnit?.number || "-",
-              monthlyRent: Number(b.monthlyPriceSnapshot || 0),
-              startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "2026-09-01",
-              paymentStatus: "lunas",
-            }));
-            const existingIds = new Set(mapped.map((m) => m.id));
-            const merged = [...mapped, ...seedTenants.filter((s) => !existingIds.has(s.id))];
-            setTenantsList(merged);
-          }
+          const mapped: Tenant[] = active.map((b: any) => ({
+            id: b.id,
+            name: b.applicant?.fullName || b.applicantName || "Penyewa",
+            phone: b.applicant?.phone || "-",
+            propertySlug: b.property?.slug || "",
+            propertyName: b.property?.name || "Kost",
+            roomNumber: b.roomUnit?.number || "-",
+            monthlyRent: Number(b.monthlyPriceSnapshot || 0),
+            startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "2026-09-01",
+            paymentStatus: "lunas",
+          }));
+          setTenantsList(mapped);
         }
       })
       .catch(() => {});
@@ -114,66 +108,80 @@ export default function OwnerTenantsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((tn) => (
-              <TableRow key={tn.id} className="border-b border-nk-border last:border-b-0">
-                <TableCell className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-nk-warm text-sm font-medium text-nk-text">
-                      {tn.name.trim().charAt(0).toUpperCase()}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium text-nk-text">{tn.name}</span>
-                      <span className="block truncate text-xs text-nk-text-muted">{tn.phone}</span>
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell className="px-4 py-3 text-nk-text">
-                  {tn.propertyName}
-                  <span className="block text-xs text-nk-text-muted">Kamar {tn.roomNumber}</span>
-                </TableCell>
-                <TableCell className="px-4 py-3">{payBadge(tn.paymentStatus)}</TableCell>
-                <TableCell className="px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => setDetail(tn)}
-                    className="rounded-md border border-nk-border px-3 py-1.5 text-xs text-nk-text transition-colors hover:bg-nk-warm"
-                  >
-                    {t("viewDetail")}
-                  </button>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="py-8 text-center text-xs text-nk-text-muted">
+                  Belum ada tenant aktif.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filtered.map((tn) => (
+                <TableRow key={tn.id} className="border-b border-nk-border last:border-b-0">
+                  <TableCell className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-nk-warm text-sm font-medium text-nk-text">
+                        {tn.name.trim().charAt(0).toUpperCase()}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-nk-text">{tn.name}</span>
+                        <span className="block truncate text-xs text-nk-text-muted">{tn.phone}</span>
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-nk-text">
+                    {tn.propertyName}
+                    <span className="block text-xs text-nk-text-muted">Kamar {tn.roomNumber}</span>
+                  </TableCell>
+                  <TableCell className="px-4 py-3">{payBadge(tn.paymentStatus)}</TableCell>
+                  <TableCell className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => setDetail(tn)}
+                      className="rounded-md border border-nk-border px-3 py-1.5 text-xs text-nk-text transition-colors hover:bg-nk-warm"
+                    >
+                      {t("viewDetail")}
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
 
       {/* mobile cards */}
       <div className="flex flex-col gap-3 lg:hidden">
-        {filtered.map((tn) => (
-          <article key={tn.id} className="rounded-lg border border-nk-border bg-nk-surface p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-nk-warm text-sm font-medium text-nk-text">
-                  {tn.name.trim().charAt(0).toUpperCase()}
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-nk-text">{tn.name}</span>
-                  <span className="block truncate text-xs text-nk-text-muted">
-                    {tn.propertyName} · {tn.roomNumber}
+        {filtered.length === 0 ? (
+          <div className="rounded-lg border border-nk-border bg-nk-surface p-8 text-center text-xs text-nk-text-muted">
+            Belum ada tenant aktif.
+          </div>
+        ) : (
+          filtered.map((tn) => (
+            <article key={tn.id} className="rounded-lg border border-nk-border bg-nk-surface p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-nk-warm text-sm font-medium text-nk-text">
+                    {tn.name.trim().charAt(0).toUpperCase()}
                   </span>
-                </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-nk-text">{tn.name}</span>
+                    <span className="block truncate text-xs text-nk-text-muted">
+                      {tn.propertyName} · {tn.roomNumber}
+                    </span>
+                  </span>
+                </div>
+                {payBadge(tn.paymentStatus)}
               </div>
-              {payBadge(tn.paymentStatus)}
-            </div>
-            <button
-              type="button"
-              onClick={() => setDetail(tn)}
-              className="mt-3 w-full rounded-md border border-nk-border px-3 py-2 text-xs text-nk-text transition-colors hover:bg-nk-warm"
-            >
-              {t("viewDetail")}
-            </button>
-          </article>
-        ))}
+              <button
+                type="button"
+                onClick={() => setDetail(tn)}
+                className="mt-3 w-full rounded-md border border-nk-border px-3 py-2 text-xs text-nk-text transition-colors hover:bg-nk-warm"
+              >
+                {t("viewDetail")}
+              </button>
+            </article>
+          ))
+        )}
       </div>
 
       {/* modal detail tenant */}

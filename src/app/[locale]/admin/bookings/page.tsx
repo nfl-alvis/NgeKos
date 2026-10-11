@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CalendarCheck, CheckCircle2, Clock, Search } from "lucide-react";
 import {
@@ -23,7 +23,6 @@ import AdminPageShell, { AdminSection, AdminStat } from "@/components/admin/Admi
 import { StatusBadge, type StatusColor } from "@/components/StatusBadge";
 import { formatIDR } from "@/lib/utils";
 import { formatReviewDate } from "@/lib/adminReviewStore";
-import { bookings, ownerBookings } from "@/lib/data/entities";
 import type { BookingStatus } from "@/lib/data/types";
 
 const STATUS_COLOR: Record<BookingStatus, StatusColor> = {
@@ -39,12 +38,35 @@ const STATUS_COLOR: Record<BookingStatus, StatusColor> = {
 export default function AdminBookingsPage() {
   const t = useTranslations("admin.bookings");
   const locale = useLocale();
-  const all = useMemo(
-    () => [...bookings, ...ownerBookings].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    []
-  );
+  const [bookingsList, setBookingsList] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | BookingStatus>("all");
+
+  useEffect(() => {
+    fetch("/api/bookings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          const mapped = json.data.map((b: any) => ({
+            id: b.id,
+            applicantName: b.user?.fullName || b.applicantName || "Penyewa",
+            applicantPhone: b.user?.phone || b.applicantPhone || "-",
+            propertyName: b.property?.name || b.propertyName || "-",
+            roomType: b.roomType?.name || b.roomType || "Kamar",
+            roomNumber: b.roomUnit?.number || b.roomNumber || "-",
+            city: b.property?.city || b.city || "-",
+            startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "",
+            monthlyPrice: Number(b.monthlyPrice || b.amountSnapshot || 0),
+            status: (b.status ? b.status.toLowerCase() : "pending") as BookingStatus,
+            createdAt: typeof b.createdAt === "string" ? b.createdAt : "",
+          }));
+          setBookingsList(mapped.sort((a: any, b: any) => (b.createdAt || "").localeCompare(a.createdAt || "")));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const all = bookingsList;
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -121,7 +143,7 @@ export default function AdminBookingsPage() {
                   <TableCell className="px-4 py-3 text-nk-text-muted">{formatReviewDate(b.startDate, locale)}</TableCell>
                   <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text">{formatIDR(b.monthlyPrice)}</TableCell>
                   <TableCell className="px-4 py-3">
-                    <StatusBadge color={STATUS_COLOR[b.status]}>{t(`st${camel(b.status)}`)}</StatusBadge>
+                    <StatusBadge color={STATUS_COLOR[b.status as BookingStatus] ?? "gray"}>{t(`st${camel(b.status)}`)}</StatusBadge>
                   </TableCell>
                 </TableRow>
               ))}

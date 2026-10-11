@@ -26,15 +26,13 @@ export default function TenantBillsPage() {
   const ops = useTenantOps();
   const { tenant } = useTenantSession();
   const property = getPropertyBySlug(tenant.propertySlug);
-  const [bills, setBills] = useState<(typeof invoices)>(
-    invoices.filter((i) => i.tenantName === tenant.name || i.tenantName === "I Made Sudiarta")
-  );
+  const [bills, setBills] = useState<(typeof invoices)>([]);
 
   useEffect(() => {
     fetch("/api/invoices")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const mapped = json.data.map((item: any) => ({
             id: item.code || item.id,
             tenantName: item.tenant?.fullName || item.tenantName || tenant.name,
@@ -57,16 +55,7 @@ export default function TenantBillsPage() {
   const my = bills.sort((a: any, b: any) => b.dueDate.localeCompare(a.dueDate));
   const isPaid = (id: string, status: string) => status === "lunas" || ops.paidInvoiceIds.includes(id);
 
-  // tagihan periode berikutnya (belum terbit di seed) - disintesis utk demo
-  const nextBill: (typeof invoices)[number] = {
-    id: "INV-2610-01",
-    tenantName: tenant.name,
-    amount: tenant.monthlyRent,
-    period: locale === "id" ? "Oktober 2026" : "October 2026",
-    dueDate: NEXT_DUE,
-    status: "belum-lunas",
-  };
-  const rows = [nextBill, ...my].sort((a, b) => b.dueDate.localeCompare(a.dueDate));
+  const rows = my;
   const nextDue = rows.find((i) => !isPaid(i.id, i.status)) ?? null;
   const outstanding = rows.filter((i) => !isPaid(i.id, i.status)).reduce((s, i) => s + i.amount, 0);
 
@@ -154,7 +143,12 @@ export default function TenantBillsPage() {
             }
             bodyClass="divide-y divide-nk-border"
           >
-            {rows.map((inv) => {
+            {rows.length === 0 ? (
+              <p className="p-8 text-center text-xs text-nk-text-muted">
+                {locale === "id" ? "Belum ada riwayat tagihan." : "No billing history yet."}
+              </p>
+            ) : (
+              rows.map((inv) => {
               const paid = isPaid(inv.id, inv.status);
               return (
                 <div key={inv.id} className="flex items-center gap-3 px-4 py-3.5">
@@ -187,7 +181,8 @@ export default function TenantBillsPage() {
                   </div>
                 </div>
               );
-            })}
+            })
+            )}
           </DashSection>
         </div>
       </div>

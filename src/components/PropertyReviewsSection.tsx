@@ -63,30 +63,13 @@ export default function PropertyReviewsSection({
 
       if (!cancelled) {
         const seedMatches = seedUserReviews.filter((r) => r.propertySlug === propertySlug);
-        const fallbackList = seedMatches.length > 0
-          ? seedMatches.map((r) => ({
-              id: r.id,
-              authorName: r.authorName,
-              rating: r.rating,
-              body: r.bodyId,
-              createdAt: `${r.at}T10:00:00Z`,
-            }))
-          : [
-              {
-                id: `rev-default-1-${propertySlug}`,
-                authorName: "Rian Pratama",
-                rating: 5,
-                body: "Kamar sangat bersih dan pencahayaan matahari bagus. Pemilik kos ramah dan tanggap saat ada kendala.",
-                createdAt: "2026-08-15T09:30:00Z",
-              },
-              {
-                id: `rev-default-2-${propertySlug}`,
-                authorName: "Dewi Lestari",
-                rating: 4,
-                body: "Lokasi sangat strategis dekat jalan raya dan warung makan. WiFi stabil untuk kebutuhan kerja atau kuliah.",
-                createdAt: "2026-07-22T14:15:00Z",
-              },
-            ];
+        const fallbackList = seedMatches.map((r) => ({
+          id: r.id,
+          authorName: r.authorName,
+          rating: r.rating,
+          body: r.bodyId,
+          createdAt: `${r.at}T10:00:00Z`,
+        }));
         setReviews(fallbackList);
         setLoading(false);
       }

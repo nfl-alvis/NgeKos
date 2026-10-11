@@ -18,9 +18,11 @@
     "prisma:studio": "dotenv -e .env.local -- prisma studio",
     "telegram:webhook": "tsx scripts/set-telegram-webhook.ts",
     "telegram:poll": "tsx scripts/telegram-polling.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:e2e": "e2e run"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.91",
     "@base-ui/react": "^1.7.0",
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/adapter-pg": "^6.12.0",
@@ -49,12 +51,16 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.67",
+    "@e2e-dev/web": "^0.13.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.20.3",
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "ai": "^7.0.0",
     "dotenv-cli": "^11.0.0",
+    "e2e": "^0.18.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "prisma": "^6.12.0",

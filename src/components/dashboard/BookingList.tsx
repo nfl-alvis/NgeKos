@@ -89,7 +89,7 @@ export default function BookingList() {
   const locale = useLocale();
   const router = useRouter();
 
-  const [items, setItems] = useState<Booking[]>(staticBookings);
+  const [items, setItems] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [tab, setTab] = useState<"all" | "awaiting" | "active" | "history">("all");
   const [search, setSearch] = useState("");
@@ -106,9 +106,7 @@ export default function BookingList() {
           : null;
         if (rawList) {
           const dbItems = rawList.map(mapDbBooking);
-          const existingIds = new Set(dbItems.map((d: Booking) => d.id));
-          const merged = [...dbItems, ...staticBookings.filter((s) => !existingIds.has(s.id))];
-          setItems(merged);
+          setItems(dbItems);
         }
       })
       .catch(() => {});

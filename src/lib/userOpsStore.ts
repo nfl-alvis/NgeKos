@@ -52,7 +52,7 @@ function computeDerived(s: PersistedState): Derived {
     ...Object.values(s.reviewEdits),
     ...seedUserReviews.filter((r) => !s.removedReviewIds.includes(r.id) && !s.reviewEdits[r.id]),
   ].sort((a, b) => b.at.localeCompare(a.at));
-  return { favorites: s.favorites ?? favoriteSlugsSeed, payments, reviews };
+  return { favorites: s.favorites ?? [], payments, reviews };
 }
 
 let derived: Derived = computeDerived(EMPTY);

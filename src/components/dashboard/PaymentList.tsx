@@ -68,9 +68,8 @@ export default function PaymentList() {
   }, []);
 
   const allPayments = useMemo(() => {
-    const list = dbPayments.length > 0 ? dbPayments : ops.payments;
-    return [...list].sort((a, b) => b.at.localeCompare(a.at));
-  }, [dbPayments, ops.payments]);
+    return [...dbPayments].sort((a, b) => b.at.localeCompare(a.at));
+  }, [dbPayments]);
 
   const counts = useMemo(() => {
     return {

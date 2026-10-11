@@ -16,7 +16,7 @@ export default function OwnerPropertiesPage() {
   const t = useTranslations("owner.properties");
   const router = useRouter();
   const { user } = useSession();
-  const [props, setProps] = useState<Array<ReturnType<typeof getOwnerProperties>[number] | Property>>([]);
+  const [props, setProps] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -45,7 +45,7 @@ export default function OwnerPropertiesPage() {
       try {
         const res = await fetch("/api/properties?mine=true");
         if (!res.ok) {
-          if (!cancelled) setProps(getOwnerProperties());
+          if (!cancelled) setProps([]);
           return;
         }
         const json = await res.json();
@@ -81,14 +81,12 @@ export default function OwnerPropertiesPage() {
               sizeM2: rt.sizeM2 ?? 12,
             })),
           }));
-          const existingSlugs = new Set(mapped.map((m) => m.slug));
-          const merged = [...mapped, ...getOwnerProperties().filter((p) => !existingSlugs.has(p.slug))];
-          setProps(merged);
+          setProps(mapped);
         } else if (!cancelled) {
-          setProps(getOwnerProperties());
+          setProps([]);
         }
       } catch {
-        if (!cancelled) setProps(getOwnerProperties());
+        if (!cancelled) setProps([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -214,72 +212,78 @@ export default function OwnerPropertiesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {props.map((p) => {
-          const totalRooms = p.roomTypes.reduce((acc, rt) => acc + rt.total, 0);
-          const filledRooms = p.roomTypes.reduce(
-            (acc, rt) => acc + (rt.total - rt.available),
-            0
-          );
-          return (
-            <article key={p.slug} className="overflow-hidden rounded-lg border border-nk-border bg-nk-surface">
-              <div className="relative">
-                <img
-                  src={getKosImage(p.slug || p.imageSeed, "main")}
-                  alt={p.name}
-                  className="aspect-[16/9] w-full object-cover"
-                />
-                <div className="absolute right-2 top-2">
-                  {p.verificationStatus === "verified" && (
-                    <StatusBadge color="green">{t("verified")}</StatusBadge>
-                  )}
-                  {p.verificationStatus === "pending" && (
-                    <StatusBadge color="yellow">{t("pending")}</StatusBadge>
-                  )}
-                  {p.verificationStatus === "rejected" && (
-                    <StatusBadge color="red">{t("rejected")}</StatusBadge>
-                  )}
-                </div>
-              </div>
-              <div className="p-4">
-                <h2 className="truncate text-base font-medium text-nk-text">{p.name}</h2>
-                <p className="text-sm text-nk-text-muted">
-                  {p.district}, {p.city}
-                </p>
-
-                {p.verificationStatus === "rejected" && p.verificationNote && (
-                  <div className="mt-3 rounded-md border border-[#EBC4C0] bg-[#FAEAE8] p-3">
-                    <p className="text-xs text-[#9C3B32]">
-                      {t("rejectionReason", { reason: p.verificationNote })}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => handleResubmitVerification(("id" in p ? p.id : "") || p.slug)}
-                      className="mt-2 text-xs font-medium text-[#9C3B32] underline underline-offset-4 hover:opacity-80"
-                    >
-                      {t("resubmit")}
-                    </button>
+      {props.length === 0 ? (
+        <div className="rounded-xl border border-nk-border bg-nk-surface p-12 text-center text-sm text-nk-text-muted">
+          Belum ada properti terdaftar. Klik &quot;{t("add")}&quot; untuk menambahkan properti baru.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {props.map((p) => {
+            const totalRooms = p.roomTypes.reduce((acc, rt) => acc + rt.total, 0);
+            const filledRooms = p.roomTypes.reduce(
+              (acc, rt) => acc + (rt.total - rt.available),
+              0
+            );
+            return (
+              <article key={p.slug} className="overflow-hidden rounded-lg border border-nk-border bg-nk-surface">
+                <div className="relative">
+                  <img
+                    src={getKosImage(p.slug || p.imageSeed, "main")}
+                    alt={p.name}
+                    className="aspect-[16/9] w-full object-cover"
+                  />
+                  <div className="absolute right-2 top-2">
+                    {p.verificationStatus === "verified" && (
+                      <StatusBadge color="green">{t("verified")}</StatusBadge>
+                    )}
+                    {p.verificationStatus === "pending" && (
+                      <StatusBadge color="yellow">{t("pending")}</StatusBadge>
+                    )}
+                    {p.verificationStatus === "rejected" && (
+                      <StatusBadge color="red">{t("rejected")}</StatusBadge>
+                    )}
                   </div>
-                )}
-
-                <div className="mt-3 flex items-center gap-3 text-xs text-nk-text-muted">
-                  <span>{t("rooms", { count: totalRooms })}</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{t("occupancy", { count: filledRooms, total: totalRooms })}</span>
                 </div>
+                <div className="p-4">
+                  <h2 className="truncate text-base font-medium text-nk-text">{p.name}</h2>
+                  <p className="text-sm text-nk-text-muted">
+                    {p.district}, {p.city}
+                  </p>
 
-                <button
-                  type="button"
-                  onClick={() => router.push(`/owner/properties/${p.slug}`)}
-                  className="mt-4 w-full rounded-lg border border-nk-border px-4 py-2.5 text-sm font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99]"
-                >
-                  {t("manage")}
-                </button>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+                  {p.verificationStatus === "rejected" && p.verificationNote && (
+                    <div className="mt-3 rounded-md border border-[#EBC4C0] bg-[#FAEAE8] p-3">
+                      <p className="text-xs text-[#9C3B32]">
+                        {t("rejectionReason", { reason: p.verificationNote })}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleResubmitVerification(("id" in p ? p.id : "") || p.slug)}
+                        className="mt-2 text-xs font-medium text-[#9C3B32] underline underline-offset-4 hover:opacity-80"
+                      >
+                        {t("resubmit")}
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="mt-3 flex items-center gap-3 text-xs text-nk-text-muted">
+                    <span>{t("rooms", { count: totalRooms })}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{t("occupancy", { count: filledRooms, total: totalRooms })}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/owner/properties/${p.slug}`)}
+                    className="mt-4 w-full rounded-lg border border-nk-border px-4 py-2.5 text-sm font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99]"
+                  >
+                    {t("manage")}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
 
       <CreatePropertyDialog
         open={createOpen}

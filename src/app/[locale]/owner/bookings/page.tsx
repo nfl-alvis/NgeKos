@@ -86,7 +86,7 @@ export default function OwnerBookingsPage() {
   const [detail, setDetail] = useState<Booking | null>(null);
   const [rejectTarget, setRejectTarget] = useState<Booking | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [bookingsList, setBookingsList] = useState<Booking[]>(ownerBookings);
+  const [bookingsList, setBookingsList] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -99,9 +99,7 @@ export default function OwnerBookingsPage() {
         const raw = Array.isArray(json?.data) ? json.data : Array.isArray(json?.data?.items) ? json.data.items : null;
         if (raw) {
           const dbItems = raw.map(mapDbBooking);
-          const existingIds = new Set(dbItems.map((d: Booking) => d.id));
-          const merged = [...dbItems, ...ownerBookings.filter((o) => !existingIds.has(o.id))];
-          setBookingsList(merged);
+          setBookingsList(dbItems);
         }
       })
       .catch(() => {})

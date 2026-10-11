@@ -78,38 +78,10 @@ export const GET = withApi(async () => {
       };
     });
 
-    // Mock data fallback only for owner demo
-    if (isOwner) {
-      const combined = [...formattedDb];
-      for (const mock of mockConversations) {
-        if (!combined.some((item) => item.id === mock.id)) {
-          combined.push({
-            ...mock,
-            propertyName: undefined,
-            propertySlug: undefined,
-            externalChatId: null,
-            messages: mock.messages.map((m) => {
-              const hasReply = mock.messages.some(
-                (other) => other.from !== m.from && new Date(other.at).getTime() >= new Date(m.at).getTime()
-              );
-              const status = m.status || (hasReply ? "read" : mock.telegramConnected ? "delivered" : "sent");
-              return {
-                ...m,
-                isMe: m.from === "owner",
-                readAt: m.readAt ?? (status === "read" ? m.at : null),
-                status: status as "sent" | "delivered" | "read",
-              };
-            }),
-          });
-        }
-      }
-      return successResponse(combined);
-    }
-
     return successResponse(formattedDb);
   } catch (err) {
     console.warn("[Conversations API] Error fetching DB conversations:", err);
-    return successResponse(isOwner ? mockConversations : []);
+    return successResponse([]);
   }
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   ArrowUpRight,
@@ -60,15 +60,34 @@ export default function OwnerDashboardInsights({
   const locale = useLocale();
   const isEn = locale === "en";
   const properties = getOwnerProperties();
+  const [unpaidInvoices, setUnpaidInvoices] = useState<any[]>([]);
 
-  const unpaid = invoices
-    .filter((invoice) => invoice.status === "belum-lunas")
-    .sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.id.localeCompare(b.id));
+  useEffect(() => {
+    fetch("/api/invoices")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          const mapped = json.data
+            .filter((i: any) => i.status === "UNPAID" || i.status === "belum-lunas")
+            .map((i: any) => ({
+              id: i.code || i.id,
+              tenantName: i.tenant?.fullName || i.tenantName || "Penyewa",
+              period: i.period || "Periode Berjalan",
+              amount: Number(i.amountSnapshot || i.amount || 0),
+              dueDate: typeof i.dueDate === "string" ? i.dueDate.slice(0, 10) : "",
+            }));
+          setUnpaidInvoices(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const unpaid = unpaidInvoices;
 
   const pendingCount =
     pendingBookingsCount !== undefined
       ? pendingBookingsCount
-      : ownerBookings.filter((booking) => booking.status === "pending").length;
+      : 0;
 
   const actions = [
     {
@@ -198,7 +217,7 @@ export default function OwnerDashboardInsights({
             </div>
           </div>
 
-          {selected && (
+          {selected ? (
             <div>
               <div className="flex items-center justify-between">
                 <div>
@@ -292,6 +311,10 @@ export default function OwnerDashboardInsights({
                 <p className="mt-4 text-xs text-nk-text-muted">{t("noRooms")}</p>
               )}
             </div>
+          ) : (
+            <p className="mt-4 text-xs text-nk-text-muted">
+              {isEn ? "No properties registered yet." : "Belum ada properti terdaftar."}
+            </p>
           )}
         </div>
 

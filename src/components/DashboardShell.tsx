@@ -240,23 +240,21 @@ export default function DashboardShell({
   const userName =
     user?.name ??
     (role === "owner"
-      ? "Ratri Wulandari"
+      ? "Pemilik Kos"
       : role === "admin"
-        ? "Bayu Pratama"
-        : "I made Sudiarta");
+        ? "Admin"
+        : "Pengguna");
   const initial = userName.trim().charAt(0).toUpperCase();
 
-  const [notifs, setNotifs] = useState<NotificationItem[]>(notifications);
-  const [unreadCount, setUnreadCount] = useState<number>(() =>
-    notifications.filter((n) => !n.read).length
-  );
+  const [notifs, setNotifs] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   const fetchNotifs = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications");
       if (res.ok) {
         const json = await res.json();
-        if (Array.isArray(json?.data) && json.data.length > 0) {
+        if (Array.isArray(json?.data)) {
           const mapped: NotificationItem[] = json.data.map((n: any) => ({
             id: n.id,
             type: n.type || "system",

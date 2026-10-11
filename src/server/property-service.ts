@@ -24,6 +24,7 @@ const propertyInclude = {
 type PropertyRecord = Prisma.PropertyGetPayload<{ include: typeof propertyInclude }>;
 
 function storageUrl(path: string) {
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
   const encoded = path.split("/").map(encodeURIComponent).join("/");
   return `${env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET}/${encoded}`;
 }
@@ -112,7 +113,7 @@ function mapStaticToDto(p: any, ownerId = "58983471-0904-40df-beb8-3a51888b176b"
     rating: p.rating ?? 0,
     reviewCount: p.reviewCount ?? 0,
     publishedAt: p.verificationStatus === "verified" ? new Date().toISOString() : null,
-    owner: { id: ownerId, fullName: "Ratri Wulandari (Owner Demo)", phone: null },
+    owner: { id: ownerId, fullName: "Pemilik Kos", phone: null },
     images: [],
     facilities: (p.facilities || []).map((key: string) => ({ key, nameId: key, nameEn: key, icon: null })),
     roomTypes: (p.roomTypes || []).map((rt: any) => ({
