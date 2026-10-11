@@ -935,6 +935,7 @@
       "toastSuspended": "Ditangguhkan: {name}",
       "toastReactivated": "Aktif kembali: {name}",
       "suspendHint": "Owner yang ditangguhkan tetap bisa masuk untuk membaca, tapi tidak dapat mengubah data atau menerima booking baru.",
+      "noOwners": "Belum ada akun pemilik kos terdaftar.",
       "empty": "Tidak ada owner pada filter ini"
     },
     "users": {
@@ -957,6 +958,7 @@
       "actUnblock": "Pulihkan",
       "toastBlocked": "Diblokir: {name}",
       "toastUnblocked": "Dipulihkan: {name}",
+      "noUsers": "Belum ada akun pengguna terdaftar.",
       "empty": "Tidak ada hasil untuk kata kunci ini"
     },
     "bookings": {
@@ -972,6 +974,8 @@
       "filterAll": "Semua status",
       "stPending": "Menunggu",
       "stApprovedAwaitingPayment": "Menunggu Bayar",
+      "stConfirmed": "Dikonfirmasi",
+      "stCompleted": "Selesai",
       "stActive": "Aktif",
       "stRejected": "Ditolak",
       "stExpired": "Kedaluwarsa",
@@ -1911,6 +1915,7 @@
       "colPaid": "Tanggal bayar",
       "colMethod": "Metode",
       "colStatus": "Status",
+      "noPayments": "Belum ada riwayat pembayaran",
       "paid": "Lunas",
       "unpaid": "Belum Bayar"
     },

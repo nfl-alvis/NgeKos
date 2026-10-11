@@ -935,6 +935,7 @@
       "toastSuspended": "Suspended: {name}",
       "toastReactivated": "Reactivated: {name}",
       "suspendHint": "Suspended owners can still sign in to read, but cannot edit data or accept new bookings.",
+      "noOwners": "No owner accounts registered yet.",
       "empty": "No owners match this filter"
     },
     "users": {
@@ -957,6 +958,7 @@
       "actUnblock": "Unblock",
       "toastBlocked": "Blocked: {name}",
       "toastUnblocked": "Unblocked: {name}",
+      "noUsers": "No user accounts registered yet.",
       "empty": "No results for this keyword"
     },
     "bookings": {
@@ -972,6 +974,8 @@
       "filterAll": "All statuses",
       "stPending": "Pending",
       "stApprovedAwaitingPayment": "Awaiting Payment",
+      "stConfirmed": "Confirmed",
+      "stCompleted": "Completed",
       "stActive": "Active",
       "stRejected": "Rejected",
       "stExpired": "Expired",
@@ -1911,6 +1915,7 @@
       "colPaid": "Paid date",
       "colMethod": "Method",
       "colStatus": "Status",
+      "noPayments": "No payment history yet",
       "paid": "Paid",
       "unpaid": "Unpaid"
     },

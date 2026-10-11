@@ -60,14 +60,15 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  let p: Property | null = null;
-  try {
-    const dbProp = await getProperty(slug);
-    if (dbProp) p = toUiProperty(dbProp);
-  } catch {
-    p = getPropertyBySlug(slug) ?? null;
+  let p: Property | null = getPropertyBySlug(slug) ?? null;
+  if (!p) {
+    try {
+      const dbProp = await getProperty(slug);
+      if (dbProp) p = toUiProperty(dbProp);
+    } catch {
+      p = null;
+    }
   }
-  if (!p) p = getPropertyBySlug(slug) ?? null;
   if (!p) return { title: "Not Found" };
   return {
     title: `${p.name} - ${p.district}, ${p.city}`,
@@ -83,14 +84,15 @@ export default async function DetailPage({
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const t = await getTranslations();
-  let p: Property | null = null;
-  try {
-    const dbProp = await getProperty(slug);
-    if (dbProp) p = toUiProperty(dbProp);
-  } catch {
-    p = getPropertyBySlug(slug) ?? null;
+  let p: Property | null = getPropertyBySlug(slug) ?? null;
+  if (!p) {
+    try {
+      const dbProp = await getProperty(slug);
+      if (dbProp) p = toUiProperty(dbProp);
+    } catch {
+      p = null;
+    }
   }
-  if (!p) p = getPropertyBySlug(slug) ?? null;
 
   if (!p) notFound();
 

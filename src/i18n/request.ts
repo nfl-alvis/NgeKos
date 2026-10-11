@@ -11,5 +11,13 @@ export default getRequestConfig(async ({ requestLocale }) => {
   return {
     locale,
     messages: (await import(`../../messages/${locale}.json`)).default,
+    onError(error) {
+      if (error.code !== "MISSING_MESSAGE") {
+        console.error(error);
+      }
+    },
+    getMessageFallback({ namespace, key }) {
+      return [namespace, key].filter(Boolean).join(".");
+    },
   };
 });

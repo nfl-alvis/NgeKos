@@ -32,17 +32,19 @@ export default function AdminFinancePage() {
   const locale = useLocale();
   const [months, setMonths] = useState<6 | 12>(12);
 
-  const chartData = monthlyRevenue.slice(-months).map((m, i) => ({
-    label: tu(`m${monthlyRevenue.length - months + 1 + i}`),
-    gross: Math.round(m.gross / 1_000_000),
-    fee: Math.round(m.fee / 100_000) / 10,
-  }));
+  const chartData = monthlyRevenue.length > 0
+    ? monthlyRevenue.slice(-months).map((m, i) => ({
+        label: tu(`m${Math.max(1, monthlyRevenue.length - months + 1 + i)}`),
+        gross: Math.round(m.gross / 1_000_000),
+        fee: Math.round(m.fee / 100_000) / 10,
+      }))
+    : [];
 
   const grossYtd = monthlyRevenue.reduce((a, m) => a + m.gross, 0);
   const feeYtd = monthlyRevenue.reduce((a, m) => a + m.fee, 0);
   const last = monthlyRevenue[monthlyRevenue.length - 1];
   const prev = monthlyRevenue[monthlyRevenue.length - 2];
-  const growth = ((last.gross - prev.gross) / prev.gross) * 100;
+  const growth = last && prev && prev.gross > 0 ? ((last.gross - prev.gross) / prev.gross) * 100 : 0;
 
   const byMethodMap = new Map<string, number>();
   for (const x of platformTransactions) {
@@ -58,7 +60,12 @@ export default function AdminFinancePage() {
   };
   const byMethod = [...byMethodMap.entries()]
     .sort((a, b) => b[1] - a[1])
-    .map(([k, v]) => ({ key: k, label: t(labelKey[k] ?? k), pct: Math.round((v / byMethodTotal) * 100), amount: v }));
+    .map(([k, v]) => ({
+      key: k,
+      label: t(labelKey[k] ?? k),
+      pct: byMethodTotal > 0 ? Math.round((v / byMethodTotal) * 100) : 0,
+      amount: v,
+    }));
 
   const settled = platformTransactions.filter((x) => x.status === "settlement");
   const refundTotal = platformTransactions.filter((x) => x.status === "refund").reduce((a, x) => a + x.amount, 0);
