@@ -41,9 +41,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Markdown files (DO NOT PUSH ANY .MD FILES)
+# Markdown files (ignore all markdown files except root README.md)
 *.md
 **/*.md
+!/README.md
 
 # Documentation, PRD, & Diagrams
 /docs/
