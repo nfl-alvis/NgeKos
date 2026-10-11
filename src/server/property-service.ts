@@ -24,7 +24,7 @@ const propertyInclude = {
 type PropertyRecord = Prisma.PropertyGetPayload<{ include: typeof propertyInclude }>;
 
 function storageUrl(path: string) {
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("/")) return path;
   const encoded = path.split("/").map(encodeURIComponent).join("/");
   return `${env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET}/${encoded}`;
 }

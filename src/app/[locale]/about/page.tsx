@@ -201,7 +201,7 @@ export default async function AboutPage({
           <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
             <div className="md:order-2">
               <Image
-                src="https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=920&q=80"
+                src="/images/kost/kost-dparagon-ijen-nirwana/main.jpg"
                 alt={t("z1Alt")}
                 width={920}
                 height={640}
@@ -222,7 +222,7 @@ export default async function AboutPage({
           <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
             <div>
               <Image
-                src="https://images.unsplash.com/photo-1555899434-94d1368aa7af?auto=format&fit=crop&w=920&q=80"
+                src="/images/kost/kost-dparagon-songgolangit/common.jpg"
                 alt={t("z2Alt")}
                 width={920}
                 height={640}

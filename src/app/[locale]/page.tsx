@@ -280,7 +280,7 @@ export default async function HomePage({
           {/* Row 1 · Right: image */}
           <div className="overflow-hidden bg-nk-warm">
             <Image
-              src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80"
+              src="/images/kost/kost-dparagon-ijen-nirwana/main.jpg"
               alt={t("why.agent")}
               width={900}
               height={680}
@@ -291,7 +291,7 @@ export default async function HomePage({
           {/* Row 2 · Left: image */}
           <div className="overflow-hidden bg-nk-warm">
             <Image
-              src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=900&q=80"
+              src="/images/kost/kost-2nd-home-putri-exclusive/room.jpg"
               alt={t("why.favorite")}
               width={900}
               height={680}
