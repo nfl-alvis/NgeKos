@@ -10,6 +10,7 @@ import {
   MouseEvent,
 } from "react";
 import { gsap } from "gsap";
+import { useRouter } from "@/i18n/navigation";
 
 export interface AccordionGalleryItem {
   image: string;
@@ -54,18 +55,18 @@ const DEFAULT_ITEMS: AccordionGalleryItem[] = [
 export default function AccordionGallery({
   items = DEFAULT_ITEMS,
   defaultIndex = 2,
-  accentColor = "#ffffff",
-  overlayColor = "#060010",
+  accentColor = "#2F6B3C",
+  overlayColor = "#0a0a0a",
   textColor = "#ffffff",
-  height = 460,
-  gap = 10,
-  radius = 16,
+  height = 480,
+  gap = 12,
+  radius = 0,
   expandRatio = 0.52,
   orientation = "horizontal",
   duration = 0.6,
   ease = "power3.out",
   parallax = 0.5,
-  tilt = 8,
+  tilt = 0,
   stagger = 0.06,
   trigger = "hover",
   showLabels = true,
@@ -73,6 +74,7 @@ export default function AccordionGallery({
   className = "",
   onItemClick,
 }: AccordionGalleryProps) {
+  const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRefs = useRef<(HTMLElement | null)[]>([]);
   const mediaRefs = useRef<(HTMLElement | null)[]>([]);
@@ -212,6 +214,9 @@ export default function AccordionGallery({
     } else {
       if (onItemClick) {
         onItemClick(items[i], i);
+      } else if (items[i]?.link && items[i].link!.startsWith("/") && !items[i].link!.startsWith("//")) {
+        e.preventDefault();
+        router.push(items[i].link! as any);
       }
     }
   };
@@ -303,7 +308,7 @@ export default function AccordionGallery({
                     ref={(el: HTMLElement | null) => {
                       barRefs.current[i] = el;
                     }}
-                    className="h-[32px] w-[3.5px] flex-none rounded-[3px] opacity-0"
+                    className={`h-[32px] w-[3.5px] flex-none ${radius > 0 ? "rounded-[3px]" : "rounded-none"} opacity-0`}
                     style={{
                       background: accentColor,
                       boxShadow: `0 0 12px color-mix(in srgb, ${accentColor} 60%, transparent)`,
@@ -331,7 +336,7 @@ export default function AccordionGallery({
 
                 {item.ctaText && (
                   <span
-                    className={`hidden sm:inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3 py-1.5 text-xs font-medium text-white transition-opacity duration-300 ${
+                    className={`hidden sm:inline-flex items-center gap-1.5 ${radius > 0 ? "rounded-full" : "rounded-none"} bg-white/20 backdrop-blur-md px-3 py-1.5 text-xs font-medium text-white transition-opacity duration-300 ${
                       isActive ? "opacity-100" : "opacity-0"
                     }`}
                   >
@@ -359,3 +364,4 @@ export default function AccordionGallery({
     </div>
   );
 }
+
