@@ -46,6 +46,7 @@ export default function ExploreCitiesAccordion() {
         trigger="hover"
         tilt={0}
         radius={2}
+        gap={7}
       />
     </div>
   );

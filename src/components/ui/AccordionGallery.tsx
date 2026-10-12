@@ -59,7 +59,7 @@ export default function AccordionGallery({
   overlayColor = "#0a0a0a",
   textColor = "#ffffff",
   height = 480,
-  gap = 12,
+  gap = 7,
   radius = 2,
   expandRatio = 0.52,
   orientation = "horizontal",
