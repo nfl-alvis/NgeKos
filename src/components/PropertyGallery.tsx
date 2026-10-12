@@ -8,6 +8,11 @@ import {
   ChevronRight,
   X,
   Grid,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  Minimize,
+  LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { KosGalleryItem } from "@/lib/kosImages";
@@ -32,6 +37,18 @@ export default function PropertyGallery({
   const [mobileIdx, setMobileIdx] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string>("all");
 
+  // LightGallery features: Zoom & Pan
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // LightGallery features: Fullscreen & Thumbnails drawer toggle
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [showThumbnails, setShowThumbnails] = useState<boolean>(true);
+
+  // LightGallery features: Real-time slide drag displacement
+  const [dragOffset, setDragOffset] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -44,36 +61,49 @@ export default function PropertyGallery({
 
   const currentModalIndex = Math.min(
     Math.max(0, activeIdx),
-    filteredImages.length - 1
+    Math.max(0, filteredImages.length - 1)
   );
   const currentPhoto = filteredImages[currentModalIndex] || images[0];
 
-  // Touch & Drag state for modal lightbox
-  const touchStartX = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
-  const isDragging = useRef<boolean>(false);
+  // Drag coordinates ref
+  const startX = useRef<number | null>(null);
+  const startY = useRef<number | null>(null);
+  const initialPan = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Touch state for mobile inline carousel
+  // Mobile inline carousel touch coordinates
   const mobileTouchStartX = useRef<number | null>(null);
   const mobileTouchEndX = useRef<number | null>(null);
+
+  const resetZoomAndPan = useCallback(() => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+    setDragOffset(0);
+  }, []);
 
   const openLightbox = (index = 0) => {
     setActiveCategory("all");
     setActiveIdx(index);
+    resetZoomAndPan();
     setIsOpen(true);
   };
 
   const closeLightbox = useCallback(() => {
     setIsOpen(false);
-  }, []);
+    resetZoomAndPan();
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, [resetZoomAndPan]);
 
   const nextPhoto = useCallback(() => {
+    resetZoomAndPan();
     setActiveIdx((prev) => (prev + 1) % filteredImages.length);
-  }, [filteredImages.length]);
+  }, [filteredImages.length, resetZoomAndPan]);
 
   const prevPhoto = useCallback(() => {
+    resetZoomAndPan();
     setActiveIdx((prev) => (prev - 1 + filteredImages.length) % filteredImages.length);
-  }, [filteredImages.length]);
+  }, [filteredImages.length, resetZoomAndPan]);
 
   const nextMobile = useCallback(() => {
     setMobileIdx((prev) => (prev + 1) % images.length);
@@ -83,14 +113,70 @@ export default function PropertyGallery({
     setMobileIdx((prev) => (prev - 1 + images.length) % images.length);
   }, [images.length]);
 
-  // Keyboard navigation
+  // Fullscreen toggle (LightGallery Fullscreen plugin)
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFsChange);
+    };
+  }, []);
+
+  // Zoom controls (LightGallery Zoom plugin)
+  const handleZoomIn = () => {
+    setZoomLevel((z) => Math.min(3, Math.round((z + 0.5) * 10) / 10));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel((z) => {
+      const nextZ = Math.max(1, Math.round((z - 0.5) * 10) / 10);
+      if (nextZ === 1) setPanOffset({ x: 0, y: 0 });
+      return nextZ;
+    });
+  };
+
+  const handleDoubleClick = () => {
+    if (zoomLevel === 1) {
+      setZoomLevel(2);
+    } else {
+      resetZoomAndPan();
+    }
+  };
+
+  // Keyboard navigation (LightGallery standards)
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeLightbox();
-      if (e.key === "ArrowRight") nextPhoto();
-      if (e.key === "ArrowLeft") prevPhoto();
+      if (e.key === "Escape") {
+        if (zoomLevel > 1) {
+          resetZoomAndPan();
+        } else {
+          closeLightbox();
+        }
+      } else if (e.key === "ArrowRight") {
+        nextPhoto();
+      } else if (e.key === "ArrowLeft") {
+        prevPhoto();
+      } else if (e.key === "+" || e.key === "=") {
+        handleZoomIn();
+      } else if (e.key === "-") {
+        handleZoomOut();
+      } else if (e.key.toLowerCase() === "f") {
+        toggleFullscreen();
+      } else if (e.key.toLowerCase() === "t") {
+        setShowThumbnails((prev) => !prev);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -100,55 +186,96 @@ export default function PropertyGallery({
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [isOpen, closeLightbox, nextPhoto, prevPhoto]);
+  }, [isOpen, zoomLevel, closeLightbox, nextPhoto, prevPhoto, resetZoomAndPan, toggleFullscreen]);
 
-  // Touch gestures for modal lightbox ("bisa digeser-geser")
+  // Touch gesture handlers for modal (real-time slide drag or pan)
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.targetTouches[0].clientX;
+    if (e.touches.length === 1) {
+      startX.current = e.touches[0].clientX;
+      startY.current = e.touches[0].clientY;
+      initialPan.current = { ...panOffset };
+      setIsDragging(true);
+    }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX;
+    if (!isDragging || startX.current === null || startY.current === null) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - startX.current;
+    const diffY = currentY - startY.current;
+
+    if (zoomLevel > 1) {
+      // Pan when zoomed in
+      setPanOffset({
+        x: initialPan.current.x + diffX,
+        y: initialPan.current.y + diffY,
+      });
+    } else {
+      // Real-time slide displacement
+      setDragOffset(diffX);
+    }
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
-    const diff = touchStartX.current - touchEndX.current;
-    if (diff > 45) {
-      nextPhoto();
-    } else if (diff < -45) {
-      prevPhoto();
+    if (!isDragging) return;
+    setIsDragging(false);
+
+    if (zoomLevel === 1) {
+      if (dragOffset < -50) {
+        nextPhoto();
+      } else if (dragOffset > 50) {
+        prevPhoto();
+      }
+      setDragOffset(0);
     }
-    touchStartX.current = null;
-    touchEndX.current = null;
+
+    startX.current = null;
+    startY.current = null;
   };
 
-  // Mouse drag gestures for desktop modal
+  // Mouse gesture handlers for modal
   const handleMouseDown = (e: React.MouseEvent) => {
-    touchStartX.current = e.clientX;
-    isDragging.current = true;
+    if (e.button !== 0) return; // Primary left button only
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+    initialPan.current = { ...panOffset };
+    setIsDragging(true);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging.current) return;
-    touchEndX.current = e.clientX;
+    if (!isDragging || startX.current === null || startY.current === null) return;
+    const diffX = e.clientX - startX.current;
+    const diffY = e.clientY - startY.current;
+
+    if (zoomLevel > 1) {
+      setPanOffset({
+        x: initialPan.current.x + diffX,
+        y: initialPan.current.y + diffY,
+      });
+    } else {
+      setDragOffset(diffX);
+    }
   };
 
   const handleMouseUp = () => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
-    if (!touchStartX.current || !touchEndX.current) return;
-    const diff = touchStartX.current - touchEndX.current;
-    if (diff > 45) {
-      nextPhoto();
-    } else if (diff < -45) {
-      prevPhoto();
+    if (!isDragging) return;
+    setIsDragging(false);
+
+    if (zoomLevel === 1) {
+      if (dragOffset < -50) {
+        nextPhoto();
+      } else if (dragOffset > 50) {
+        prevPhoto();
+      }
+      setDragOffset(0);
     }
-    touchStartX.current = null;
-    touchEndX.current = null;
+
+    startX.current = null;
+    startY.current = null;
   };
 
-  // Mobile inline carousel touch gestures
+  // Mobile inline carousel touch handlers
   const handleMobileTouchStart = (e: React.TouchEvent) => {
     mobileTouchStartX.current = e.targetTouches[0].clientX;
   };
@@ -333,56 +460,129 @@ export default function PropertyGallery({
         )}
       </div>
 
-      {/* ===== 3. FULL-SCREEN LIGHTBOX MODAL ("Bisa di geser-geser") ===== */}
+      {/* ===== 3. LIGHTGALLERY FULL-SCREEN LIGHTBOX MODAL ===== */}
       {mounted && isOpen && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[9999] flex flex-col bg-nk-dark/95 backdrop-blur-md text-white select-none animate-in fade-in-0 duration-200"
+          className="fixed inset-0 z-[9999] flex flex-col bg-[#0b0b0b]/96 backdrop-blur-md text-white select-none animate-in fade-in-0 duration-200"
           role="dialog"
           aria-modal="true"
-          aria-label={`Galeri foto ${propertyName}`}
+          aria-label={`LightGallery ${propertyName}`}
         >
-          {/* Top Bar */}
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6">
-            <div className="flex flex-col min-w-0 pr-4">
-              <h2 className="text-sm sm:text-base font-medium text-white truncate max-w-[240px] sm:max-w-md">
-                {propertyName}
-              </h2>
-              <span className="text-xs text-white/60 truncate">
-                {currentPhoto?.title}
-              </span>
-            </div>
-
-            {/* Category Filter Pills (Desktop & Tablet) */}
-            <div className="hidden md:flex items-center gap-1.5">
-              {categories.map((cat) => (
-                <button
-                  key={cat.key}
-                  type="button"
-                  onClick={() => {
-                    setActiveCategory(cat.key);
-                    setActiveIdx(0);
-                  }}
-                  className={cn(
-                    "border px-3 py-1 text-xs font-medium transition-colors cursor-pointer",
-                    activeCategory === cat.key
-                      ? "border-nk-accent bg-nk-accent text-white"
-                      : "border-white/15 bg-white/5 text-white/70 hover:bg-white/15 hover:text-white"
-                  )}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Counter + Close Button */}
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="border border-white/10 bg-white/10 px-2.5 py-1 text-xs font-medium text-white/80">
+          {/* ----- Top Toolbar (LightGallery lg-toolbar) ----- */}
+          <div className="h-14 shrink-0 flex items-center justify-between border-b border-white/10 bg-black/50 px-4 sm:px-6 z-40 backdrop-blur-sm">
+            {/* Left: Counter, Title & Category Chips */}
+            <div className="flex items-center gap-3 min-w-0 pr-4">
+              <span className="font-mono text-xs tracking-wider text-white/80 shrink-0">
                 {currentModalIndex + 1} / {filteredImages.length}
               </span>
+              <span className="hidden sm:inline text-white/30">•</span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs sm:text-sm font-medium text-white truncate max-w-[150px] sm:max-w-xs md:max-w-md">
+                  {propertyName}
+                </span>
+                <span className="text-[11px] text-white/60 truncate">
+                  {currentPhoto?.title}
+                </span>
+              </div>
+
+              {/* Category Filter Pills (Desktop) */}
+              <div className="hidden lg:flex items-center gap-1.5 ml-4">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => {
+                      setActiveCategory(cat.key);
+                      setActiveIdx(0);
+                      resetZoomAndPan();
+                    }}
+                    className={cn(
+                      "border px-2.5 py-0.5 text-[11px] font-medium transition-colors cursor-pointer",
+                      activeCategory === cat.key
+                        ? "border-nk-warm bg-white/20 text-white"
+                        : "border-white/10 bg-white/5 text-white/70 hover:bg-white/15 hover:text-white"
+                    )}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: LightGallery Tool Buttons */}
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+              {/* Zoom Out Button */}
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                disabled={zoomLevel <= 1}
+                title="Perkecil ( - )"
+                className="grid size-8 sm:size-9 place-items-center text-white/80 hover:text-white hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                aria-label="Zoom out"
+              >
+                <ZoomOut className="size-4 sm:size-4.5" />
+              </button>
+
+              {/* Zoom Percentage / Reset Button */}
+              <button
+                type="button"
+                onClick={resetZoomAndPan}
+                title="Reset Zoom"
+                className="font-mono text-[11px] text-white/80 hover:text-white px-1.5 py-0.5 hover:bg-white/10 transition-colors cursor-pointer"
+                aria-label="Reset zoom"
+              >
+                {Math.round(zoomLevel * 100)}%
+              </button>
+
+              {/* Zoom In Button */}
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                disabled={zoomLevel >= 3}
+                title="Perbesar ( + )"
+                className="grid size-8 sm:size-9 place-items-center text-white/80 hover:text-white hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                aria-label="Zoom in"
+              >
+                <ZoomIn className="size-4 sm:size-4.5" />
+              </button>
+
+              <span className="text-white/20 mx-1">|</span>
+
+              {/* Toggle Thumbnails Drawer Button */}
+              <button
+                type="button"
+                onClick={() => setShowThumbnails((prev) => !prev)}
+                title="Tampilkan / Sembunyikan Thumbnail ( T )"
+                className={cn(
+                  "grid size-8 sm:size-9 place-items-center text-white/80 hover:text-white hover:bg-white/10 active:scale-95 transition-colors cursor-pointer",
+                  showThumbnails && "bg-white/15 text-white"
+                )}
+                aria-label="Toggle thumbnails"
+              >
+                <LayoutGrid className="size-4 sm:size-4.5" />
+              </button>
+
+              {/* Toggle Fullscreen Button */}
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                title="Layar Penuh ( F )"
+                className="grid size-8 sm:size-9 place-items-center text-white/80 hover:text-white hover:bg-white/10 active:scale-95 transition-colors cursor-pointer"
+                aria-label="Toggle fullscreen"
+              >
+                {isFullscreen ? (
+                  <Minimize className="size-4 sm:size-4.5" />
+                ) : (
+                  <Maximize className="size-4 sm:size-4.5" />
+                )}
+              </button>
+
+              {/* Close Button */}
               <button
                 type="button"
                 onClick={closeLightbox}
-                className="grid size-9 place-items-center border border-white/10 bg-white/10 text-white/80 transition-colors hover:bg-white/25 hover:text-white active:scale-95 cursor-pointer z-30 pointer-events-auto"
+                title={`Tutup ( Esc ) — ${tClose}`}
+                className="grid size-8 sm:size-9 place-items-center text-white/80 hover:text-white hover:bg-red-500/80 active:scale-95 transition-colors cursor-pointer ml-1"
                 aria-label={tClose}
               >
                 <X className="size-5" />
@@ -390,17 +590,18 @@ export default function PropertyGallery({
             </div>
           </div>
 
-          {/* Main Photo Slide Viewport (Touch & Drag enabled) */}
+          {/* ----- Main Viewport Slider Track (LightGallery lg-inner) ----- */}
           <div
-            className="relative flex-1 flex items-center justify-center p-4 sm:p-8 overflow-hidden cursor-grab active:cursor-grabbing"
+            className="relative flex-1 flex items-center justify-center overflow-hidden"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
           >
-            {/* Prev Button */}
+            {/* Left Prev Navigation Arrow (LightGallery lg-prev) */}
             {filteredImages.length > 1 && (
               <button
                 type="button"
@@ -408,24 +609,34 @@ export default function PropertyGallery({
                   e.stopPropagation();
                   prevPhoto();
                 }}
-                className="absolute left-3 sm:left-6 z-30 pointer-events-auto grid size-10 sm:size-12 place-items-center border border-white/20 bg-black/60 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 active:scale-95 cursor-pointer"
+                className="absolute left-3 sm:left-6 z-30 pointer-events-auto grid size-11 sm:size-12 place-items-center border border-white/15 bg-black/50 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 hover:scale-105 active:scale-95 cursor-pointer"
                 aria-label="Foto sebelumnya"
+                title="Sebelumnya ( ← )"
               >
                 <ChevronLeft className="size-6" />
               </button>
             )}
 
-            {/* Active Displayed Image */}
-            <div className="relative max-h-[70vh] sm:max-h-[76vh] w-full flex items-center justify-center pointer-events-none select-none">
+            {/* Active Displayed Image with Real-time Drag Displacement & Zoom */}
+            <div
+              className="relative max-h-[70vh] sm:max-h-[74vh] w-full flex items-center justify-center select-none"
+              style={{
+                transform: `translate3d(${dragOffset + panOffset.x}px, ${panOffset.y}px, 0) scale(${zoomLevel})`,
+                transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+                cursor: zoomLevel > 1 ? "move" : "grab",
+              }}
+              onDoubleClick={handleDoubleClick}
+              title={zoomLevel === 1 ? "Klik ganda untuk perbesar 2x" : "Klik ganda untuk reset"}
+            >
               <img
                 src={currentPhoto?.url}
                 alt={currentPhoto?.title || propertyName}
                 draggable={false}
-                className="max-h-[70vh] sm:max-h-[76vh] w-auto max-w-full object-contain shadow-2xl transition-all duration-300 pointer-events-none select-none"
+                className="max-h-[70vh] sm:max-h-[74vh] w-auto max-w-full object-contain shadow-2xl pointer-events-none select-none transition-opacity duration-200"
               />
             </div>
 
-            {/* Next Button */}
+            {/* Right Next Navigation Arrow (LightGallery lg-next) */}
             {filteredImages.length > 1 && (
               <button
                 type="button"
@@ -433,47 +644,61 @@ export default function PropertyGallery({
                   e.stopPropagation();
                   nextPhoto();
                 }}
-                className="absolute right-3 sm:right-6 z-30 pointer-events-auto grid size-10 sm:size-12 place-items-center border border-white/20 bg-black/60 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 active:scale-95 cursor-pointer"
+                className="absolute right-3 sm:right-6 z-30 pointer-events-auto grid size-11 sm:size-12 place-items-center border border-white/15 bg-black/50 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 hover:scale-105 active:scale-95 cursor-pointer"
                 aria-label="Foto berikutnya"
+                title="Berikutnya ( → )"
               >
                 <ChevronRight className="size-6" />
               </button>
             )}
-          </div>
 
-          {/* Caption Tag */}
-          <div className="text-center py-1">
-            <span className="inline-block text-xs sm:text-sm font-medium text-white/70">
-              {currentPhoto?.title}
-            </span>
-          </div>
-
-          {/* Bottom Thumbnail Strip */}
-          <div className="border-t border-white/10 bg-black/40 px-4 py-2.5">
-            <div className="mx-auto flex max-w-4xl items-center justify-center gap-2 overflow-x-auto py-1">
-              {filteredImages.map((img, idx) => (
-                <button
-                  key={`${img.url}-${idx}`}
-                  type="button"
-                  onClick={() => setActiveIdx(idx)}
-                  className={cn(
-                    "relative size-14 sm:size-16 shrink-0 overflow-hidden border transition-all cursor-pointer",
-                    idx === currentModalIndex
-                      ? "border-2 border-nk-accent opacity-100 ring-1 ring-nk-accent"
-                      : "border-white/20 opacity-50 hover:opacity-85 hover:border-white/50"
-                  )}
-                  aria-label={`Lihat foto ${idx + 1}`}
-                >
-                  <img
-                    src={img.url}
-                    alt={img.title}
-                    draggable={false}
-                    className="h-full w-full object-cover pointer-events-none select-none"
-                  />
-                </button>
-              ))}
+            {/* Bottom Caption Pill */}
+            <div className="absolute bottom-3 inset-x-0 z-20 flex justify-center pointer-events-none px-4">
+              <span className="inline-block border border-white/15 bg-black/60 px-3.5 py-1 text-xs font-medium text-white/90 backdrop-blur-sm">
+                {currentPhoto?.title}
+              </span>
             </div>
           </div>
+
+          {/* ----- Bottom Thumbnail Drawer (LightGallery lg-thumb) ----- */}
+          {showThumbnails && (
+            <div className="shrink-0 border-t border-white/10 bg-black/75 px-4 py-2.5 z-40 backdrop-blur-md transition-all duration-300">
+              <div className="mx-auto flex max-w-4xl items-center justify-center gap-2 overflow-x-auto py-1">
+                {filteredImages.map((img, idx) => {
+                  const isActive = idx === currentModalIndex;
+                  return (
+                    <button
+                      key={`${img.url}-${idx}`}
+                      type="button"
+                      onClick={() => {
+                        setActiveIdx(idx);
+                        resetZoomAndPan();
+                      }}
+                      className={cn(
+                        "group relative size-14 sm:size-16 shrink-0 overflow-hidden border transition-all cursor-pointer",
+                        isActive
+                          ? "border-2 border-white opacity-100 ring-2 ring-white/30 scale-105"
+                          : "border-white/15 opacity-40 hover:opacity-85 hover:border-white/40"
+                      )}
+                      aria-label={`Lihat foto ${idx + 1}`}
+                      title={img.title}
+                    >
+                      {/* LightGallery active caret indicator */}
+                      {isActive && (
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-white z-10" />
+                      )}
+                      <img
+                        src={img.url}
+                        alt={img.title}
+                        draggable={false}
+                        className="h-full w-full object-cover pointer-events-none select-none transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>,
         document.body
       )}
