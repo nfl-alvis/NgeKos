@@ -189,7 +189,7 @@ export default function PropertyGallery({
         {/* Main large photo (Left) - full height to the bottom, zero space */}
         <div
           onClick={() => openLightbox(0)}
-          className="group relative h-full w-full overflow-hidden bg-nk-section cursor-pointer"
+          className="group relative h-full w-full min-h-0 overflow-hidden bg-nk-section cursor-pointer"
           role="button"
           tabIndex={0}
           aria-label={`Buka foto utama ${propertyName}`}
@@ -209,11 +209,11 @@ export default function PropertyGallery({
         </div>
 
         {/* 2 stacked photos (Right) */}
-        <div className="grid grid-rows-2 gap-2 h-full">
+        <div className="grid grid-rows-2 gap-2 h-full min-h-0">
           {/* Top photo (index 1) */}
           <div
             onClick={() => openLightbox(1)}
-            className="group relative h-full w-full overflow-hidden bg-nk-section cursor-pointer"
+            className="group relative h-full w-full min-h-0 overflow-hidden bg-nk-section cursor-pointer"
             role="button"
             tabIndex={0}
             aria-label={`Buka foto kedua ${propertyName}`}
@@ -229,7 +229,7 @@ export default function PropertyGallery({
           {/* Bottom photo (index 2) WITH "Lihat Semua Foto" button */}
           <div
             onClick={() => openLightbox(2)}
-            className="group relative h-full w-full overflow-hidden bg-nk-section cursor-pointer"
+            className="group relative h-full w-full min-h-0 overflow-hidden bg-nk-section cursor-pointer"
             role="button"
             tabIndex={0}
             aria-label={`Buka foto ketiga ${propertyName}`}
@@ -248,7 +248,7 @@ export default function PropertyGallery({
                 e.stopPropagation();
                 openLightbox(0);
               }}
-              className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-10 inline-flex items-center gap-2 border border-nk-border bg-nk-surface/95 px-3.5 py-2 text-xs sm:text-sm font-medium text-nk-text shadow-sm backdrop-blur-sm transition-all hover:border-nk-accent hover:bg-nk-surface hover:text-nk-accent active:scale-95"
+              className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-10 inline-flex items-center gap-2 border border-nk-border bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-nk-text shadow-sm backdrop-blur-sm transition-all hover:border-nk-accent hover:text-nk-accent active:scale-95"
             >
               <Images className="size-4 text-nk-accent" />
               <span>{tViewAll} ({images.length})</span>
