@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Maximize2,
   Grid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -185,7 +184,7 @@ export default function PropertyGallery({
   return (
     <>
       {/* ===== 1. DESKTOP GALLERY GRID (lg screens) ===== */}
-      <div className="hidden lg:grid grid-cols-[2fr_1fr] gap-2 w-full h-[400px] lg:h-[450px] xl:h-[480px]">
+      <div className="hidden lg:grid grid-cols-[2fr_1fr] gap-[1px] bg-nk-border w-full h-[400px] lg:h-[450px] xl:h-[480px]">
         {/* Main large photo (Left) - full height to the bottom, zero space */}
         <div
           onClick={() => openLightbox(0)}
@@ -197,19 +196,12 @@ export default function PropertyGallery({
           <img
             src={images[0]?.url || "/images/kost/kost-dparagon-ijen-nirwana/main.jpg"}
             alt={images[0]?.title || propertyName}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90"
           />
-          <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/15" />
-          <div className="absolute top-3 left-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <span className="inline-flex items-center gap-1.5 border border-white/20 bg-black/70 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
-              <Maximize2 className="size-3.5" />
-              Perbesar
-            </span>
-          </div>
         </div>
 
         {/* 2 stacked photos (Right) */}
-        <div className="grid grid-rows-2 gap-2 h-full min-h-0">
+        <div className="grid grid-rows-2 gap-[1px] bg-nk-border h-full min-h-0">
           {/* Top photo (index 1) */}
           <div
             onClick={() => openLightbox(1)}
@@ -221,9 +213,8 @@ export default function PropertyGallery({
             <img
               src={images[1]?.url || images[0]?.url}
               alt={images[1]?.title || `${propertyName} - kamar`}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90"
             />
-            <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/15" />
           </div>
 
           {/* Bottom photo (index 2) WITH "Lihat Semua Foto" button */}
@@ -237,9 +228,8 @@ export default function PropertyGallery({
             <img
               src={images[2]?.url || images[0]?.url}
               alt={images[2]?.title || `${propertyName} - fasilitas`}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90"
             />
-            <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/15" />
 
             {/* Tombol Lihat Semua Foto di Kanan Bawah */}
             <button
@@ -248,7 +238,7 @@ export default function PropertyGallery({
                 e.stopPropagation();
                 openLightbox(0);
               }}
-              className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-10 inline-flex items-center gap-2 border border-nk-border bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-nk-text shadow-sm backdrop-blur-sm transition-all hover:border-nk-accent hover:text-nk-accent active:scale-95"
+              className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-10 inline-flex items-center gap-2 border border-nk-border bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-nk-text shadow-sm transition-all hover:border-nk-accent hover:text-nk-accent active:scale-95"
             >
               <Images className="size-4 text-nk-accent" />
               <span>{tViewAll} ({images.length})</span>
