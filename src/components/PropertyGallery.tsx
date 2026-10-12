@@ -35,7 +35,6 @@ export default function PropertyGallery({
   const [isOpen, setIsOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const [mobileIdx, setMobileIdx] = useState(0);
-  const [activeCategory, setActiveCategory] = useState<string>("all");
 
   // LightGallery features: Zoom & Pan
   const [zoomLevel, setZoomLevel] = useState<number>(1);
@@ -53,17 +52,11 @@ export default function PropertyGallery({
     setMounted(true);
   }, []);
 
-  // Filtered images in modal if category selected
-  const filteredImages =
-    activeCategory === "all"
-      ? images
-      : images.filter((img) => img.category === activeCategory);
-
   const currentModalIndex = Math.min(
     Math.max(0, activeIdx),
-    Math.max(0, filteredImages.length - 1)
+    Math.max(0, images.length - 1)
   );
-  const currentPhoto = filteredImages[currentModalIndex] || images[0];
+  const currentPhoto = images[currentModalIndex] || images[0];
 
   // Drag coordinates ref
   const startX = useRef<number | null>(null);
@@ -81,7 +74,6 @@ export default function PropertyGallery({
   }, []);
 
   const openLightbox = (index = 0) => {
-    setActiveCategory("all");
     setActiveIdx(index);
     resetZoomAndPan();
     setIsOpen(true);
@@ -97,13 +89,13 @@ export default function PropertyGallery({
 
   const nextPhoto = useCallback(() => {
     resetZoomAndPan();
-    setActiveIdx((prev) => (prev + 1) % filteredImages.length);
-  }, [filteredImages.length, resetZoomAndPan]);
+    setActiveIdx((prev) => (prev + 1) % images.length);
+  }, [images.length, resetZoomAndPan]);
 
   const prevPhoto = useCallback(() => {
     resetZoomAndPan();
-    setActiveIdx((prev) => (prev - 1 + filteredImages.length) % filteredImages.length);
-  }, [filteredImages.length, resetZoomAndPan]);
+    setActiveIdx((prev) => (prev - 1 + images.length) % images.length);
+  }, [images.length, resetZoomAndPan]);
 
   const nextMobile = useCallback(() => {
     setMobileIdx((prev) => (prev + 1) % images.length);
@@ -296,23 +288,6 @@ export default function PropertyGallery({
     mobileTouchEndX.current = null;
   };
 
-  // Categories available for filtering
-  const categories = [
-    { key: "all", label: `Semua (${images.length})` },
-    ...Array.from(new Set(images.map((img) => img.category))).map((cat) => {
-      const count = images.filter((img) => img.category === cat).length;
-      const label =
-        cat === "facade"
-          ? "Depan"
-          : cat === "room"
-          ? "Kamar"
-          : cat === "bathroom"
-          ? "Kamar Mandi"
-          : "Fasilitas";
-      return { key: cat, label: `${label} (${count})` };
-    }),
-  ];
-
   return (
     <>
       {/* ===== 1. DESKTOP GALLERY GRID (lg screens) ===== */}
@@ -469,44 +444,19 @@ export default function PropertyGallery({
           aria-label={`LightGallery ${propertyName}`}
         >
           {/* ----- Top Toolbar (LightGallery lg-toolbar) ----- */}
-          <div className="h-14 shrink-0 flex items-center justify-between border-b border-white/10 bg-black/50 px-4 sm:px-6 z-40 backdrop-blur-sm">
-            {/* Left: Counter, Title & Category Chips */}
-            <div className="flex items-center gap-3 min-w-0 pr-4">
-              <span className="font-mono text-xs tracking-wider text-white/80 shrink-0">
-                {currentModalIndex + 1} / {filteredImages.length}
+          <div className="relative h-14 shrink-0 flex items-center justify-between border-b border-white/10 bg-black/50 px-4 sm:px-6 z-40 backdrop-blur-sm">
+            {/* Left: Property Name (hidden on small mobile, visible on sm+) */}
+            <div className="flex items-center min-w-0 max-w-[28%] sm:max-w-[36%]">
+              <span className="hidden sm:inline text-xs sm:text-sm font-medium text-white/90 truncate">
+                {propertyName}
               </span>
-              <span className="hidden sm:inline text-white/30">•</span>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs sm:text-sm font-medium text-white truncate max-w-[150px] sm:max-w-xs md:max-w-md">
-                  {propertyName}
-                </span>
-                <span className="text-[11px] text-white/60 truncate">
-                  {currentPhoto?.title}
-                </span>
-              </div>
+            </div>
 
-              {/* Category Filter Pills (Desktop) */}
-              <div className="hidden lg:flex items-center gap-1.5 ml-4">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.key}
-                    type="button"
-                    onClick={() => {
-                      setActiveCategory(cat.key);
-                      setActiveIdx(0);
-                      resetZoomAndPan();
-                    }}
-                    className={cn(
-                      "border px-2.5 py-0.5 text-[11px] font-medium transition-colors cursor-pointer",
-                      activeCategory === cat.key
-                        ? "border-nk-warm bg-white/20 text-white"
-                        : "border-white/10 bg-white/5 text-white/70 hover:bg-white/15 hover:text-white"
-                    )}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
+            {/* Center: Image Counter Only (e.g. 1 / 4) */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none select-none">
+              <span className="font-mono text-sm sm:text-base font-semibold tracking-widest text-white">
+                {currentModalIndex + 1} / {images.length}
+              </span>
             </div>
 
             {/* Right: LightGallery Tool Buttons */}
@@ -602,7 +552,7 @@ export default function PropertyGallery({
             onMouseLeave={handleMouseUp}
           >
             {/* Left Prev Navigation Arrow (LightGallery lg-prev) */}
-            {filteredImages.length > 1 && (
+            {images.length > 1 && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -637,7 +587,7 @@ export default function PropertyGallery({
             </div>
 
             {/* Right Next Navigation Arrow (LightGallery lg-next) */}
-            {filteredImages.length > 1 && (
+            {images.length > 1 && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -664,7 +614,7 @@ export default function PropertyGallery({
           {showThumbnails && (
             <div className="shrink-0 border-t border-white/10 bg-black/75 px-4 py-2.5 z-40 backdrop-blur-md transition-all duration-300">
               <div className="mx-auto flex max-w-4xl items-center justify-center gap-2 overflow-x-auto py-1">
-                {filteredImages.map((img, idx) => {
+                {images.map((img, idx) => {
                   const isActive = idx === currentModalIndex;
                   return (
                     <button
