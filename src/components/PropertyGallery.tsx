@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import Image from "next/image";
+import { createPortal } from "react-dom";
 import {
   Images,
   ChevronLeft,
@@ -26,10 +26,15 @@ export default function PropertyGallery({
   tViewAll = "Lihat semua foto",
   tClose = "Tutup galeri",
 }: PropertyGalleryProps) {
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const [mobileIdx, setMobileIdx] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Filtered images in modal if category selected
   const filteredImages =
@@ -188,7 +193,7 @@ export default function PropertyGallery({
         {/* Main large photo (Left) - full height to the bottom, zero space */}
         <div
           onClick={() => openLightbox(0)}
-          className="group relative h-full w-full min-h-0 overflow-hidden bg-nk-section cursor-pointer"
+          className="group relative h-full w-full min-h-0 overflow-hidden bg-nk-section cursor-pointer select-none"
           role="button"
           tabIndex={0}
           aria-label={`Buka foto utama ${propertyName}`}
@@ -196,7 +201,8 @@ export default function PropertyGallery({
           <img
             src={images[0]?.url || "/images/kost/kost-dparagon-ijen-nirwana/main.jpg"}
             alt={images[0]?.title || propertyName}
-            className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90"
+            draggable={false}
+            className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90 pointer-events-none select-none"
           />
         </div>
 
@@ -205,7 +211,7 @@ export default function PropertyGallery({
           {/* Top photo (index 1) */}
           <div
             onClick={() => openLightbox(1)}
-            className="group relative h-full w-full min-h-0 overflow-hidden bg-nk-section cursor-pointer"
+            className="group relative h-full w-full min-h-0 overflow-hidden bg-nk-section cursor-pointer select-none"
             role="button"
             tabIndex={0}
             aria-label={`Buka foto kedua ${propertyName}`}
@@ -213,14 +219,15 @@ export default function PropertyGallery({
             <img
               src={images[1]?.url || images[0]?.url}
               alt={images[1]?.title || `${propertyName} - kamar`}
-              className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90"
+              draggable={false}
+              className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90 pointer-events-none select-none"
             />
           </div>
 
           {/* Bottom photo (index 2) WITH "Lihat Semua Foto" button */}
           <div
             onClick={() => openLightbox(2)}
-            className="group relative h-full w-full min-h-0 overflow-hidden bg-nk-section cursor-pointer"
+            className="group relative h-full w-full min-h-0 overflow-hidden bg-nk-section cursor-pointer select-none"
             role="button"
             tabIndex={0}
             aria-label={`Buka foto ketiga ${propertyName}`}
@@ -228,7 +235,8 @@ export default function PropertyGallery({
             <img
               src={images[2]?.url || images[0]?.url}
               alt={images[2]?.title || `${propertyName} - fasilitas`}
-              className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90"
+              draggable={false}
+              className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90 pointer-events-none select-none"
             />
 
             {/* Tombol Lihat Semua Foto di Kanan Bawah */}
@@ -238,7 +246,7 @@ export default function PropertyGallery({
                 e.stopPropagation();
                 openLightbox(0);
               }}
-              className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-10 inline-flex items-center gap-2 border border-nk-border bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-nk-text shadow-sm transition-all hover:border-nk-accent hover:text-nk-accent active:scale-95"
+              className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 pointer-events-auto inline-flex items-center gap-2 border border-nk-border bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-nk-text shadow-sm transition-all hover:border-nk-accent hover:text-nk-accent active:scale-95 cursor-pointer"
             >
               <Images className="size-4 text-nk-accent" />
               <span>{tViewAll} ({images.length})</span>
@@ -264,7 +272,8 @@ export default function PropertyGallery({
           <img
             src={images[mobileIdx]?.url || images[0]?.url}
             alt={images[mobileIdx]?.title || propertyName}
-            className="h-full w-full object-cover transition-opacity duration-300"
+            draggable={false}
+            className="h-full w-full object-cover transition-opacity duration-300 pointer-events-none select-none"
           />
 
           {/* Slide overlay hint */}
@@ -288,7 +297,7 @@ export default function PropertyGallery({
               e.stopPropagation();
               openLightbox(mobileIdx);
             }}
-            className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 border border-white/20 bg-black/60 px-2.5 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-95"
+            className="absolute bottom-3 right-3 z-20 pointer-events-auto inline-flex items-center gap-1.5 border border-white/20 bg-black/60 px-2.5 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-95 cursor-pointer"
           >
             <Images className="size-3.5 text-nk-warm" />
             <span>{tViewAll} ({images.length})</span>
@@ -304,7 +313,7 @@ export default function PropertyGallery({
                 e.stopPropagation();
                 prevMobile();
               }}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 grid size-8 sm:size-9 place-items-center border border-white/20 bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-90"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 pointer-events-auto grid size-8 sm:size-9 place-items-center border border-white/20 bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-90 cursor-pointer"
               aria-label="Foto sebelumnya"
             >
               <ChevronLeft className="size-4 sm:size-5" />
@@ -315,7 +324,7 @@ export default function PropertyGallery({
                 e.stopPropagation();
                 nextMobile();
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10 grid size-8 sm:size-9 place-items-center border border-white/20 bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-90"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 pointer-events-auto grid size-8 sm:size-9 place-items-center border border-white/20 bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-90 cursor-pointer"
               aria-label="Foto berikutnya"
             >
               <ChevronRight className="size-4 sm:size-5" />
@@ -325,9 +334,9 @@ export default function PropertyGallery({
       </div>
 
       {/* ===== 3. FULL-SCREEN LIGHTBOX MODAL ("Bisa di geser-geser") ===== */}
-      {isOpen && (
+      {mounted && isOpen && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[100] flex flex-col bg-nk-dark/95 backdrop-blur-md text-white select-none animate-in fade-in-0 duration-200"
+          className="fixed inset-0 z-[9999] flex flex-col bg-nk-dark/95 backdrop-blur-md text-white select-none animate-in fade-in-0 duration-200"
           role="dialog"
           aria-modal="true"
           aria-label={`Galeri foto ${propertyName}`}
@@ -354,7 +363,7 @@ export default function PropertyGallery({
                     setActiveIdx(0);
                   }}
                   className={cn(
-                    "border px-3 py-1 text-xs font-medium transition-colors",
+                    "border px-3 py-1 text-xs font-medium transition-colors cursor-pointer",
                     activeCategory === cat.key
                       ? "border-nk-accent bg-nk-accent text-white"
                       : "border-white/15 bg-white/5 text-white/70 hover:bg-white/15 hover:text-white"
@@ -373,7 +382,7 @@ export default function PropertyGallery({
               <button
                 type="button"
                 onClick={closeLightbox}
-                className="grid size-9 place-items-center border border-white/10 bg-white/10 text-white/80 transition-colors hover:bg-white/25 hover:text-white active:scale-95"
+                className="grid size-9 place-items-center border border-white/10 bg-white/10 text-white/80 transition-colors hover:bg-white/25 hover:text-white active:scale-95 cursor-pointer z-30 pointer-events-auto"
                 aria-label={tClose}
               >
                 <X className="size-5" />
@@ -399,7 +408,7 @@ export default function PropertyGallery({
                   e.stopPropagation();
                   prevPhoto();
                 }}
-                className="absolute left-3 sm:left-6 z-20 grid size-10 sm:size-12 place-items-center border border-white/20 bg-black/60 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 active:scale-95"
+                className="absolute left-3 sm:left-6 z-30 pointer-events-auto grid size-10 sm:size-12 place-items-center border border-white/20 bg-black/60 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 active:scale-95 cursor-pointer"
                 aria-label="Foto sebelumnya"
               >
                 <ChevronLeft className="size-6" />
@@ -407,11 +416,12 @@ export default function PropertyGallery({
             )}
 
             {/* Active Displayed Image */}
-            <div className="relative max-h-[70vh] sm:max-h-[76vh] w-full flex items-center justify-center pointer-events-none">
+            <div className="relative max-h-[70vh] sm:max-h-[76vh] w-full flex items-center justify-center pointer-events-none select-none">
               <img
                 src={currentPhoto?.url}
                 alt={currentPhoto?.title || propertyName}
-                className="max-h-[70vh] sm:max-h-[76vh] w-auto max-w-full object-contain shadow-2xl transition-all duration-300"
+                draggable={false}
+                className="max-h-[70vh] sm:max-h-[76vh] w-auto max-w-full object-contain shadow-2xl transition-all duration-300 pointer-events-none select-none"
               />
             </div>
 
@@ -423,7 +433,7 @@ export default function PropertyGallery({
                   e.stopPropagation();
                   nextPhoto();
                 }}
-                className="absolute right-3 sm:right-6 z-20 grid size-10 sm:size-12 place-items-center border border-white/20 bg-black/60 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 active:scale-95"
+                className="absolute right-3 sm:right-6 z-30 pointer-events-auto grid size-10 sm:size-12 place-items-center border border-white/20 bg-black/60 text-white/90 backdrop-blur-sm transition-all hover:bg-black/90 active:scale-95 cursor-pointer"
                 aria-label="Foto berikutnya"
               >
                 <ChevronRight className="size-6" />
@@ -447,7 +457,7 @@ export default function PropertyGallery({
                   type="button"
                   onClick={() => setActiveIdx(idx)}
                   className={cn(
-                    "relative size-14 sm:size-16 shrink-0 overflow-hidden border transition-all",
+                    "relative size-14 sm:size-16 shrink-0 overflow-hidden border transition-all cursor-pointer",
                     idx === currentModalIndex
                       ? "border-2 border-nk-accent opacity-100 ring-1 ring-nk-accent"
                       : "border-white/20 opacity-50 hover:opacity-85 hover:border-white/50"
@@ -457,13 +467,15 @@ export default function PropertyGallery({
                   <img
                     src={img.url}
                     alt={img.title}
-                    className="h-full w-full object-cover"
+                    draggable={false}
+                    className="h-full w-full object-cover pointer-events-none select-none"
                   />
                 </button>
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
