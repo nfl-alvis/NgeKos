@@ -13,6 +13,7 @@ import {
   MapPin,
   Search,
   LocateFixed,
+  XCircle,
   BedDouble,
   Camera,
   Check,
@@ -340,11 +341,14 @@ export default function NewPropertyPage() {
   useEffect(() => {
     if (!alamatSearch || alamatSearch.trim().length < 3) {
       setSearchResults([]);
+      setIsSearchingGeo(false);
       return;
     }
 
+    setIsSearchingGeo(true);
+    setShowResults(true);
+
     const timer = setTimeout(async () => {
-      setIsSearchingGeo(true);
       try {
         const res = await fetch(
           `/api/geocode?text=${encodeURIComponent(alamatSearch.trim())}`
@@ -352,7 +356,6 @@ export default function NewPropertyPage() {
         if (res.ok) {
           const json = await res.json();
           setSearchResults(json.features || []);
-          setShowResults(true);
         }
       } catch (e) {
         console.error("Geocode error", e);
@@ -716,15 +719,14 @@ export default function NewPropertyPage() {
                 />
 
                 {/* 2. Floating Search Bar riding on top of the map */}
-                <div className="absolute top-3.5 inset-x-3.5 sm:top-4 sm:inset-x-4 z-[500]">
+                <div className="absolute top-3.5 inset-x-3.5 sm:top-4 sm:inset-x-4 z-20">
                   <div className="relative">
-                    <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-nk-text-muted" />
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-nk-text-muted" />
                     <input
                       type="text"
                       value={alamatSearch}
                       onChange={(e) => {
                         setAlamatSearch(e.target.value);
-                        setShowResults(true);
                       }}
                       onFocus={() => {
                         if (searchResults.length > 0) setShowResults(true);
@@ -732,27 +734,60 @@ export default function NewPropertyPage() {
                       placeholder="Cari jalan, perumahan, kampus, atau nama kos..."
                       className="h-11 w-full rounded-lg border border-nk-border bg-nk-surface/95 pl-10 pr-10 text-sm text-nk-text placeholder:text-nk-text-muted shadow-md backdrop-blur-sm transition-all focus:border-nk-accent focus:bg-nk-surface focus:outline-none"
                     />
-                    {isSearchingGeo && (
-                      <Loader2 className="absolute right-3.5 top-1/2 size-4 -translate-y-1/2 animate-spin text-nk-text-muted" />
+
+                    {/* Reset Button (X inside circle, only appears when text exists) */}
+                    {alamatSearch.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAlamatSearch("");
+                          setSearchResults([]);
+                          setShowResults(false);
+                          setIsSearchingGeo(false);
+                        }}
+                        title="Hapus pencarian"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 z-10 grid size-6 place-items-center rounded-full text-nk-text-muted hover:bg-nk-warm hover:text-nk-text transition-colors cursor-pointer"
+                        aria-label="Hapus teks pencarian"
+                      >
+                        <XCircle className="size-4" />
+                      </button>
                     )}
 
-                    {/* Autocomplete Dropdown floating below search bar */}
-                    {showResults && searchResults.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1.5 max-h-56 overflow-y-auto rounded-lg border border-nk-border bg-nk-surface py-1 shadow-xl z-[510]">
-                        {searchResults.map((item, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => handleSelectLocation(item)}
-                            className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left text-xs transition-colors hover:bg-nk-warm cursor-pointer"
-                          >
-                            <MapPin className="mt-0.5 size-3.5 shrink-0 text-nk-accent" />
-                            <div>
-                              <p className="font-medium text-nk-text">{item.name}</p>
-                              <p className="text-nk-text-muted line-clamp-1">{item.formatted}</p>
-                            </div>
-                          </button>
-                        ))}
+                    {/* Autocomplete Dropdown with Skeleton Screen */}
+                    {showResults && (isSearchingGeo || searchResults.length > 0) && (
+                      <div className="absolute left-0 right-0 top-full mt-1.5 max-h-56 overflow-y-auto rounded-lg border border-nk-border bg-nk-surface py-1 shadow-xl z-30">
+                        {isSearchingGeo ? (
+                          <div className="space-y-1 p-1">
+                            {[1, 2, 3].map((idx) => (
+                              <div
+                                key={idx}
+                                className="relative overflow-hidden flex items-start gap-2.5 px-3 py-2.5 rounded-md"
+                              >
+                                <div className="mt-0.5 size-3.5 shrink-0 rounded-full bg-stone-200 animate-pulse" />
+                                <div className="flex-1 space-y-1.5 py-0.5">
+                                  <div className="h-3 w-2/5 rounded bg-stone-200 animate-pulse" />
+                                  <div className="h-2.5 w-4/5 rounded bg-stone-200/70 animate-pulse" />
+                                </div>
+                                <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
+                              </div>
+                            ))}
+                          </div>
+                        ) : searchResults.length > 0 ? (
+                          searchResults.map((item, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleSelectLocation(item)}
+                              className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left text-xs transition-colors hover:bg-nk-warm cursor-pointer"
+                            >
+                              <MapPin className="mt-0.5 size-3.5 shrink-0 text-nk-accent" />
+                              <div>
+                                <p className="font-medium text-nk-text">{item.name}</p>
+                                <p className="text-nk-text-muted line-clamp-1">{item.formatted}</p>
+                              </div>
+                            </button>
+                          ))
+                        ) : null}
                       </div>
                     )}
                   </div>
