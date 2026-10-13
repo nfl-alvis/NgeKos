@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
@@ -10,6 +11,8 @@ import { useSession } from "@/components/SessionProvider";
 import {
   Building2,
   MapPin,
+  Search,
+  LocateFixed,
   BedDouble,
   Camera,
   Check,
@@ -79,6 +82,18 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { formatIDR } from "@/lib/utils";
+
+const InteractiveMapPicker = dynamic(
+  () => import("@/components/InteractiveMapPicker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center bg-nk-warm">
+        <Loader2 className="size-6 animate-spin text-nk-accent" />
+      </div>
+    ),
+  }
+);
 
 const STEPS = [
   { id: 1, label: "Data Kos", icon: Building2 },
@@ -359,6 +374,25 @@ export default function NewPropertyPage() {
     if (item.city) setKabupatenKota(item.city);
     if (item.state) setProvinsi(item.state);
     if (item.postcode) setKodePos(item.postcode);
+  };
+
+  // Handle click on map to pick location
+  const handleMapPickLocation = async (newLat: number, newLon: number) => {
+    setLat(newLat);
+    setLon(newLon);
+
+    try {
+      const res = await fetch(`/api/geocode?lat=${newLat}&lon=${newLon}`);
+      if (res.ok) {
+        const json = await res.json();
+        const first = json.features?.[0];
+        if (first) {
+          handleSelectLocation(first);
+        }
+      }
+    } catch (err) {
+      console.error("Reverse geocode on map click failed", err);
+    }
   };
 
   // GPS current location
@@ -642,15 +676,30 @@ export default function NewPropertyPage() {
               </p>
             </div>
 
-            {/* Alamat Kos & Pencarian Lokasi */}
+            {/* Peta Interaktif & Pencarian Alamat Kos */}
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-nk-text">
-                Cari Alamat Kos di Peta <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <MapPin className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-nk-text-muted" />
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-nk-text">
+                  Titik Pin Lokasi Kos <span className="text-rose-500">*</span>
+                </label>
+                <span className="text-xs text-nk-text-muted">
+                  Koordinat: {lat.toFixed(5)}, {lon.toFixed(5)}
+                </span>
+              </div>
+
+              {/* Map Container with Floating Search on Top & Target GPS at Bottom-Right */}
+              <div className="relative h-80 sm:h-96 w-full overflow-hidden rounded-xl border border-nk-border bg-nk-warm shadow-sm">
+                {/* 1. Leaflet Interactive Clickable Map */}
+                <InteractiveMapPicker
+                  lat={lat}
+                  lon={lon}
+                  onChangeLocation={handleMapPickLocation}
+                />
+
+                {/* 2. Floating Search Bar riding on top of the map */}
+                <div className="absolute top-3.5 inset-x-3.5 sm:top-4 sm:inset-x-4 z-[500]">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-nk-text-muted" />
                     <input
                       type="text"
                       value={alamatSearch}
@@ -661,65 +710,45 @@ export default function NewPropertyPage() {
                       onFocus={() => {
                         if (searchResults.length > 0) setShowResults(true);
                       }}
-                      placeholder="Ketik nama jalan, perumahan, kampus, atau daerah..."
-                      className="h-11 w-full rounded-lg border border-nk-border bg-nk-bg pl-10 pr-10 text-sm text-nk-text placeholder:text-nk-text-muted focus:border-nk-accent focus:outline-none"
+                      placeholder="Cari jalan, perumahan, kampus, atau nama kos..."
+                      className="h-11 w-full rounded-lg border border-nk-border bg-nk-surface/95 pl-10 pr-10 text-sm text-nk-text placeholder:text-nk-text-muted shadow-md backdrop-blur-sm transition-all focus:border-nk-accent focus:bg-nk-surface focus:outline-none"
                     />
                     {isSearchingGeo && (
                       <Loader2 className="absolute right-3.5 top-1/2 size-4 -translate-y-1/2 animate-spin text-nk-text-muted" />
                     )}
+
+                    {/* Autocomplete Dropdown floating below search bar */}
+                    {showResults && searchResults.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1.5 max-h-56 overflow-y-auto rounded-lg border border-nk-border bg-nk-surface py-1 shadow-xl z-[510]">
+                        {searchResults.map((item, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSelectLocation(item)}
+                            className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left text-xs transition-colors hover:bg-nk-warm cursor-pointer"
+                          >
+                            <MapPin className="mt-0.5 size-3.5 shrink-0 text-nk-accent" />
+                            <div>
+                              <p className="font-medium text-nk-text">{item.name}</p>
+                              <p className="text-nk-text-muted line-clamp-1">{item.formatted}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleUseGPS}
-                    className="inline-flex h-11 items-center gap-1.5 whitespace-nowrap rounded-lg border border-nk-border bg-nk-warm px-3.5 text-xs font-medium text-nk-text hover:bg-nk-border/60 transition-colors"
-                  >
-                    <Navigation className="size-3.5 text-nk-accent" />
-                    <span className="hidden sm:inline">Lokasi Saya</span>
-                  </button>
                 </div>
 
-                {/* Autocomplete Dropdown */}
-                {showResults && searchResults.length > 0 && (
-                  <div className="absolute z-30 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-nk-border bg-nk-surface py-1 shadow-lg">
-                    {searchResults.map((item, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleSelectLocation(item)}
-                        className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left text-xs transition-colors hover:bg-nk-warm"
-                      >
-                        <MapPin className="mt-0.5 size-3.5 shrink-0 text-nk-accent" />
-                        <div>
-                          <p className="font-medium text-nk-text">{item.name}</p>
-                          <p className="text-nk-text-muted line-clamp-1">{item.formatted}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Peta Interaktif OpenStreetMap */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-nk-text">Titik Pin Lokasi Kos</span>
-                <span className="text-xs text-nk-text-muted">
-                  Koordinat: {lat.toFixed(5)}, {lon.toFixed(5)}
-                </span>
-              </div>
-              <div className="relative h-64 w-full overflow-hidden rounded-xl border border-nk-border bg-nk-warm">
-                <iframe
-                  title="Peta Lokasi Kos"
-                  width="100%"
-                  height="100%"
-                  className="border-0"
-                  loading="lazy"
-                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.006}%2C${lat - 0.005}%2C${lon + 0.006}%2C${lat + 0.005}&layer=mapnik&marker=${lat}%2C${lon}`}
-                />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 text-xs text-white">
-                  Geser atau pilih alamat di atas untuk memperbarui pin lokasi kos.
-                </div>
+                {/* 3. Floating Target GPS Button at Bottom-Right */}
+                <button
+                  type="button"
+                  onClick={handleUseGPS}
+                  title="Gunakan Lokasi Saya Saat Ini (GPS)"
+                  className="absolute bottom-4 right-4 z-[400] grid size-10 place-items-center rounded-lg border border-nk-border bg-nk-surface text-nk-text shadow-md hover:bg-nk-warm hover:text-nk-accent active:scale-95 transition-all cursor-pointer"
+                  aria-label="Gunakan lokasi saya saat ini"
+                >
+                  <LocateFixed className="size-5 text-nk-accent" />
+                </button>
               </div>
             </div>
 
