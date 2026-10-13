@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -198,6 +198,7 @@ export default function NewPropertyPage() {
   const [alamatSearch, setAlamatSearch] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearchingGeo, setIsSearchingGeo] = useState(false);
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
   // Map coordinates (default: Bandung / ITB area)
@@ -213,6 +214,17 @@ export default function NewPropertyPage() {
   const [kabupatenKota, setKabupatenKota] = useState("Bandung");
   const [provinsi, setProvinsi] = useState("Jawa Barat");
   const [kodePos, setKodePos] = useState("40132");
+
+  // Wilayah Administrasi gabungan (Contoh: "Rejowinangun, Kotagede, Kota Yogyakarta, DI Yogyakarta 55171")
+  const displayWilayah = useMemo(() => {
+    const parts: string[] = [];
+    if (kelurahan) parts.push(kelurahan);
+    if (kecamatan && !parts.includes(kecamatan)) parts.push(kecamatan);
+    if (kabupatenKota && !parts.includes(kabupatenKota)) parts.push(kabupatenKota);
+    const stateAndZip = [provinsi, kodePos].filter(Boolean).join(" ");
+    if (stateAndZip) parts.push(stateAndZip);
+    return parts.join(", ");
+  }, [kelurahan, kecamatan, kabupatenKota, provinsi, kodePos]);
 
   // Patokan alamat (opsional)
   const [patokanAlamat, setPatokanAlamat] = useState("");
@@ -380,6 +392,7 @@ export default function NewPropertyPage() {
   const handleMapPickLocation = async (newLat: number, newLon: number) => {
     setLat(newLat);
     setLon(newLon);
+    setIsReverseGeocoding(true);
 
     try {
       const res = await fetch(`/api/geocode?lat=${newLat}&lon=${newLon}`);
@@ -392,6 +405,8 @@ export default function NewPropertyPage() {
       }
     } catch (err) {
       console.error("Reverse geocode on map click failed", err);
+    } finally {
+      setIsReverseGeocoding(false);
     }
   };
 
@@ -401,6 +416,7 @@ export default function NewPropertyPage() {
       alert("Geolocation tidak didukung pada peramban ini.");
       return;
     }
+    setIsReverseGeocoding(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const newLat = pos.coords.latitude;
@@ -419,9 +435,12 @@ export default function NewPropertyPage() {
           }
         } catch (err) {
           console.error("Reverse geocode failed", err);
+        } finally {
+          setIsReverseGeocoding(false);
         }
       },
       (err) => {
+        setIsReverseGeocoding(false);
         alert("Gagal mendapatkan lokasi GPS: " + err.message);
       },
       { timeout: 10000 }
@@ -752,80 +771,78 @@ export default function NewPropertyPage() {
               </div>
             </div>
 
-            {/* Bagian 1: Detail Lokasi (Bisa diedit) */}
-            <div className="rounded-lg border border-nk-border bg-nk-warm/40 p-4 sm:p-5 space-y-3">
+            {/* Detail Lokasi Jalan & Wilayah Administrasi (Satu Wadah Terpadu) */}
+            <div className="rounded-lg border border-nk-border bg-nk-warm/40 p-4 sm:p-5 space-y-4">
               <div className="flex items-start gap-2">
                 <Info className="size-4 shrink-0 text-nk-accent mt-0.5" />
                 <p className="text-xs font-medium leading-relaxed text-nk-text">
                   Periksa dan lengkapi alamat dengan nama jalan & nomor rumah (jika ada) serta RT/RW.
                 </p>
               </div>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-nk-text">
-                  Detail Lokasi Jalan / RT / RW <span className="text-rose-500">*</span>
-                </span>
-                <textarea
-                  rows={2}
-                  required
-                  value={detailLokasi}
-                  onChange={(e) => setDetailLokasi(e.target.value)}
-                  placeholder="Contoh: Jl. Dago Asri No. 12B, RT 03 / RW 07"
-                  className="rounded-lg border border-nk-border bg-nk-surface p-3 text-sm text-nk-text placeholder:text-nk-text-muted/60 focus:border-nk-accent focus:outline-none"
-                />
-              </label>
-            </div>
 
-            {/* Bagian 2: Wilayah Administrasi (Read-only) */}
-            <div className="rounded-lg border border-nk-border bg-nk-surface p-4 sm:p-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-nk-text-muted mb-3">
-                Wilayah Administrasi (Otomatis dari Peta)
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-nk-text-muted">Kelurahan / Desa</span>
-                  <input
-                    type="text"
-                    readOnly
-                    value={kelurahan || "Terisi otomatis"}
-                    className="h-10 rounded-md border border-nk-border bg-nk-warm/50 px-3 text-xs font-medium text-nk-text cursor-default"
-                  />
+              {/* 1. Detail Lokasi Jalan / RT / RW */}
+              <label className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-nk-text">
+                    Detail Lokasi Jalan / RT / RW <span className="text-rose-500">*</span>
+                  </span>
+                  {isReverseGeocoding && (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-nk-accent">
+                      <Loader2 className="size-3 animate-spin text-nk-accent" />
+                      Mendeteksi alamat...
+                    </span>
+                  )}
                 </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-nk-text-muted">Kapanewon / Kecamatan</span>
-                  <input
-                    type="text"
-                    readOnly
-                    value={kecamatan || "Terisi otomatis"}
-                    className="h-10 rounded-md border border-nk-border bg-nk-warm/50 px-3 text-xs font-medium text-nk-text cursor-default"
+
+                {isReverseGeocoding ? (
+                  <div className="relative h-[72px] w-full overflow-hidden rounded-lg border border-nk-border bg-nk-surface p-3.5 space-y-2">
+                    <div className="h-3.5 w-3/4 rounded bg-stone-200 animate-pulse" />
+                    <div className="h-3 w-1/2 rounded bg-stone-200/70 animate-pulse" />
+                    <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
+                  </div>
+                ) : (
+                  <textarea
+                    rows={2}
+                    required
+                    value={detailLokasi}
+                    onChange={(e) => setDetailLokasi(e.target.value)}
+                    placeholder="Contoh: Jl. Dago Asri No. 12B, RT 03 / RW 07"
+                    className="rounded-lg border border-nk-border bg-nk-surface p-3 text-sm text-nk-text placeholder:text-nk-text-muted/60 focus:border-nk-accent focus:outline-none"
                   />
+                )}
+              </label>
+
+              {/* 2. Wilayah Administrasi (Satu Kotak Gabungan di Bawah Inputan Jalan) */}
+              <div className="flex flex-col gap-1.5 pt-0.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-nk-text">
+                    Wilayah Administrasi (Otomatis dari Peta)
+                  </span>
+                  <span className="text-[11px] text-nk-text-muted">
+                    {isReverseGeocoding ? "Memperbarui pin lokasi..." : "Terisi otomatis dari pin peta"}
+                  </span>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-nk-text-muted">Kabupaten / Kota</span>
-                  <input
-                    type="text"
-                    readOnly
-                    value={kabupatenKota}
-                    className="h-10 rounded-md border border-nk-border bg-nk-warm/50 px-3 text-xs font-medium text-nk-text cursor-default"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-nk-text-muted">Provinsi</span>
-                  <input
-                    type="text"
-                    readOnly
-                    value={provinsi}
-                    className="h-10 rounded-md border border-nk-border bg-nk-warm/50 px-3 text-xs font-medium text-nk-text cursor-default"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-nk-text-muted">Kode Pos</span>
-                  <input
-                    type="text"
-                    readOnly
-                    value={kodePos}
-                    className="h-10 rounded-md border border-nk-border bg-nk-warm/50 px-3 text-xs font-medium text-nk-text cursor-default"
-                  />
-                </div>
+
+                {isReverseGeocoding ? (
+                  <div className="relative h-11 w-full overflow-hidden rounded-lg border border-nk-border bg-nk-surface px-3.5 flex items-center gap-3">
+                    <div className="size-4 shrink-0 rounded-full bg-stone-200 animate-pulse" />
+                    <div className="h-3.5 w-4/5 rounded bg-stone-200 animate-pulse" />
+                    <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
+                  </div>
+                ) : (
+                  <div className="relative flex items-center">
+                    <MapPin className="pointer-events-none absolute left-3.5 size-4 text-nk-accent" />
+                    <input
+                      type="text"
+                      readOnly
+                      value={
+                        displayWilayah ||
+                        "Pilih titik lokasi pada peta di atas untuk memuat wilayah administrasi"
+                      }
+                      className="h-11 w-full rounded-lg border border-nk-border bg-nk-surface pl-10 pr-4 text-xs font-medium text-nk-text cursor-default select-all focus:outline-none"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

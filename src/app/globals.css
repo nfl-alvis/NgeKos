@@ -148,9 +148,21 @@ h1, h2, h3 {
   to { height: 0; }
 }
 
+/* ===== shimmer skeleton animation ===== */
+@keyframes nk-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: nk-shimmer 1.6s infinite ease-in-out;
+}
+
 /* register as Tailwind v4 animations so `animate-accordion-down/up` resolve */
 @theme inline {
   --animate-accordion-down: nk-accordion-down 0.25s ease-out;
   --animate-accordion-up: nk-accordion-up 0.2s ease-in;
+  --animate-shimmer: nk-shimmer 1.6s infinite ease-in-out;
 }
+
 
