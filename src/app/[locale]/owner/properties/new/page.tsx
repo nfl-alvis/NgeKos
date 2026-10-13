@@ -719,7 +719,7 @@ export default function NewPropertyPage() {
                 />
 
                 {/* 2. Floating Search Bar riding on top of the map */}
-                <div className="absolute top-3.5 inset-x-3.5 sm:top-4 sm:inset-x-4 z-20">
+                <div className="absolute top-3.5 inset-x-3.5 sm:top-4 sm:inset-x-4 z-[1000]">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-nk-text-muted" />
                     <input
@@ -755,7 +755,7 @@ export default function NewPropertyPage() {
 
                     {/* Autocomplete Dropdown with Skeleton Screen */}
                     {showResults && (isSearchingGeo || searchResults.length > 0) && (
-                      <div className="absolute left-0 right-0 top-full mt-1.5 max-h-56 overflow-y-auto rounded-lg border border-nk-border bg-nk-surface py-1 shadow-xl z-30">
+                      <div className="absolute left-0 right-0 top-full mt-1.5 max-h-56 overflow-y-auto rounded-lg border border-nk-border bg-nk-surface py-1 shadow-xl z-[1010]">
                         {isSearchingGeo ? (
                           <div className="space-y-1 p-1">
                             {[1, 2, 3].map((idx) => (
@@ -798,7 +798,7 @@ export default function NewPropertyPage() {
                   type="button"
                   onClick={handleUseGPS}
                   title="Gunakan Lokasi Saya Saat Ini (GPS)"
-                  className="absolute bottom-4 right-4 z-[400] grid size-10 place-items-center rounded-lg border border-nk-border bg-nk-surface text-nk-text shadow-md hover:bg-nk-warm hover:text-nk-accent active:scale-95 transition-all cursor-pointer"
+                  className="absolute bottom-4 right-4 z-[1000] grid size-10 place-items-center rounded-lg border border-nk-border bg-nk-surface text-nk-text shadow-md hover:bg-nk-warm hover:text-nk-accent active:scale-95 transition-all cursor-pointer"
                   aria-label="Gunakan lokasi saya saat ini"
                 >
                   <LocateFixed className="size-5 text-nk-accent" />
