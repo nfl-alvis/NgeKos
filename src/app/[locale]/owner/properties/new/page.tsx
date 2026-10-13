@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -200,6 +200,7 @@ export default function NewPropertyPage() {
   const [isSearchingGeo, setIsSearchingGeo] = useState(false);
   const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const isUserTypingRef = useRef(false);
 
   // Map coordinates (default: Bandung / ITB area)
   const [lat, setLat] = useState<number>(-6.8905);
@@ -336,11 +337,16 @@ export default function NewPropertyPage() {
     }
   }, [user]);
 
-  // Autocomplete debounce
+  // Autocomplete debounce - hanya aktif saat pengguna mengetik sendiri di input
   useEffect(() => {
+    if (!isUserTypingRef.current) {
+      return;
+    }
+
     if (!alamatSearch || alamatSearch.trim().length < 3) {
       setSearchResults([]);
       setIsSearchingGeo(false);
+      setShowResults(false);
       return;
     }
 
@@ -368,7 +374,9 @@ export default function NewPropertyPage() {
 
   // Handle location selection
   const handleSelectLocation = (item: any) => {
+    isUserTypingRef.current = false;
     setShowResults(false);
+    setIsSearchingGeo(false);
     setAlamatSearch(item.formatted || item.name);
 
     if (item.lat && item.lon) {
@@ -392,6 +400,7 @@ export default function NewPropertyPage() {
 
   // Handle click on map to pick location
   const handleMapPickLocation = async (newLat: number, newLon: number) => {
+    isUserTypingRef.current = false;
     setLat(newLat);
     setLon(newLon);
     setIsReverseGeocoding(true);
@@ -418,6 +427,7 @@ export default function NewPropertyPage() {
       alert("Geolocation tidak didukung pada peramban ini.");
       return;
     }
+    isUserTypingRef.current = false;
     setIsReverseGeocoding(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -725,6 +735,7 @@ export default function NewPropertyPage() {
                       type="text"
                       value={alamatSearch}
                       onChange={(e) => {
+                        isUserTypingRef.current = true;
                         setAlamatSearch(e.target.value);
                       }}
                       onFocus={() => {
@@ -739,6 +750,7 @@ export default function NewPropertyPage() {
                       <button
                         type="button"
                         onClick={() => {
+                          isUserTypingRef.current = false;
                           setAlamatSearch("");
                           setSearchResults([]);
                           setShowResults(false);
@@ -808,17 +820,9 @@ export default function NewPropertyPage() {
             {/* Detail Lokasi Jalan & Wilayah Administrasi (Satu Wadah Terpadu) */}
             {/* 1. Detail Lokasi Jalan / RT / RW */}
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-nk-text">
-                  Detail Lokasi Jalan / RT / RW <span className="text-rose-500">*</span>
-                </label>
-                {isReverseGeocoding && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-nk-accent">
-                    <Loader2 className="size-3 animate-spin text-nk-accent" />
-                    Mendeteksi alamat...
-                  </span>
-                )}
-              </div>
+              <label className="text-sm font-medium text-nk-text">
+                Detail Lokasi Jalan / RT / RW <span className="text-rose-500">*</span>
+              </label>
 
               {isReverseGeocoding ? (
                 <div className="relative h-[72px] w-full overflow-hidden rounded-lg border border-nk-border bg-nk-surface p-3.5 space-y-2">
@@ -843,14 +847,9 @@ export default function NewPropertyPage() {
 
             {/* 2. Wilayah Administrasi (Otomatis dari Peta) */}
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-nk-text">
-                  Wilayah Administrasi (Otomatis dari Peta)
-                </label>
-                <span className="text-xs text-nk-text-muted">
-                  {isReverseGeocoding ? "Memperbarui pin lokasi..." : "Terisi otomatis dari pin peta"}
-                </span>
-              </div>
+              <label className="text-sm font-medium text-nk-text">
+                Wilayah Administrasi (Otomatis dari Peta)
+              </label>
 
               {isReverseGeocoding ? (
                 <div className="relative h-11 w-full overflow-hidden rounded-lg border border-nk-border bg-nk-surface px-3.5 flex items-center gap-3">
