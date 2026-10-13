@@ -82,6 +82,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { formatIDR } from "@/lib/utils";
+import Stepper03 from "@/components/shadcn-space/stepper/stepper-03";
 
 const InteractiveMapPicker = dynamic(
   () => import("@/components/InteractiveMapPicker"),
@@ -621,45 +622,24 @@ export default function NewPropertyPage() {
           </p>
         </div>
 
-        {/* Wizard Step Navigation */}
-        <div className="mb-8 rounded-xl border border-nk-border bg-nk-surface p-3 sm:p-4 shadow-sm">
-          <div className="grid grid-cols-4 gap-2">
-            {STEPS.map((s) => {
-              const Icon = s.icon;
-              const isActive = step === s.id;
-              const isPast = step > s.id;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => {
-                    if (isPast) setStep(s.id);
-                  }}
-                  disabled={!isPast && !isActive}
-                  className={`flex flex-col items-center gap-1.5 rounded-lg py-2.5 px-2 text-center transition-all sm:flex-row sm:justify-center sm:gap-2.5 ${
-                    isActive
-                      ? "bg-nk-accent text-nk-text-inverse font-medium shadow-sm"
-                      : isPast
-                        ? "bg-nk-warm text-nk-text hover:bg-nk-border/50 cursor-pointer"
-                        : "text-nk-text-muted opacity-50 cursor-not-allowed"
-                  }`}
-                >
-                  <div
-                    className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                      isActive
-                        ? "bg-white/20 text-white"
-                        : isPast
-                          ? "bg-nk-accent text-white"
-                          : "bg-nk-border text-nk-text-muted"
-                    }`}
-                  >
-                    {isPast ? <Check className="size-3.5 stroke-[3]" /> : s.id}
-                  </div>
-                  <span className="text-xs sm:text-sm truncate">{s.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        {/* Wizard Step Navigation with @shadcn-space/stepper-03 */}
+        <div className="mb-8">
+          <Stepper03
+            steps={STEPS.map((s) => ({
+              title: s.label,
+              icon: s.icon,
+            }))}
+            activeStep={step - 1}
+            onStepChange={(idx) => {
+              // Owner can return to review or edit previously visited steps
+              if (idx + 1 <= step) {
+                setStep(idx + 1);
+              }
+            }}
+            canNavigateStep={(idx) => idx + 1 <= step}
+            showContent={false}
+            showNavigation={false}
+          />
         </div>
 
         {/* Error Alert if any */}

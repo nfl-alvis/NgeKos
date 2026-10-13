@@ -1,6 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "base",
+  "style": "default",
   "rsc": true,
   "tsx": true,
   "tailwind": {
@@ -18,6 +18,6 @@
   },
   "iconLibrary": "lucide",
   "registries": {
-    "@shadcn": "https://ui.shadcn.com/r/{name}.json"
+    "@shadcn-space": "https://shadcnspace.com/r/{name}.json"
   }
 }
