@@ -707,7 +707,7 @@ export default function NewPropertyPage() {
               </div>
 
               {/* Map Container with Floating Search on Top & Target GPS at Bottom-Right */}
-              <div className="relative h-80 sm:h-96 w-full overflow-hidden rounded-xl border border-nk-border bg-nk-warm shadow-sm">
+              <div className="relative isolate z-0 h-80 sm:h-96 w-full overflow-hidden rounded-xl border border-nk-border bg-nk-warm shadow-sm">
                 {/* 1. Leaflet Interactive Clickable Map */}
                 <InteractiveMapPicker
                   lat={lat}

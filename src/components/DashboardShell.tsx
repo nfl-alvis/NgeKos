@@ -388,7 +388,7 @@ export default function DashboardShell({
 
       <SidebarInset>
         {/* header ala shadcn-admin: trigger + breadcrumb + switcher + avatar menu */}
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 rounded-t-xl border-b border-nk-border bg-nk-bg/80 px-4 backdrop-blur-md">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 rounded-t-xl border-b border-nk-border bg-nk-bg/80 px-4 backdrop-blur-md">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="h-4" />
           {/* breadcrumb (shadcn Breadcrumb) */}
@@ -554,9 +554,9 @@ export default function DashboardShell({
                     type="button"
                     aria-label="Tutup menu"
                     onClick={() => setMenuOpen(false)}
-                    className="fixed inset-0 z-30 cursor-default"
+                    className="fixed inset-0 z-40 cursor-default"
                   />
-                  <div className="absolute right-0 top-10 z-40 w-56 rounded-lg border border-nk-border bg-nk-surface p-1 shadow-lg">
+                  <div className="absolute right-0 top-10 z-50 w-56 rounded-lg border border-nk-border bg-nk-surface p-1 shadow-lg">
                     <div className="border-b border-nk-border px-3 py-2">
                       <p className="truncate text-sm font-medium text-nk-text">{userName}</p>
                       <p className="text-xs text-nk-text-muted">{roleLabel}</p>
