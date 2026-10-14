@@ -6,6 +6,14 @@ import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Logo from "@/components/Logo";
 import { useSession } from "@/components/SessionProvider";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Navbar() {
   const t = useTranslations("nav");
@@ -15,11 +23,17 @@ export default function Navbar() {
   const router = useRouter();
   const [roleOpen, setRoleOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const initial = user ? user.name.trim().charAt(0).toUpperCase() : "";
 
-  const handleLogout = () => {
+  const onLogoutClick = () => {
     setAvatarOpen(false);
+    setLogoutConfirmOpen(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setLogoutConfirmOpen(false);
     logout();
     router.push("/");
   };
@@ -85,35 +99,37 @@ export default function Navbar() {
                     onClick={() => setAvatarOpen(false)}
                     aria-hidden="true"
                   />
-                  <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-nk-border bg-nk-surface py-1 shadow-xl">
-                    <div className="border-b border-nk-border px-4 py-3">
+                  <div className="absolute right-0 z-50 mt-2 w-56 rounded-lg border border-nk-border bg-nk-surface p-1 shadow-lg">
+                    <div className="border-b border-nk-border px-3 py-2">
                       <p className="truncate text-sm font-medium text-nk-text">{user.name}</p>
                       <p className="truncate text-xs text-nk-text-muted">{user.email}</p>
                     </div>
-                    <Link
-                      href={
-                        user.role === "owner"
-                          ? "/owner"
+                    <div className="p-1">
+                      <Link
+                        href={
+                          user.role === "owner"
+                            ? "/owner"
+                            : user.role === "admin"
+                              ? "/admin"
+                              : "/dashboard"
+                        }
+                        onClick={() => setAvatarOpen(false)}
+                        className="block rounded-md px-3 py-2 text-sm text-nk-text transition-colors hover:bg-nk-warm"
+                      >
+                        {user.role === "owner"
+                          ? t("dashboard")
                           : user.role === "admin"
-                            ? "/admin"
-                            : "/dashboard"
-                      }
-                      onClick={() => setAvatarOpen(false)}
-                      className="block px-4 py-2.5 text-sm text-nk-text transition-colors hover:bg-nk-warm"
-                    >
-                      {user.role === "owner"
-                        ? t("dashboard")
-                        : user.role === "admin"
-                          ? t("adminPanel")
-                          : t("userPanel")}
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="block w-full px-4 py-2.5 text-left text-sm text-nk-text-muted transition-colors hover:bg-nk-warm hover:text-nk-text"
-                    >
-                      {t("logout")}
-                    </button>
+                            ? t("adminPanel")
+                            : t("userPanel")}
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={onLogoutClick}
+                        className="block w-full rounded-md px-3 py-2 text-left text-sm text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] cursor-pointer"
+                      >
+                        {t("logout")}
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
@@ -133,13 +149,68 @@ export default function Navbar() {
 
         <div className="flex items-center gap-2 md:hidden">
           <LanguageSwitcher />
-          <button
-            type="button"
-            onClick={() => setRoleOpen(true)}
-            className="rounded-none bg-nk-accent px-3.5 py-1.5 text-xs font-medium text-nk-text-inverse"
-          >
-            {loginT("register")}
-          </button>
+          {user ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setAvatarOpen((v) => !v)}
+                aria-label={user.name}
+                aria-expanded={avatarOpen}
+                className="flex size-8 items-center justify-center rounded-full bg-nk-accent text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90"
+              >
+                {initial}
+              </button>
+              {avatarOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setAvatarOpen(false)}
+                    aria-hidden="true"
+                  />
+                  <div className="absolute right-0 z-50 mt-2 w-56 rounded-lg border border-nk-border bg-nk-surface p-1 shadow-lg">
+                    <div className="border-b border-nk-border px-3 py-2">
+                      <p className="truncate text-sm font-medium text-nk-text">{user.name}</p>
+                      <p className="truncate text-xs text-nk-text-muted">{user.email}</p>
+                    </div>
+                    <div className="p-1">
+                      <Link
+                        href={
+                          user.role === "owner"
+                            ? "/owner"
+                            : user.role === "admin"
+                              ? "/admin"
+                              : "/dashboard"
+                        }
+                        onClick={() => setAvatarOpen(false)}
+                        className="block rounded-md px-3 py-2 text-sm text-nk-text transition-colors hover:bg-nk-warm"
+                      >
+                        {user.role === "owner"
+                          ? t("dashboard")
+                          : user.role === "admin"
+                            ? t("adminPanel")
+                            : t("userPanel")}
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={onLogoutClick}
+                        className="block w-full rounded-md px-3 py-2 text-left text-sm text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] cursor-pointer"
+                      >
+                        {t("logout")}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setRoleOpen(true)}
+              className="rounded-none bg-nk-accent px-3.5 py-1.5 text-xs font-medium text-nk-text-inverse"
+            >
+              {loginT("register")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -243,6 +314,34 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={logoutConfirmOpen} onOpenChange={setLogoutConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("logoutConfirmTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("logoutConfirmDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex flex-row justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setLogoutConfirmOpen(false)}
+              className="rounded-lg border border-nk-border bg-nk-surface px-4 py-2 text-sm font-medium text-nk-text hover:bg-nk-warm cursor-pointer transition-colors"
+            >
+              {t("cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmLogout}
+              className="rounded-lg bg-[#9C3B32] px-4 py-2 text-sm font-medium text-white hover:bg-[#7f2f28] cursor-pointer transition-colors"
+            >
+              {t("logout")}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

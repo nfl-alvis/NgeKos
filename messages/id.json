@@ -14,6 +14,9 @@
     "myBookings": "Booking Saya",
     "notifications": "Notifikasi",
     "logout": "Keluar",
+    "logoutConfirmTitle": "Konfirmasi Keluar",
+    "logoutConfirmDesc": "Apakah Anda yakin ingin keluar dari akun ini?",
+    "cancel": "Batal",
     "tenantPanel": "Panel Penyewa",
     "adminGroups": {
       "operations": "Operasional",

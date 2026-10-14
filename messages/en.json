@@ -14,6 +14,9 @@
     "myBookings": "My Bookings",
     "notifications": "Notifications",
     "logout": "Log out",
+    "logoutConfirmTitle": "Confirm Logout",
+    "logoutConfirmDesc": "Are you sure you want to log out of your account?",
+    "cancel": "Cancel",
     "tenantPanel": "Tenant panel",
     "adminGroups": {
       "operations": "Operations",

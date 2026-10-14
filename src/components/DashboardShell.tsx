@@ -39,6 +39,14 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -212,6 +220,7 @@ export default function DashboardShell({
   const router = useRouter();
   const { user, logout } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   // NOTE: guard sesi/admin untuk sementara DILEPAS atas permintaan user -
   // halaman dashboard bisa diakses langsung via URL tanpa login.
@@ -304,8 +313,13 @@ export default function DashboardShell({
 
   const pageTitle = currentItem ? t(currentItem.label) : null;
 
-  const handleLogout = () => {
+  const onLogoutClick = () => {
     setMenuOpen(false);
+    setLogoutConfirmOpen(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setLogoutConfirmOpen(false);
     logout();
     router.push("/");
   };
@@ -571,8 +585,8 @@ export default function DashboardShell({
                       </Link>
                       <button
                         type="button"
-                        onClick={handleLogout}
-                        className="block w-full rounded-md px-3 py-2 text-left text-sm text-[#9C3B32] transition-colors hover:bg-[#FAEAE8]"
+                        onClick={onLogoutClick}
+                        className="block w-full rounded-md px-3 py-2 text-left text-sm text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] cursor-pointer"
                       >
                         {navT("logout")}
                       </button>
@@ -588,6 +602,34 @@ export default function DashboardShell({
           {children}
         </div>
       </SidebarInset>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={logoutConfirmOpen} onOpenChange={setLogoutConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{navT("logoutConfirmTitle")}</DialogTitle>
+            <DialogDescription>
+              {navT("logoutConfirmDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex flex-row justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setLogoutConfirmOpen(false)}
+              className="rounded-lg border border-nk-border bg-nk-surface px-4 py-2 text-sm font-medium text-nk-text hover:bg-nk-warm cursor-pointer transition-colors"
+            >
+              {navT("cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmLogout}
+              className="rounded-lg bg-[#9C3B32] px-4 py-2 text-sm font-medium text-white hover:bg-[#7f2f28] cursor-pointer transition-colors"
+            >
+              {navT("logout")}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }
