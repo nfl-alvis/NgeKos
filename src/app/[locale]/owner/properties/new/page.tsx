@@ -83,6 +83,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatIDR } from "@/lib/utils";
 import Stepper03 from "@/components/shadcn-space/stepper/stepper-03";
+import { motion, AnimatePresence } from "motion/react";
 
 const InteractiveMapPicker = dynamic(
   () => import("@/components/InteractiveMapPicker"),
@@ -102,6 +103,48 @@ const STEPS = [
   { id: 3, label: "Foto & Fasilitas", icon: Camera },
   { id: 4, label: "Data Rekening", icon: CreditCard },
 ];
+
+const DRAFT_STORAGE_KEY = "ngekos_owner_property_draft";
+
+interface PropertyFormDraft {
+  step: number;
+  namaKos: string;
+  alamatSearch: string;
+  lat: number;
+  lon: number;
+  detailLokasi: string;
+  kelurahan: string;
+  kecamatan: string;
+  kabupatenKota: string;
+  provinsi: string;
+  kodePos: string;
+  patokanAlamat: string;
+  tipeKamar: string;
+  gender: "MALE" | "FEMALE" | "MIXED";
+  ukuranKamar: string;
+  totalKamar: number;
+  kamarKosong: number;
+  hargaPerbulan: string;
+  enableHargaSpesial: boolean;
+  hargaSpesial: string;
+  durasiSpesial: string;
+  enableUangJaminan: boolean;
+  persenDp: number;
+  nominalJaminan: string;
+  enableBiayaTambahan: boolean;
+  biayaTambahanList: { id: string; nominal: string; nama: string }[];
+  photos: { [key: string]: string };
+  fasilitasDasar: string[];
+  fasilitasLanjutan: string[];
+  fasilitasBersama: string[];
+  peraturanKos: string[];
+  deskripsiKos: string;
+  namaPemilik: string;
+  namaBank: string;
+  nomorRekening: string;
+  namaPemilikRekening: string;
+  savedAt: number;
+}
 
 const PHOTO_SLOTS = [
   { key: "kamarTidur", label: "Foto Kamar Tidur", icon: Bed, required: true },
@@ -337,6 +380,244 @@ export default function NewPropertyPage() {
       if (!namaPemilikRekening) setNamaPemilikRekening(user.name);
     }
   }, [user]);
+
+  // -------------------------------------------------------------
+  // DRAFT STATE & AUTO-SAVE / RESTORE LOGIC
+  // -------------------------------------------------------------
+  const [hasDraftLoaded, setHasDraftLoaded] = useState(false);
+  const [showDraftNotice, setShowDraftNotice] = useState(false);
+
+  const draftRef = useRef<PropertyFormDraft | null>(null);
+  draftRef.current = {
+    step,
+    namaKos,
+    alamatSearch,
+    lat,
+    lon,
+    detailLokasi,
+    kelurahan,
+    kecamatan,
+    kabupatenKota,
+    provinsi,
+    kodePos,
+    patokanAlamat,
+    tipeKamar,
+    gender,
+    ukuranKamar,
+    totalKamar,
+    kamarKosong,
+    hargaPerbulan,
+    enableHargaSpesial,
+    hargaSpesial,
+    durasiSpesial,
+    enableUangJaminan,
+    persenDp,
+    nominalJaminan,
+    enableBiayaTambahan,
+    biayaTambahanList,
+    photos,
+    fasilitasDasar,
+    fasilitasLanjutan,
+    fasilitasBersama,
+    peraturanKos,
+    deskripsiKos,
+    namaPemilik,
+    namaBank,
+    nomorRekening,
+    namaPemilikRekening,
+    savedAt: Date.now(),
+  };
+
+  // 1. Muat draf yang tersimpan saat pertama kali halaman dibuka
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (raw) {
+        const draft: PropertyFormDraft = JSON.parse(raw);
+        const hasMeaningfulData = Boolean(
+          (draft.namaKos && draft.namaKos.trim().length > 0) ||
+          (draft.detailLokasi && draft.detailLokasi.trim().length > 0) ||
+          (draft.step && draft.step > 1) ||
+          (draft.nomorRekening && draft.nomorRekening.trim().length > 0)
+        );
+
+        if (hasMeaningfulData) {
+          if (draft.step) setStep(draft.step);
+          if (draft.namaKos !== undefined) setNamaKos(draft.namaKos);
+          if (draft.alamatSearch !== undefined) setAlamatSearch(draft.alamatSearch);
+          if (draft.lat !== undefined) setLat(draft.lat);
+          if (draft.lon !== undefined) setLon(draft.lon);
+          if (draft.detailLokasi !== undefined) setDetailLokasi(draft.detailLokasi);
+          if (draft.kelurahan !== undefined) setKelurahan(draft.kelurahan);
+          if (draft.kecamatan !== undefined) setKecamatan(draft.kecamatan);
+          if (draft.kabupatenKota !== undefined) setKabupatenKota(draft.kabupatenKota);
+          if (draft.provinsi !== undefined) setProvinsi(draft.provinsi);
+          if (draft.kodePos !== undefined) setKodePos(draft.kodePos);
+          if (draft.patokanAlamat !== undefined) setPatokanAlamat(draft.patokanAlamat);
+
+          if (draft.tipeKamar !== undefined) setTipeKamar(draft.tipeKamar);
+          if (draft.gender !== undefined) setGender(draft.gender);
+          if (draft.ukuranKamar !== undefined) setUkuranKamar(draft.ukuranKamar);
+          if (draft.totalKamar !== undefined) setTotalKamar(draft.totalKamar);
+          if (draft.kamarKosong !== undefined) setKamarKosong(draft.kamarKosong);
+          if (draft.hargaPerbulan !== undefined) setHargaPerbulan(draft.hargaPerbulan);
+
+          if (draft.enableHargaSpesial !== undefined) setEnableHargaSpesial(draft.enableHargaSpesial);
+          if (draft.hargaSpesial !== undefined) setHargaSpesial(draft.hargaSpesial);
+          if (draft.durasiSpesial !== undefined) setDurasiSpesial(draft.durasiSpesial);
+
+          if (draft.enableUangJaminan !== undefined) setEnableUangJaminan(draft.enableUangJaminan);
+          if (draft.persenDp !== undefined) setPersenDp(draft.persenDp);
+          if (draft.nominalJaminan !== undefined) setNominalJaminan(draft.nominalJaminan);
+
+          if (draft.enableBiayaTambahan !== undefined) setEnableBiayaTambahan(draft.enableBiayaTambahan);
+          if (draft.biayaTambahanList !== undefined) setBiayaTambahanList(draft.biayaTambahanList);
+
+          if (draft.photos !== undefined) setPhotos(draft.photos);
+          if (draft.fasilitasDasar !== undefined) setFasilitasDasar(draft.fasilitasDasar);
+          if (draft.fasilitasLanjutan !== undefined) setFasilitasLanjutan(draft.fasilitasLanjutan);
+          if (draft.fasilitasBersama !== undefined) setFasilitasBersama(draft.fasilitasBersama);
+          if (draft.peraturanKos !== undefined) setPeraturanKos(draft.peraturanKos);
+          if (draft.deskripsiKos !== undefined) setDeskripsiKos(draft.deskripsiKos);
+
+          if (draft.namaPemilik !== undefined) setNamaPemilik(draft.namaPemilik);
+          if (draft.namaBank !== undefined) setNamaBank(draft.namaBank);
+          if (draft.nomorRekening !== undefined) setNomorRekening(draft.nomorRekening);
+          if (draft.namaPemilikRekening !== undefined) setNamaPemilikRekening(draft.namaPemilikRekening);
+
+          setShowDraftNotice(true);
+        }
+      }
+    } catch (e) {
+      console.error("Gagal memuat draf properti:", e);
+    } finally {
+      setHasDraftLoaded(true);
+    }
+  }, []);
+
+  // 2. Fungsi simpan draf ke localStorage
+  const saveDraftToStorage = () => {
+    if (!draftRef.current) return;
+    const d = draftRef.current;
+    const hasProgress = Boolean(
+      (d.namaKos && d.namaKos.trim().length > 0) ||
+      (d.detailLokasi && d.detailLokasi.trim().length > 0) ||
+      d.step > 1 ||
+      (d.nomorRekening && d.nomorRekening.trim().length > 0)
+    );
+    if (hasProgress) {
+      try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(d));
+      } catch (err) {
+        console.error("Gagal menyimpan draf:", err);
+      }
+    }
+  };
+
+  // 3. Simpan draf otomatis tiap ada perubahan
+  useEffect(() => {
+    if (!hasDraftLoaded) return;
+    const timer = setTimeout(() => {
+      saveDraftToStorage();
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [
+    hasDraftLoaded,
+    step,
+    namaKos,
+    alamatSearch,
+    lat,
+    lon,
+    detailLokasi,
+    kelurahan,
+    kecamatan,
+    kabupatenKota,
+    provinsi,
+    kodePos,
+    patokanAlamat,
+    tipeKamar,
+    gender,
+    ukuranKamar,
+    totalKamar,
+    kamarKosong,
+    hargaPerbulan,
+    enableHargaSpesial,
+    hargaSpesial,
+    durasiSpesial,
+    enableUangJaminan,
+    persenDp,
+    nominalJaminan,
+    enableBiayaTambahan,
+    biayaTambahanList,
+    photos,
+    fasilitasDasar,
+    fasilitasLanjutan,
+    fasilitasBersama,
+    peraturanKos,
+    deskripsiKos,
+    namaPemilik,
+    namaBank,
+    nomorRekening,
+    namaPemilikRekening,
+  ]);
+
+  // 4. Simpan draf saat meninggalkan halaman (unmount / navigasi / pagehide / reload)
+  useEffect(() => {
+    const handleExit = () => {
+      saveDraftToStorage();
+    };
+
+    window.addEventListener("pagehide", handleExit);
+    window.addEventListener("beforeunload", handleExit);
+
+    return () => {
+      handleExit();
+      window.removeEventListener("pagehide", handleExit);
+      window.removeEventListener("beforeunload", handleExit);
+    };
+  }, []);
+
+  // 5. Hapus draf jika pengguna memilih mulai dari awal
+  const handleClearDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch {}
+    setShowDraftNotice(false);
+    setStep(1);
+    setNamaKos("");
+    setAlamatSearch("");
+    setDetailLokasi("");
+    setKelurahan("");
+    setKecamatan("");
+    setKabupatenKota("Bandung");
+    setProvinsi("Jawa Barat");
+    setKodePos("40132");
+    setPatokanAlamat("");
+    setTipeKamar("Kamar Standar");
+    setGender("MIXED");
+    setUkuranKamar("3 x 3 meter");
+    setTotalKamar(5);
+    setKamarKosong(5);
+    setHargaPerbulan("1500000");
+    setEnableHargaSpesial(false);
+    setHargaSpesial("1350000");
+    setDurasiSpesial("6 bulan");
+    setEnableUangJaminan(false);
+    setPersenDp(20);
+    setNominalJaminan("300000");
+    setEnableBiayaTambahan(false);
+    setBiayaTambahanList([{ id: "fee-1", nominal: "50000", nama: "Biaya Kebersihan & Sampah" }]);
+    setPhotos({
+      kamarTidur: "",
+      depanKamar: "",
+      kamarMandi: "",
+      bangunanKos: "",
+      fasilitasBersama: "",
+      bangunanJalan: "",
+      lainnya: "",
+    });
+    setNomorRekening("");
+  };
 
   // Autocomplete debounce - hanya aktif saat pengguna mengetik sendiri di input
   useEffect(() => {
@@ -593,6 +874,9 @@ export default function NewPropertyPage() {
         }
 
         // Successfully created! Show success popup modal
+        try {
+          localStorage.removeItem(DRAFT_STORAGE_KEY);
+        } catch {}
         setShowSuccessModal(true);
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan kos.");
@@ -641,6 +925,39 @@ export default function NewPropertyPage() {
             showNavigation={false}
           />
         </div>
+
+        {/* Banner Pemulihan Draf */}
+        {showDraftNotice && (
+          <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-nk-accent/20 bg-nk-warm p-4 text-xs text-nk-text shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-7 items-center justify-center rounded-lg bg-nk-accent/10 text-nk-accent shrink-0">
+                <Sparkles className="size-4" />
+              </div>
+              <div>
+                <p className="font-semibold text-nk-accent">Draf Progres Dipulihkan</p>
+                <p className="text-nk-text-muted">
+                  Progres formulir pendaftaran kos Anda sebelumnya telah otomatis dimuat kembali.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+              <button
+                type="button"
+                onClick={handleClearDraft}
+                className="rounded-lg border border-nk-border bg-nk-surface px-3 py-1.5 font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+              >
+                Mulai dari Awal
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDraftNotice(false)}
+                className="rounded-lg bg-nk-accent px-3 py-1.5 font-medium text-white hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                Lanjutkan Draf
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Error Alert if any */}
         {errorMsg && (
@@ -1007,7 +1324,7 @@ export default function NewPropertyPage() {
 
               {/* Sudah Terisi Auto-calculated */}
               <div className="flex flex-col justify-center gap-1 rounded-lg border border-nk-border bg-nk-warm/60 p-4 text-center">
-                <span className="text-xs text-nk-text-muted">Sudah Terisi (Otomatis)</span>
+                <span className="text-xs text-nk-text-muted">Sudah Terisi</span>
                 <span className="text-lg font-bold text-nk-accent">
                   {kamarTerisi} Kamar
                 </span>
@@ -1049,7 +1366,7 @@ export default function NewPropertyPage() {
               </h3>
 
               {/* 1. Harga Spesial Durasi Lama */}
-              <div className="space-y-3 rounded-lg border border-nk-border bg-nk-surface p-4">
+              <div className="rounded-lg border border-nk-border bg-nk-surface p-4">
                 <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-nk-text">
                   <input
                     type="checkbox"
@@ -1059,41 +1376,52 @@ export default function NewPropertyPage() {
                   />
                   <span>Harga spesial durasi lama</span>
                 </label>
-                {enableHargaSpesial && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs text-nk-text-muted">Nominal Harga Spesial</span>
-                      <div className="flex items-center rounded-md border border-nk-border bg-nk-bg overflow-hidden">
-                        <span className="bg-nk-warm px-3 py-2 text-xs font-medium text-nk-text border-r border-nk-border">
-                          Rp
-                        </span>
-                        <input
-                          type="text"
-                          value={parseInt(hargaSpesial.replace(/\D/g, "") || "0", 10).toLocaleString("id-ID")}
-                          onChange={(e) => setHargaSpesial(e.target.value.replace(/\D/g, ""))}
-                          className="flex-1 bg-transparent px-3 py-1.5 text-xs text-nk-text focus:outline-none"
-                        />
+                <AnimatePresence initial={false}>
+                  {enableHargaSpesial && (
+                    <motion.div
+                      key="anim-harga-spesial"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-nk-text-muted">Nominal Harga Spesial</span>
+                          <div className="flex items-center rounded-md border border-nk-border bg-nk-bg overflow-hidden">
+                            <span className="bg-nk-warm px-3 py-2 text-xs font-medium text-nk-text border-r border-nk-border">
+                              Rp
+                            </span>
+                            <input
+                              type="text"
+                              value={parseInt(hargaSpesial.replace(/\D/g, "") || "0", 10).toLocaleString("id-ID")}
+                              onChange={(e) => setHargaSpesial(e.target.value.replace(/\D/g, ""))}
+                              className="flex-1 bg-transparent px-3 py-1.5 text-xs text-nk-text focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-nk-text-muted">Minimal Durasi</span>
+                          <select
+                            value={durasiSpesial}
+                            onChange={(e) => setDurasiSpesial(e.target.value)}
+                            className="h-9 rounded-md border border-nk-border bg-nk-surface px-3 text-xs text-nk-text focus:outline-none"
+                          >
+                            <option value="3 bulan">3 bulan</option>
+                            <option value="6 bulan">6 bulan</option>
+                            <option value="1 tahun">1 tahun</option>
+                            <option value="2 tahun">2 tahun</option>
+                          </select>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs text-nk-text-muted">Minimal Durasi</span>
-                      <select
-                        value={durasiSpesial}
-                        onChange={(e) => setDurasiSpesial(e.target.value)}
-                        className="h-9 rounded-md border border-nk-border bg-nk-surface px-3 text-xs text-nk-text focus:outline-none"
-                      >
-                        <option value="3 bulan">3 bulan</option>
-                        <option value="6 bulan">6 bulan</option>
-                        <option value="1 tahun">1 tahun</option>
-                        <option value="2 tahun">2 tahun</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* 2. Uang Jaminan (Deposit) */}
-              <div className="space-y-3 rounded-lg border border-nk-border bg-nk-surface p-4">
+              <div className="rounded-lg border border-nk-border bg-nk-surface p-4">
                 <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-nk-text">
                   <input
                     type="checkbox"
@@ -1103,53 +1431,64 @@ export default function NewPropertyPage() {
                   />
                   <span>Uang jaminan (Deposit / DP)</span>
                 </label>
-                {enableUangJaminan && (
-                  <div className="space-y-3 pt-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-nk-text-muted">Persentase DP:</span>
-                      {[10, 20, 30, 40, 50].map((pct) => (
-                        <button
-                          key={pct}
-                          type="button"
-                          onClick={() => {
-                            setPersenDp(pct);
-                            const monthly = parseInt(hargaPerbulan.replace(/\D/g, "") || "0", 10);
-                            const calculated = Math.round((monthly * pct) / 100);
-                            setNominalJaminan(String(calculated));
-                          }}
-                          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                            persenDp === pct
-                              ? "bg-nk-accent text-white"
-                              : "bg-nk-warm text-nk-text hover:bg-nk-border/60"
-                          }`}
-                        >
-                          {pct}%
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs text-nk-text-muted">Nominal Uang Jaminan</span>
-                      <div className="flex items-center rounded-md border border-nk-border bg-nk-bg overflow-hidden max-w-xs">
-                        <span className="bg-nk-warm px-3 py-2 text-xs font-medium text-nk-text border-r border-nk-border">
-                          Rp
-                        </span>
-                        <input
-                          type="text"
-                          value={parseInt(nominalJaminan.replace(/\D/g, "") || "0", 10).toLocaleString("id-ID")}
-                          onChange={(e) => setNominalJaminan(e.target.value.replace(/\D/g, ""))}
-                          className="flex-1 bg-transparent px-3 py-1.5 text-xs text-nk-text focus:outline-none"
-                        />
+                <AnimatePresence initial={false}>
+                  {enableUangJaminan && (
+                    <motion.div
+                      key="anim-uang-jaminan"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-3 pt-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-nk-text-muted">Persentase DP:</span>
+                          {[10, 20, 30, 40, 50].map((pct) => (
+                            <button
+                              key={pct}
+                              type="button"
+                              onClick={() => {
+                                setPersenDp(pct);
+                                const monthly = parseInt(hargaPerbulan.replace(/\D/g, "") || "0", 10);
+                                const calculated = Math.round((monthly * pct) / 100);
+                                setNominalJaminan(String(calculated));
+                              }}
+                              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                                persenDp === pct
+                                  ? "bg-nk-accent text-white"
+                                  : "bg-nk-warm text-nk-text hover:bg-nk-border/60"
+                              }`}
+                            >
+                              {pct}%
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-nk-text-muted">Nominal Uang Jaminan</span>
+                          <div className="flex items-center rounded-md border border-nk-border bg-nk-bg overflow-hidden max-w-xs">
+                            <span className="bg-nk-warm px-3 py-2 text-xs font-medium text-nk-text border-r border-nk-border">
+                              Rp
+                            </span>
+                            <input
+                              type="text"
+                              value={parseInt(nominalJaminan.replace(/\D/g, "") || "0", 10).toLocaleString("id-ID")}
+                              onChange={(e) => setNominalJaminan(e.target.value.replace(/\D/g, ""))}
+                              className="flex-1 bg-transparent px-3 py-1.5 text-xs text-nk-text focus:outline-none"
+                            />
+                          </div>
+                          <p className="text-[11px] text-nk-text-muted">
+                            Uang jaminan deposit ini akan disimpan dan dikembalikan kepada penyewa setelah masa sewa berakhir jika tidak ada kerusakan.
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-nk-text-muted">
-                        Uang jaminan deposit ini akan disimpan dan dikembalikan kepada penyewa setelah masa sewa berakhir jika tidak ada kerusakan.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* 3. Biaya Tambahan */}
-              <div className="space-y-3 rounded-lg border border-nk-border bg-nk-surface p-4">
+              <div className="rounded-lg border border-nk-border bg-nk-surface p-4">
                 <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-nk-text">
                   <input
                     type="checkbox"
@@ -1159,66 +1498,77 @@ export default function NewPropertyPage() {
                   />
                   <span>Biaya tambahan</span>
                 </label>
-                {enableBiayaTambahan && (
-                  <div className="space-y-2 pt-2">
-                    {biayaTambahanList.map((row, idx) => (
-                      <div key={row.id} className="flex items-center gap-2">
-                        <div className="flex w-36 items-center rounded-md border border-nk-border bg-nk-bg overflow-hidden">
-                          <span className="bg-nk-warm px-2 py-1.5 text-xs font-medium text-nk-text border-r border-nk-border">
-                            Rp
-                          </span>
-                          <input
-                            type="text"
-                            value={parseInt(row.nominal.replace(/\D/g, "") || "0", 10).toLocaleString("id-ID")}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/\D/g, "");
-                              setBiayaTambahanList((prev) =>
-                                prev.map((item, i) => (i === idx ? { ...item, nominal: val } : item))
-                              );
-                            }}
-                            className="w-full bg-transparent px-2 py-1.5 text-xs text-nk-text focus:outline-none"
-                          />
-                        </div>
-                        <input
-                          type="text"
-                          value={row.nama}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setBiayaTambahanList((prev) =>
-                              prev.map((item, i) => (i === idx ? { ...item, nama: val } : item))
-                            );
-                          }}
-                          placeholder="Nama biaya (cth: Listrik / Parkir Mobil)"
-                          className="flex-1 h-9 rounded-md border border-nk-border bg-nk-surface px-3 text-xs text-nk-text focus:outline-none"
-                        />
-                        {biayaTambahanList.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setBiayaTambahanList((prev) => prev.filter((_, i) => i !== idx))
-                            }
-                            className="p-1 text-rose-500 hover:opacity-80"
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setBiayaTambahanList((prev) => [
-                          ...prev,
-                          { id: `fee-${Date.now()}`, nominal: "50000", nama: "" },
-                        ])
-                      }
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-nk-accent hover:underline pt-1"
+                <AnimatePresence initial={false}>
+                  {enableBiayaTambahan && (
+                    <motion.div
+                      key="anim-biaya-tambahan"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
                     >
-                      <Plus className="size-3.5" />
-                      Tambah Biaya Lainnya
-                    </button>
-                  </div>
-                )}
+                      <div className="space-y-2 pt-3">
+                        {biayaTambahanList.map((row, idx) => (
+                          <div key={row.id} className="flex items-center gap-2">
+                            <div className="flex w-36 items-center rounded-md border border-nk-border bg-nk-bg overflow-hidden">
+                              <span className="bg-nk-warm px-2 py-1.5 text-xs font-medium text-nk-text border-r border-nk-border">
+                                Rp
+                              </span>
+                              <input
+                                type="text"
+                                value={parseInt(row.nominal.replace(/\D/g, "") || "0", 10).toLocaleString("id-ID")}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/\D/g, "");
+                                  setBiayaTambahanList((prev) =>
+                                    prev.map((item, i) => (i === idx ? { ...item, nominal: val } : item))
+                                  );
+                                }}
+                                className="w-full bg-transparent px-2 py-1.5 text-xs text-nk-text focus:outline-none"
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              value={row.nama}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setBiayaTambahanList((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, nama: val } : item))
+                                );
+                              }}
+                              placeholder="Nama biaya (cth: Listrik / Parkir Mobil)"
+                              className="flex-1 h-9 rounded-md border border-nk-border bg-nk-surface px-3 text-xs text-nk-text focus:outline-none"
+                            />
+                            {biayaTambahanList.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setBiayaTambahanList((prev) => prev.filter((_, i) => i !== idx))
+                                }
+                                className="p-1 text-rose-500 hover:opacity-80"
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setBiayaTambahanList((prev) => [
+                              ...prev,
+                              { id: `fee-${Date.now()}`, nominal: "50000", nama: "" },
+                            ])
+                          }
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-nk-accent hover:underline pt-1 cursor-pointer"
+                        >
+                          <Plus className="size-3.5" />
+                          Tambah Biaya Lainnya
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
