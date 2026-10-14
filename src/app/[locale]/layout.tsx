@@ -136,7 +136,7 @@ export async function generateMetadata({
       MobileOptimized: "320",
     },
     verification: {
-      google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+      google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "ouA13kvHIsdN4FJ65Ugx3_phY2wqgmUVeSijcREiwjU",
     },
   };
 }
@@ -160,6 +160,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className={`${sans.variable}`}>
       <head>
+        <meta name="google-site-verification" content="ouA13kvHIsdN4FJ65Ugx3_phY2wqgmUVeSijcREiwjU" />
         <JsonLd data={webSiteSchema} />
         <JsonLd data={organizationSchema} />
       </head>
