@@ -46,6 +46,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Avatar,
   AvatarFallback,
@@ -562,38 +563,46 @@ export default function DashboardShell({
                 </Avatar>
               </button>
 
-              {menuOpen && (
-                <>
-                  <button
-                    type="button"
-                    aria-label="Tutup menu"
-                    onClick={() => setMenuOpen(false)}
-                    className="fixed inset-0 z-40 cursor-default"
-                  />
-                  <div className="absolute right-0 top-10 z-50 w-56 rounded-lg border border-nk-border bg-nk-surface p-1 shadow-lg">
-                    <div className="border-b border-nk-border px-3 py-2">
-                      <p className="truncate text-sm font-medium text-nk-text">{userName}</p>
-                      <p className="text-xs text-nk-text-muted">{roleLabel}</p>
-                    </div>
-                    <div className="p-1">
-                      <Link
-                        href="/"
-                        onClick={() => setMenuOpen(false)}
-                        className="block rounded-md px-3 py-2 text-sm text-nk-text transition-colors hover:bg-nk-warm"
-                      >
-                        {navT("home")}
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={onLogoutClick}
-                        className="block w-full rounded-md px-3 py-2 text-left text-sm text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] cursor-pointer"
-                      >
-                        {navT("logout")}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+              <AnimatePresence>
+                {menuOpen && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Tutup menu"
+                      onClick={() => setMenuOpen(false)}
+                      className="fixed inset-0 z-40 cursor-default"
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="absolute right-0 top-10 z-50 w-56 origin-top-right rounded-lg border border-nk-border bg-nk-surface p-1 shadow-lg"
+                    >
+                      <div className="border-b border-nk-border px-3 py-2">
+                        <p className="truncate text-sm font-medium text-nk-text">{userName}</p>
+                        <p className="text-xs text-nk-text-muted">{roleLabel}</p>
+                      </div>
+                      <div className="p-1">
+                        <Link
+                          href="/"
+                          onClick={() => setMenuOpen(false)}
+                          className="block rounded-md px-3 py-2 text-sm text-nk-text transition-colors hover:bg-nk-warm"
+                        >
+                          {navT("home")}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={onLogoutClick}
+                          className="block w-full rounded-md px-3 py-2 text-left text-sm text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] cursor-pointer"
+                        >
+                          {navT("logout")}
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>

@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function Navbar() {
   const t = useTranslations("nav");
@@ -92,47 +93,55 @@ export default function Navbar() {
               >
                 {initial}
               </button>
-              {avatarOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setAvatarOpen(false)}
-                    aria-hidden="true"
-                  />
-                  <div className="absolute right-0 z-50 mt-2 w-56 rounded-lg border border-nk-border bg-nk-surface p-1 shadow-lg">
-                    <div className="border-b border-nk-border px-3 py-2">
-                      <p className="truncate text-sm font-medium text-nk-text">{user.name}</p>
-                      <p className="truncate text-xs text-nk-text-muted">{user.email}</p>
-                    </div>
-                    <div className="p-1">
-                      <Link
-                        href={
-                          user.role === "owner"
-                            ? "/owner"
+              <AnimatePresence>
+                {avatarOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setAvatarOpen(false)}
+                      aria-hidden="true"
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-lg border border-nk-border bg-nk-surface p-1 shadow-lg"
+                    >
+                      <div className="border-b border-nk-border px-3 py-2">
+                        <p className="truncate text-sm font-medium text-nk-text">{user.name}</p>
+                        <p className="truncate text-xs text-nk-text-muted">{user.email}</p>
+                      </div>
+                      <div className="p-1">
+                        <Link
+                          href={
+                            user.role === "owner"
+                              ? "/owner"
+                              : user.role === "admin"
+                                ? "/admin"
+                                : "/dashboard"
+                          }
+                          onClick={() => setAvatarOpen(false)}
+                          className="block rounded-md px-3 py-2 text-sm text-nk-text transition-colors hover:bg-nk-warm"
+                        >
+                          {user.role === "owner"
+                            ? t("dashboard")
                             : user.role === "admin"
-                              ? "/admin"
-                              : "/dashboard"
-                        }
-                        onClick={() => setAvatarOpen(false)}
-                        className="block rounded-md px-3 py-2 text-sm text-nk-text transition-colors hover:bg-nk-warm"
-                      >
-                        {user.role === "owner"
-                          ? t("dashboard")
-                          : user.role === "admin"
-                            ? t("adminPanel")
-                            : t("userPanel")}
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={onLogoutClick}
-                        className="block w-full rounded-md px-3 py-2 text-left text-sm text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] cursor-pointer"
-                      >
-                        {t("logout")}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+                              ? t("adminPanel")
+                              : t("userPanel")}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={onLogoutClick}
+                          className="block w-full rounded-md px-3 py-2 text-left text-sm text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] cursor-pointer"
+                        >
+                          {t("logout")}
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <div className="flex items-center">
@@ -160,47 +169,55 @@ export default function Navbar() {
               >
                 {initial}
               </button>
-              {avatarOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setAvatarOpen(false)}
-                    aria-hidden="true"
-                  />
-                  <div className="absolute right-0 z-50 mt-2 w-56 rounded-lg border border-nk-border bg-nk-surface p-1 shadow-lg">
-                    <div className="border-b border-nk-border px-3 py-2">
-                      <p className="truncate text-sm font-medium text-nk-text">{user.name}</p>
-                      <p className="truncate text-xs text-nk-text-muted">{user.email}</p>
-                    </div>
-                    <div className="p-1">
-                      <Link
-                        href={
-                          user.role === "owner"
-                            ? "/owner"
+              <AnimatePresence>
+                {avatarOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setAvatarOpen(false)}
+                      aria-hidden="true"
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-lg border border-nk-border bg-nk-surface p-1 shadow-lg"
+                    >
+                      <div className="border-b border-nk-border px-3 py-2">
+                        <p className="truncate text-sm font-medium text-nk-text">{user.name}</p>
+                        <p className="truncate text-xs text-nk-text-muted">{user.email}</p>
+                      </div>
+                      <div className="p-1">
+                        <Link
+                          href={
+                            user.role === "owner"
+                              ? "/owner"
+                              : user.role === "admin"
+                                ? "/admin"
+                                : "/dashboard"
+                          }
+                          onClick={() => setAvatarOpen(false)}
+                          className="block rounded-md px-3 py-2 text-sm text-nk-text transition-colors hover:bg-nk-warm"
+                        >
+                          {user.role === "owner"
+                            ? t("dashboard")
                             : user.role === "admin"
-                              ? "/admin"
-                              : "/dashboard"
-                        }
-                        onClick={() => setAvatarOpen(false)}
-                        className="block rounded-md px-3 py-2 text-sm text-nk-text transition-colors hover:bg-nk-warm"
-                      >
-                        {user.role === "owner"
-                          ? t("dashboard")
-                          : user.role === "admin"
-                            ? t("adminPanel")
-                            : t("userPanel")}
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={onLogoutClick}
-                        className="block w-full rounded-md px-3 py-2 text-left text-sm text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] cursor-pointer"
-                      >
-                        {t("logout")}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+                              ? t("adminPanel")
+                              : t("userPanel")}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={onLogoutClick}
+                          className="block w-full rounded-md px-3 py-2 text-left text-sm text-[#9C3B32] transition-colors hover:bg-[#FAEAE8] cursor-pointer"
+                        >
+                          {t("logout")}
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <button
