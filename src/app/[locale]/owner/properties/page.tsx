@@ -14,10 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search,
   X,
-  FileEdit,
-  Trash2,
-  ArrowRight,
-  Clock,
   Building2,
   SearchX,
 } from "lucide-react";
@@ -47,7 +43,8 @@ export default function OwnerPropertiesPage() {
   // Search & Draft state
   const [searchQuery, setSearchQuery] = useState("");
   const [draft, setDraft] = useState<PropertyFormDraft | null>(null);
-  const [deleteDraftConfirmOpen, setDeleteDraftConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<"draft" | Property | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleResubmitVerification = async (idOrSlug: string) => {
     try {
@@ -173,7 +170,29 @@ export default function OwnerPropertiesPage() {
   const handleDeleteDraft = () => {
     deleteSavedPropertyDraft();
     setDraft(null);
-    setDeleteDraftConfirmOpen(false);
+    setDeleteTarget(null);
+  };
+
+  const handleDeleteProperty = async (property: Property) => {
+    setIsDeleting(true);
+    try {
+      const idOrSlug = ("id" in property && property.id) || property.slug;
+      const res = await fetch(`/api/properties/${idOrSlug}`, {
+        method: "DELETE",
+      });
+      if (res.ok || res.status === 204) {
+        setProps((prev) =>
+          prev.filter((item) =>
+            "id" in item && item.id ? item.id !== property.id : item.slug !== property.slug
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Failed to delete property:", err);
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
+    }
   };
 
   const getStepName = (step: number) => {
@@ -249,7 +268,7 @@ export default function OwnerPropertiesPage() {
           <button
             type="button"
             onClick={() => router.push("/owner/properties/new")}
-            className="mt-6 rounded-lg bg-nk-accent px-6 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+            className="mt-6 rounded-lg bg-nk-accent px-6 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99] cursor-pointer"
           >
             {t("emptyCta")}
           </button>
@@ -292,6 +311,9 @@ export default function OwnerPropertiesPage() {
     );
   }
 
+  const showDraftCard = Boolean(draft && draftMatchesSearch);
+  const totalItemsCount = filteredProps.length + (showDraftCard ? 1 : 0);
+
   return (
     <DashboardShell role="owner">
       {/* Header */}
@@ -299,7 +321,7 @@ export default function OwnerPropertiesPage() {
         <div>
           <h1 className="text-2xl font-medium tracking-tight text-nk-text">{t("title")}</h1>
           <p className="text-xs text-nk-text-muted mt-0.5">
-            {t("showingResults", { count: props.length })}
+            {t("showingResults", { count: props.length + (draft ? 1 : 0) })}
           </p>
         </div>
         <div className="group relative w-fit">
@@ -356,7 +378,7 @@ export default function OwnerPropertiesPage() {
           <div className="mt-2 flex items-center justify-between text-xs text-nk-text-muted">
             <span>
               {t("showingResults", {
-                count: filteredProps.length + (draftMatchesSearch ? 1 : 0),
+                count: totalItemsCount,
               })}
             </span>
             <button
@@ -370,121 +392,8 @@ export default function OwnerPropertiesPage() {
         )}
       </div>
 
-      {/* Saved Draft Banner / Card */}
-      {draft && draftMatchesSearch && (
-        <div className="mb-6 overflow-hidden rounded-xl border border-amber-300/80 bg-amber-50/50 p-4 transition-all hover:border-amber-400 dark:border-amber-700/60 dark:bg-amber-950/20">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-amber-900 dark:text-amber-300">
-                {t("draftSectionTitle")}
-              </h2>
-            </div>
-            {draft.savedAt && (
-              <span className="flex items-center gap-1 text-[11px] text-nk-text-muted">
-                <Clock className="size-3" />
-                {formatSavedTime(draft.savedAt)}
-              </span>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3.5">
-              <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-amber-200 bg-amber-100/60 dark:border-amber-800 dark:bg-amber-900/40">
-                {draftThumbnail ? (
-                  <img
-                    src={draftThumbnail}
-                    alt={draft.namaKos || "Draf"}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-amber-700 dark:text-amber-300">
-                    <Building2 className="size-8 opacity-70" />
-                  </div>
-                )}
-                <span className="absolute bottom-1 left-1 rounded bg-amber-700/90 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-white uppercase shadow-sm">
-                  {t("draftBadge")}
-                </span>
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-medium text-nk-text">
-                  {draft.namaKos?.trim() || t("draftUntitled")}
-                </h3>
-                <p className="text-xs text-nk-text-muted">
-                  {[draft.kecamatan, draft.kabupatenKota].filter(Boolean).join(", ") ||
-                    draft.alamatSearch ||
-                    t("draftNoLocation")}
-                </p>
-                <div className="flex flex-wrap items-center gap-2 pt-1.5">
-                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
-                    <FileEdit className="size-3" />
-                    {t("draftStepProgress", {
-                      step: draft.step || 1,
-                      stepName: getStepName(draft.step || 1),
-                    })}
-                  </span>
-                  <div className="hidden sm:flex h-1.5 w-24 overflow-hidden rounded-full bg-amber-200/80 dark:bg-amber-800/80">
-                    <div
-                      className="h-full bg-amber-600 transition-all duration-300"
-                      style={{ width: `${Math.min(100, Math.max(25, (draft.step || 1) * 25))}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 self-end sm:self-center">
-              <button
-                type="button"
-                onClick={() => setDeleteDraftConfirmOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-nk-border bg-white px-3 py-2 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 active:scale-[0.99] dark:bg-nk-surface dark:hover:bg-rose-950/30 cursor-pointer"
-              >
-                <Trash2 className="size-3.5" />
-                <span>{t("draftDiscard")}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push("/owner/properties/new")}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99] cursor-pointer"
-              >
-                <span>{t("draftContinue")}</span>
-                <ArrowRight className="size-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Discard Draft Confirmation Dialog */}
-      <Dialog open={deleteDraftConfirmOpen} onOpenChange={setDeleteDraftConfirmOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("draftDiscardTitle")}</DialogTitle>
-            <DialogDescription className="pt-2 text-sm text-nk-text-muted">
-              {t("draftDiscardDesc")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 pt-4">
-            <button
-              type="button"
-              onClick={() => setDeleteDraftConfirmOpen(false)}
-              className="rounded-lg border border-nk-border px-4 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm cursor-pointer"
-            >
-              {t("cancel")}
-            </button>
-            <button
-              type="button"
-              onClick={handleDeleteDraft}
-              className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90 cursor-pointer"
-            >
-              {t("confirmDiscard")}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Main Content Area */}
-      {searchQuery.trim() && filteredProps.length === 0 && !draftMatchesSearch ? (
+      {searchQuery.trim() && totalItemsCount === 0 ? (
         /* Empty Search Results */
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-nk-border bg-nk-surface px-6 py-14 text-center">
           <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-nk-warm text-nk-text-muted">
@@ -502,18 +411,88 @@ export default function OwnerPropertiesPage() {
             {t("clearSearch")}
           </button>
         </div>
-      ) : props.length === 0 && draft ? (
-        /* Has Draft but No Published Properties Yet */
-        <div className="rounded-xl border border-nk-border bg-nk-surface p-8 text-center text-sm text-nk-text-muted">
-          <p>{t("noPublishedYet")}</p>
-          <p className="mt-1 text-xs text-nk-text-muted">{t("emptyBody")}</p>
-        </div>
-      ) : filteredProps.length === 0 ? (
-        /* Empty after filtering (when draft exists and matches, but no properties match) */
-        null
       ) : (
-        /* Grid of Properties */
+        /* Unified Grid of Properties & Draft */
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {/* 1. DRAFT CARD (Styled exactly like other property cards, with red draft badge & notice) */}
+          {showDraftCard && draft && (
+            <article className="flex flex-col overflow-hidden rounded-lg border border-nk-border bg-nk-surface">
+              <div className="relative">
+                {draftThumbnail ? (
+                  <img
+                    src={draftThumbnail}
+                    alt={draft.namaKos || "Draft"}
+                    className="aspect-[16/9] w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex aspect-[16/9] w-full items-center justify-center bg-nk-warm text-nk-text-muted">
+                    <Building2 className="size-10 opacity-40" />
+                  </div>
+                )}
+                <div className="absolute right-2 top-2">
+                  <StatusBadge color="red">{t("draftBadge")}</StatusBadge>
+                </div>
+              </div>
+
+              <div className="flex flex-1 flex-col justify-between p-4">
+                <div>
+                  <h2 className="truncate text-base font-medium text-nk-text">
+                    {draft.namaKos?.trim() || t("draftUntitled")}
+                  </h2>
+                  <p className="text-sm text-nk-text-muted truncate">
+                    {[draft.kecamatan, draft.kabupatenKota].filter(Boolean).join(", ") ||
+                      draft.alamatSearch ||
+                      t("draftNoLocation")}
+                  </p>
+
+                  {/* Informational Box: Lengkapi data kos / belum tampil di pencarian */}
+                  <div className="mt-3 rounded-md border border-[#EBC4C0] bg-[#FAEAE8] p-3">
+                    <p className="text-xs font-semibold text-[#9C3B32]">
+                      {t("draftActionRequired")}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[#9C3B32]">
+                      {t("draftSearchNotice")}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-3 text-xs text-nk-text-muted">
+                    <span>
+                      {t("draftStepProgress", {
+                        step: draft.step || 1,
+                        stepName: getStepName(draft.step || 1),
+                      })}
+                    </span>
+                    {draft.savedAt && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{formatSavedTime(draft.savedAt)}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bottom Actions: Hapus Kos (Kiri) & Manage (Kanan) */}
+                <div className="mt-4 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget("draft")}
+                    className="flex-1 rounded-lg border border-nk-border px-3 py-2.5 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 hover:border-rose-200 active:scale-[0.99] cursor-pointer text-center"
+                  >
+                    {t("deleteProperty")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/owner/properties/new")}
+                    className="flex-1 rounded-lg border border-nk-border px-3 py-2.5 text-sm font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99] cursor-pointer text-center"
+                  >
+                    {t("manage")}
+                  </button>
+                </div>
+              </div>
+            </article>
+          )}
+
+          {/* 2. REGULAR PROPERTIES CARDS */}
           {filteredProps.map((p) => {
             const totalRooms = p.roomTypes.reduce((acc, rt) => acc + rt.total, 0);
             const filledRooms = p.roomTypes.reduce(
@@ -521,7 +500,7 @@ export default function OwnerPropertiesPage() {
               0
             );
             return (
-              <article key={p.slug} className="overflow-hidden rounded-lg border border-nk-border bg-nk-surface">
+              <article key={p.slug} className="flex flex-col overflow-hidden rounded-lg border border-nk-border bg-nk-surface">
                 <div className="relative">
                   <img
                     src={getKosImage(p.slug || p.imageSeed, "main")}
@@ -540,46 +519,101 @@ export default function OwnerPropertiesPage() {
                     )}
                   </div>
                 </div>
-                <div className="p-4">
-                  <h2 className="truncate text-base font-medium text-nk-text">{p.name}</h2>
-                  <p className="text-sm text-nk-text-muted">
-                    {p.district}, {p.city}
-                  </p>
 
-                  {p.verificationStatus === "rejected" && p.verificationNote && (
-                    <div className="mt-3 rounded-md border border-[#EBC4C0] bg-[#FAEAE8] p-3">
-                      <p className="text-xs text-[#9C3B32]">
-                        {t("rejectionReason", { reason: p.verificationNote })}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => handleResubmitVerification(("id" in p ? p.id : "") || p.slug)}
-                        className="mt-2 text-xs font-medium text-[#9C3B32] underline underline-offset-4 hover:opacity-80 cursor-pointer"
-                      >
-                        {t("resubmit")}
-                      </button>
+                <div className="flex flex-1 flex-col justify-between p-4">
+                  <div>
+                    <h2 className="truncate text-base font-medium text-nk-text">{p.name}</h2>
+                    <p className="text-sm text-nk-text-muted truncate">
+                      {p.district}, {p.city}
+                    </p>
+
+                    {p.verificationStatus === "rejected" && p.verificationNote && (
+                      <div className="mt-3 rounded-md border border-[#EBC4C0] bg-[#FAEAE8] p-3">
+                        <p className="text-xs text-[#9C3B32]">
+                          {t("rejectionReason", { reason: p.verificationNote })}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleResubmitVerification(("id" in p ? p.id : "") || p.slug)}
+                          className="mt-2 text-xs font-medium text-[#9C3B32] underline underline-offset-4 hover:opacity-80 cursor-pointer"
+                        >
+                          {t("resubmit")}
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="mt-3 flex items-center gap-3 text-xs text-nk-text-muted">
+                      <span>{t("rooms", { count: totalRooms })}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{t("occupancy", { count: filledRooms, total: totalRooms })}</span>
                     </div>
-                  )}
-
-                  <div className="mt-3 flex items-center gap-3 text-xs text-nk-text-muted">
-                    <span>{t("rooms", { count: totalRooms })}</span>
-                    <span aria-hidden="true">·</span>
-                    <span>{t("occupancy", { count: filledRooms, total: totalRooms })}</span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/owner/properties/${p.slug}`)}
-                    className="mt-4 w-full rounded-lg border border-nk-border px-4 py-2.5 text-sm font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99] cursor-pointer"
-                  >
-                    {t("manage")}
-                  </button>
+                  {/* Bottom Actions: Hapus Kos (Kiri) & Manage (Kanan) */}
+                  <div className="mt-4 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(p)}
+                      className="flex-1 rounded-lg border border-nk-border px-3 py-2.5 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 hover:border-rose-200 active:scale-[0.99] cursor-pointer text-center"
+                    >
+                      {t("deleteProperty")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/owner/properties/${p.slug}`)}
+                      className="flex-1 rounded-lg border border-nk-border px-3 py-2.5 text-sm font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99] cursor-pointer text-center"
+                    >
+                      {t("manage")}
+                    </button>
+                  </div>
                 </div>
               </article>
             );
           })}
         </div>
       )}
+
+      {/* Confirmation Dialog Before Deleting Kost (Draft or Live Property) */}
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {deleteTarget === "draft"
+                ? t("deleteDraftTitle")
+                : t("deletePropertyTitle", { name: deleteTarget?.name ?? "" })}
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-sm text-nk-text-muted">
+              {deleteTarget === "draft"
+                ? t("deleteDraftDesc")
+                : t("deletePropertyDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => setDeleteTarget(null)}
+              className="rounded-lg border border-nk-border px-4 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm cursor-pointer disabled:opacity-50"
+            >
+              {t("cancel")}
+            </button>
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => {
+                if (deleteTarget === "draft") {
+                  handleDeleteDraft();
+                } else if (deleteTarget) {
+                  handleDeleteProperty(deleteTarget);
+                }
+              }}
+              className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90 cursor-pointer disabled:opacity-50"
+            >
+              {isDeleting ? t("deleting") : t("confirmDelete")}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <CreatePropertyDialog
         open={createOpen}
