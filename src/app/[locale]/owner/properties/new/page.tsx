@@ -2326,7 +2326,6 @@ export default function NewPropertyPage() {
                               checked={bolehBawaAnak}
                               onChange={setBolehBawaAnak}
                               label="Boleh bawa anak"
-                              description="Penyewa diperbolehkan membawa anak tinggal di dalam kamar kos"
                             />
                             <AnimatePresence initial={false}>
                               {bolehBawaAnak && (
@@ -2368,7 +2367,6 @@ export default function NewPropertyPage() {
                               checked={bolehPasutri}
                               onChange={setBolehPasutri}
                               label="Boleh untuk pasutri"
-                              description="Pasangan suami-istri sah diperbolehkan menyewa satu kamar bersama"
                             />
                             <AnimatePresence initial={false}>
                               {bolehPasutri && (
@@ -2409,7 +2407,6 @@ export default function NewPropertyPage() {
                             checked={wajibKtp}
                             onChange={setWajibKtp}
                             label="Wajib sertakan KTP saat pengajuan sewa"
-                            description="Identitas resmi wajib untuk verifikasi keamanan pengelola kos"
                           />
 
                           {/* Boleh bawa hewan */}
@@ -2417,7 +2414,6 @@ export default function NewPropertyPage() {
                             checked={bolehBawaHewan}
                             onChange={setBolehBawaHewan}
                             label="Boleh bawa hewan"
-                            description="Penyewa diperbolehkan membawa hewan peliharaan di area kos"
                           />
                         </div>
                       </div>
