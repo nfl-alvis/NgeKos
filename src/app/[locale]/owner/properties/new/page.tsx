@@ -2206,14 +2206,9 @@ export default function NewPropertyPage() {
                     <div className="border-t border-nk-border bg-nk-warm/10 p-4 sm:p-6 space-y-6">
                       {/* SECTION 1: Kriteria Calon Penyewa */}
                       <div className="space-y-3">
-                        <div>
-                          <h4 className="text-xs font-semibold uppercase tracking-wider text-nk-text">
-                            Kriteria Calon Penyewa
-                          </h4>
-                          <p className="text-xs text-nk-text-muted">
-                            Pilih kategori calon penyewa yang diperbolehkan tinggal di kos Anda.
-                          </p>
-                        </div>
+                        <h4 className="text-sm font-semibold text-nk-text">
+                          Kriteria Calon Penyewa
+                        </h4>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           {[
                             {
@@ -2255,11 +2250,11 @@ export default function NewPropertyPage() {
                                     <CheckCircle2 className="size-3.5 text-white" />
                                   )}
                                 </div>
-                                <span className="font-semibold text-xs mt-2.5">
+                                <span className="font-semibold text-sm mt-2.5">
                                   {item.label}
                                 </span>
                                 <span
-                                  className={`text-[11px] mt-1 line-clamp-2 ${
+                                  className={`text-xs mt-1 line-clamp-2 ${
                                     isSelected ? "text-white/80" : "text-nk-text-muted"
                                   }`}
                                 >
@@ -2272,16 +2267,11 @@ export default function NewPropertyPage() {
                       </div>
 
                       {/* SECTION 2: Kapasitas Penghuni Maksimum per Kamar */}
-                      <div className="pt-2 border-t border-nk-border space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div>
-                            <h4 className="text-xs font-semibold uppercase tracking-wider text-nk-text">
-                              Kapasitas Penghuni Maksimum per Kamar
-                            </h4>
-                            <p className="text-xs text-nk-text-muted">
-                              Batas jumlah orang yang diperbolehkan tinggal di dalam satu kamar.
-                            </p>
-                          </div>
+                      <div className="pt-2 border-t border-nk-border">
+                        <div className="flex items-center justify-between gap-4 py-1">
+                          <h4 className="text-sm font-semibold text-nk-text">
+                            Kapasitas Penghuni Maksimum per Kamar
+                          </h4>
                           <div className="flex items-center gap-3">
                             <button
                               type="button"
@@ -2292,7 +2282,7 @@ export default function NewPropertyPage() {
                             >
                               <Minus className="size-4" />
                             </button>
-                            <span className="min-w-[70px] text-center text-sm font-bold text-nk-text">
+                            <span className="min-w-[70px] text-center text-sm font-semibold text-nk-text">
                               {kapasitasMaksimal} Orang
                             </span>
                             <button
@@ -2309,15 +2299,10 @@ export default function NewPropertyPage() {
                       </div>
 
                       {/* SECTION 3: Persyaratan dan Dokumen */}
-                      <div className="pt-2 border-t border-nk-border space-y-2">
-                        <div>
-                          <h4 className="text-xs font-semibold uppercase tracking-wider text-nk-text">
-                            Persyaratan dan Dokumen
-                          </h4>
-                          <p className="text-xs text-nk-text-muted">
-                            Ketentuan kependudukan serta dokumen resmi yang wajib dilampirkan calon penyewa.
-                          </p>
-                        </div>
+                      <div className="pt-2 border-t border-nk-border space-y-3">
+                        <h4 className="text-sm font-semibold text-nk-text">
+                          Persyaratan dan Dokumen
+                        </h4>
 
                         <div className="divide-y divide-nk-border/60 rounded-lg border border-nk-border bg-nk-surface px-4">
                           {/* Boleh bawa anak */}
@@ -2347,10 +2332,10 @@ export default function NewPropertyPage() {
                                         className="mt-0.5 size-4 accent-[#3A2618]"
                                       />
                                       <div>
-                                        <span className="font-medium text-nk-text">
+                                        <span className="text-sm font-medium text-nk-text">
                                           Wajib sertakan kartu keluarga saat pengajuan sewa
                                         </span>
-                                        <p className="text-[11px] text-nk-text-muted">
+                                        <p className="text-xs text-nk-text-muted mt-0.5">
                                           Dokumen untuk membawa anak
                                         </p>
                                       </div>
@@ -2388,10 +2373,10 @@ export default function NewPropertyPage() {
                                         className="mt-0.5 size-4 accent-[#3A2618]"
                                       />
                                       <div>
-                                        <span className="font-medium text-nk-text">
+                                        <span className="text-sm font-medium text-nk-text">
                                           Wajib sertakan buku nikah saat pengajuan sewa
                                         </span>
-                                        <p className="text-[11px] text-nk-text-muted">
+                                        <p className="text-xs text-nk-text-muted mt-0.5">
                                           Dokumen untuk pasutri
                                         </p>
                                       </div>
@@ -2420,14 +2405,9 @@ export default function NewPropertyPage() {
 
                       {/* SECTION 4: Sub-Akordion Gabungan */}
                       <div className="pt-2 border-t border-nk-border space-y-3">
-                        <div>
-                          <h4 className="text-xs font-semibold uppercase tracking-wider text-nk-text">
-                            Tata Tertib & Ketentuan Lainnya
-                          </h4>
-                          <p className="text-xs text-nk-text-muted">
-                            Atur rincian jam malam, larangan bagi penghuni, peraturan penerimaan tamu, dan denda tata tertib.
-                          </p>
-                        </div>
+                        <h4 className="text-sm font-semibold text-nk-text">
+                          Tata Tertib & Ketentuan Lainnya
+                        </h4>
 
                         <div className="space-y-3">
                           {/* Sub-Akordion 1: Akses Jam Malam */}
@@ -2439,12 +2419,12 @@ export default function NewPropertyPage() {
                             >
                               <div className="flex items-center gap-2.5">
                                 <Clock className="size-4 text-nk-text-muted" />
-                                <span className="text-xs font-semibold text-nk-text">
+                                <span className="text-sm font-medium text-nk-text">
                                   Akses Jam Malam
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-nk-accent font-medium">
+                                <span className="text-xs text-nk-accent font-medium">
                                   {aksesJamMalam === "Akses 24 jam"
                                     ? "Akses 24 Jam"
                                     : `Jam Malam (${jamMalamText})`}
@@ -2486,17 +2466,17 @@ export default function NewPropertyPage() {
                                             key={opt.val}
                                             type="button"
                                             onClick={() => setAksesJamMalam(opt.val)}
-                                            className={`flex flex-col items-start p-3 rounded-lg border text-left text-xs transition-all cursor-pointer ${
+                                            className={`flex flex-col items-start p-3 rounded-lg border text-left transition-all cursor-pointer ${
                                               selected
                                                 ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
                                                 : "border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm"
                                             }`}
                                           >
-                                            <span className="font-semibold">
+                                            <span className="text-sm font-medium">
                                               {opt.label}
                                             </span>
                                             <span
-                                              className={`text-[11px] mt-0.5 ${
+                                              className={`text-xs mt-0.5 ${
                                                 selected
                                                   ? "text-white/80"
                                                   : "text-nk-text-muted"
@@ -2553,13 +2533,13 @@ export default function NewPropertyPage() {
                             >
                               <div className="flex items-center gap-2.5">
                                 <Ban className="size-4 text-nk-text-muted" />
-                                <span className="text-xs font-semibold text-nk-text">
+                                <span className="text-sm font-medium text-nk-text">
                                   Larangan Penyewa
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
                                 {laranganPenyewa.length > 0 && (
-                                  <span className="text-[11px] text-nk-accent font-medium">
+                                  <span className="text-xs text-nk-accent font-medium">
                                     {laranganPenyewa.length} larangan aktif
                                   </span>
                                 )}
@@ -2594,7 +2574,7 @@ export default function NewPropertyPage() {
                                         return (
                                           <label
                                             key={rule}
-                                            className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-xs cursor-pointer transition-all ${
+                                            className={`flex items-start gap-2.5 rounded-lg border p-2.5 cursor-pointer transition-all ${
                                               checked
                                                 ? "border-nk-accent bg-nk-surface shadow-xs text-nk-text font-medium"
                                                 : "border-nk-border bg-nk-surface/60 text-nk-text-muted hover:bg-nk-surface"
@@ -2612,7 +2592,7 @@ export default function NewPropertyPage() {
                                               }
                                               className="mt-0.5 size-4 accent-[#3A2618]"
                                             />
-                                            <span>{rule}</span>
+                                            <span className="text-sm text-nk-text leading-tight">{rule}</span>
                                           </label>
                                         );
                                       })}
@@ -2632,12 +2612,12 @@ export default function NewPropertyPage() {
                             >
                               <div className="flex items-center gap-2.5">
                                 <Users className="size-4 text-nk-text-muted" />
-                                <span className="text-xs font-semibold text-nk-text">
+                                <span className="text-sm font-medium text-nk-text">
                                   Peraturan Tamu
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-nk-accent font-medium">
+                                <span className="text-xs text-nk-accent font-medium">
                                   {bolehTerimaTamu
                                     ? `${peraturanTamu.length} aturan tamu`
                                     : "Tamu dilarang"}
@@ -2664,7 +2644,6 @@ export default function NewPropertyPage() {
                                       checked={bolehTerimaTamu}
                                       onChange={setBolehTerimaTamu}
                                       label="Boleh menerima tamu?"
-                                      description="Apakah penyewa diperkenankan menerima tamu di area kos"
                                     />
 
                                     <AnimatePresence initial={false}>
@@ -2687,7 +2666,7 @@ export default function NewPropertyPage() {
                                               return (
                                                 <label
                                                   key={rule}
-                                                  className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-xs cursor-pointer transition-all ${
+                                                  className={`flex items-start gap-2.5 rounded-lg border p-2.5 cursor-pointer transition-all ${
                                                     checked
                                                       ? "border-nk-accent bg-nk-surface shadow-xs text-nk-text font-medium"
                                                       : "border-nk-border bg-nk-surface/60 text-nk-text-muted hover:bg-nk-surface"
@@ -2705,7 +2684,7 @@ export default function NewPropertyPage() {
                                                     }
                                                     className="mt-0.5 size-4 accent-[#3A2618]"
                                                   />
-                                                  <span>{rule}</span>
+                                                  <span className="text-sm text-nk-text leading-tight">{rule}</span>
                                                 </label>
                                               );
                                             })}
@@ -2728,13 +2707,13 @@ export default function NewPropertyPage() {
                             >
                               <div className="flex items-center gap-2.5">
                                 <AlertTriangle className="size-4 text-nk-text-muted" />
-                                <span className="text-xs font-semibold text-nk-text">
+                                <span className="text-sm font-medium text-nk-text">
                                   Lainnya
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
                                 {peraturanLainnya.length > 0 && (
-                                  <span className="text-[11px] text-nk-accent font-medium">
+                                  <span className="text-xs text-nk-accent font-medium">
                                     {peraturanLainnya.length} dipilih
                                   </span>
                                 )}
@@ -2769,7 +2748,7 @@ export default function NewPropertyPage() {
                                         return (
                                           <label
                                             key={rule}
-                                            className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-xs cursor-pointer transition-all ${
+                                            className={`flex items-start gap-2.5 rounded-lg border p-2.5 cursor-pointer transition-all ${
                                               checked
                                                 ? "border-nk-accent bg-nk-surface shadow-xs text-nk-text font-medium"
                                                 : "border-nk-border bg-nk-surface/60 text-nk-text-muted hover:bg-nk-surface"
@@ -2787,7 +2766,7 @@ export default function NewPropertyPage() {
                                               }
                                               className="mt-0.5 size-4 accent-[#3A2618]"
                                             />
-                                            <span>{rule}</span>
+                                            <span className="text-sm text-nk-text leading-tight">{rule}</span>
                                           </label>
                                         );
                                       })}
@@ -2806,21 +2785,23 @@ export default function NewPropertyPage() {
             </div>
 
             {/* Section DI LUAR Akordion: Deskripsi Kos */}
-            <div className="flex flex-col gap-2 pt-2">
-              <label className="text-sm font-medium text-nk-text">
-                Deskripsi Kos <span className="text-rose-500">*</span>
-              </label>
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-nk-text">
+                  Deskripsi Kos <span className="text-rose-500">*</span>
+                </label>
+                <span className="text-xs text-nk-text-muted">
+                  Minimal 20 karakter ({deskripsiKos.trim().length}/20)
+                </span>
+              </div>
               <textarea
                 rows={4}
                 required
                 value={deskripsiKos}
                 onChange={(e) => setDeskripsiKos(e.target.value)}
                 placeholder="Ceritakan keunggulan kos, suasana sekitar, akses kampus terdekat, atau catatan penting lainnya..."
-                className="rounded-lg border border-nk-border bg-nk-surface p-3.5 text-sm text-nk-text placeholder:text-nk-text-muted focus:border-nk-accent focus:outline-none"
+                className="w-full rounded-lg border border-nk-border bg-nk-surface p-3.5 text-sm text-nk-text placeholder:text-nk-text-muted focus:border-nk-accent focus:outline-none"
               />
-              <p className="text-xs text-nk-text-muted">
-                Minimal 20 karakter ({deskripsiKos.length}/20).
-              </p>
             </div>
 
             {/* Action Buttons */}
@@ -2862,7 +2843,7 @@ export default function NewPropertyPage() {
 
             <div className="space-y-4">
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-nk-text">
+                <span className="text-sm font-medium text-nk-text">
                   Nama Lengkap Pemilik Kos <span className="text-rose-500">*</span>
                 </span>
                 <input
@@ -2876,7 +2857,7 @@ export default function NewPropertyPage() {
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-nk-text">
+                <span className="text-sm font-medium text-nk-text">
                   Pilihan Bank <span className="text-rose-500">*</span>
                 </span>
                 <select
@@ -2896,7 +2877,7 @@ export default function NewPropertyPage() {
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-nk-text">
+                <span className="text-sm font-medium text-nk-text">
                   Nomor Rekening <span className="text-rose-500">*</span>
                 </span>
                 <input
@@ -2910,7 +2891,7 @@ export default function NewPropertyPage() {
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-nk-text">
+                <span className="text-sm font-medium text-nk-text">
                   Nama Pemilik Rekening <span className="text-rose-500">*</span>
                 </span>
                 <input
