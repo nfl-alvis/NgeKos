@@ -1667,37 +1667,48 @@ export default function NewPropertyPage() {
                   </div>
                 </button>
 
-                {accordionOpen.dasar && (
-                  <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {FASILITAS_DASAR_ITEMS.map((item) => {
-                        const checked = fasilitasDasar.includes(item.label);
-                        const Icon = item.icon;
-                        return (
-                          <button
-                            key={item.label}
-                            type="button"
-                            onClick={() =>
-                              toggleArrayItem(fasilitasDasar, setFasilitasDasar, item.label)
-                            }
-                            className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
-                              checked
-                                ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
-                                : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
-                            }`}
-                          >
-                            <Icon
-                              className={`size-4 shrink-0 transition-colors ${
-                                checked ? "text-white" : "text-nk-text-muted"
-                              }`}
-                            />
-                            <span className="truncate">{item.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {accordionOpen.dasar && (
+                    <motion.div
+                      key="accordion-dasar"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          {FASILITAS_DASAR_ITEMS.map((item) => {
+                            const checked = fasilitasDasar.includes(item.label);
+                            const Icon = item.icon;
+                            return (
+                              <button
+                                key={item.label}
+                                type="button"
+                                onClick={() =>
+                                  toggleArrayItem(fasilitasDasar, setFasilitasDasar, item.label)
+                                }
+                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                                  checked
+                                    ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
+                                    : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                                }`}
+                              >
+                                <Icon
+                                  className={`size-4 shrink-0 transition-colors ${
+                                    checked ? "text-white" : "text-nk-text-muted"
+                                  }`}
+                                />
+                                <span className="truncate">{item.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Akordion 2: Fasilitas Lanjutan (Opsional) */}
@@ -1734,37 +1745,48 @@ export default function NewPropertyPage() {
                   </div>
                 </button>
 
-                {accordionOpen.lanjutan && (
-                  <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {FASILITAS_LANJUTAN_ITEMS.map((item) => {
-                        const checked = fasilitasLanjutan.includes(item.label);
-                        const Icon = item.icon;
-                        return (
-                          <button
-                            key={item.label}
-                            type="button"
-                            onClick={() =>
-                              toggleArrayItem(fasilitasLanjutan, setFasilitasLanjutan, item.label)
-                            }
-                            className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
-                              checked
-                                ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
-                                : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
-                            }`}
-                          >
-                            <Icon
-                              className={`size-4 shrink-0 transition-colors ${
-                                checked ? "text-white" : "text-nk-text-muted"
-                              }`}
-                            />
-                            <span className="truncate">{item.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {accordionOpen.lanjutan && (
+                    <motion.div
+                      key="accordion-lanjutan"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          {FASILITAS_LANJUTAN_ITEMS.map((item) => {
+                            const checked = fasilitasLanjutan.includes(item.label);
+                            const Icon = item.icon;
+                            return (
+                              <button
+                                key={item.label}
+                                type="button"
+                                onClick={() =>
+                                  toggleArrayItem(fasilitasLanjutan, setFasilitasLanjutan, item.label)
+                                }
+                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                                  checked
+                                    ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
+                                    : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                                }`}
+                              >
+                                <Icon
+                                  className={`size-4 shrink-0 transition-colors ${
+                                    checked ? "text-white" : "text-nk-text-muted"
+                                  }`}
+                                />
+                                <span className="truncate">{item.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Akordion 3: Fasilitas Bersama (Opsional) */}
@@ -1801,37 +1823,48 @@ export default function NewPropertyPage() {
                   </div>
                 </button>
 
-                {accordionOpen.bersama && (
-                  <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {FASILITAS_BERSAMA_ITEMS.map((item) => {
-                        const checked = fasilitasBersama.includes(item.label);
-                        const Icon = item.icon;
-                        return (
-                          <button
-                            key={item.label}
-                            type="button"
-                            onClick={() =>
-                              toggleArrayItem(fasilitasBersama, setFasilitasBersama, item.label)
-                            }
-                            className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
-                              checked
-                                ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
-                                : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
-                            }`}
-                          >
-                            <Icon
-                              className={`size-4 shrink-0 transition-colors ${
-                                checked ? "text-white" : "text-nk-text-muted"
-                              }`}
-                            />
-                            <span className="truncate">{item.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {accordionOpen.bersama && (
+                    <motion.div
+                      key="accordion-bersama"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          {FASILITAS_BERSAMA_ITEMS.map((item) => {
+                            const checked = fasilitasBersama.includes(item.label);
+                            const Icon = item.icon;
+                            return (
+                              <button
+                                key={item.label}
+                                type="button"
+                                onClick={() =>
+                                  toggleArrayItem(fasilitasBersama, setFasilitasBersama, item.label)
+                                }
+                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                                  checked
+                                    ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
+                                    : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                                }`}
+                              >
+                                <Icon
+                                  className={`size-4 shrink-0 transition-colors ${
+                                    checked ? "text-white" : "text-nk-text-muted"
+                                  }`}
+                                />
+                                <span className="truncate">{item.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Akordion 4: Peraturan Kos (Opsional) */}
@@ -1868,37 +1901,48 @@ export default function NewPropertyPage() {
                   </div>
                 </button>
 
-                {accordionOpen.peraturan && (
-                  <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {PERATURAN_KOS_ITEMS.map((item) => {
-                        const checked = peraturanKos.includes(item.label);
-                        const Icon = item.icon;
-                        return (
-                          <button
-                            key={item.label}
-                            type="button"
-                            onClick={() =>
-                              toggleArrayItem(peraturanKos, setPeraturanKos, item.label)
-                            }
-                            className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
-                              checked
-                                ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
-                                : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
-                            }`}
-                          >
-                            <Icon
-                              className={`size-4 shrink-0 transition-colors ${
-                                checked ? "text-white" : "text-nk-text-muted"
-                              }`}
-                            />
-                            <span className="truncate">{item.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {accordionOpen.peraturan && (
+                    <motion.div
+                      key="accordion-peraturan"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {PERATURAN_KOS_ITEMS.map((item) => {
+                            const checked = peraturanKos.includes(item.label);
+                            const Icon = item.icon;
+                            return (
+                              <button
+                                key={item.label}
+                                type="button"
+                                onClick={() =>
+                                  toggleArrayItem(peraturanKos, setPeraturanKos, item.label)
+                                }
+                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                                  checked
+                                    ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
+                                    : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                                }`}
+                              >
+                                <Icon
+                                  className={`size-4 shrink-0 transition-colors ${
+                                    checked ? "text-white" : "text-nk-text-muted"
+                                  }`}
+                                />
+                                <span className="truncate">{item.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
