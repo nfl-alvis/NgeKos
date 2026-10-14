@@ -526,7 +526,7 @@
       "draftSearchNotice": "This listing is not yet visible in search results.",
       "draftUntitled": "New Kost (Untitled)",
       "draftNoLocation": "Location not set",
-      "draftStepProgress": "Step {step} of 4: {stepName}",
+      "draftStepProgress": "Step {step} of 6: {stepName}",
       "draftSavedJustNow": "Saved just now",
       "draftSavedMinutesAgo": "Saved {minutes}m ago",
       "draftSavedHoursAgo": "Saved {hours}h ago",
@@ -544,8 +544,10 @@
       "stepNames": {
         "1": "Property Info",
         "2": "Rooms",
-        "3": "Photos & Facilities",
-        "4": "Bank Account"
+        "3": "Photos",
+        "4": "Facilities",
+        "5": "Rules & Description",
+        "6": "Bank Account"
       }
     },
     "detail": {

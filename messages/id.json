@@ -526,7 +526,7 @@
       "draftSearchNotice": "Iklan kos ini belum tampil di halaman pencarian kos.",
       "draftUntitled": "Kos Baru (Tanpa Nama)",
       "draftNoLocation": "Lokasi belum ditentukan",
-      "draftStepProgress": "Langkah {step} dari 4: {stepName}",
+      "draftStepProgress": "Langkah {step} dari 6: {stepName}",
       "draftSavedJustNow": "Tersimpan baru saja",
       "draftSavedMinutesAgo": "Tersimpan {minutes} menit lalu",
       "draftSavedHoursAgo": "Tersimpan {hours} jam lalu",
@@ -544,8 +544,10 @@
       "stepNames": {
         "1": "Data Kos",
         "2": "Kamar Kos",
-        "3": "Foto & Fasilitas",
-        "4": "Data Rekening"
+        "3": "Foto Kos",
+        "4": "Fasilitas Kos",
+        "5": "Peraturan Kos",
+        "6": "Data Rekening"
       }
     },
     "detail": {

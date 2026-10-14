@@ -72,6 +72,10 @@ import {
   IdCard,
   AlertTriangle,
   Users,
+  Briefcase,
+  VolumeX,
+  ShieldAlert,
+  FileCheck,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -100,9 +104,52 @@ const InteractiveMapPicker = dynamic(
 const STEPS = [
   { id: 1, label: "Data Kos", icon: Building2 },
   { id: 2, label: "Kamar Kos", icon: BedDouble },
-  { id: 3, label: "Foto & Fasilitas", icon: Camera },
-  { id: 4, label: "Data Rekening", icon: CreditCard },
+  { id: 3, label: "Foto Kos", icon: Camera },
+  { id: 4, label: "Fasilitas", icon: Sparkles },
+  { id: 5, label: "Peraturan", icon: FileText },
+  { id: 6, label: "Data Rekening", icon: CreditCard },
 ];
+
+function ToggleSwitch({
+  checked,
+  onChange,
+  disabled = false,
+  label,
+  description,
+}: {
+  checked: boolean;
+  onChange: (val: boolean) => void;
+  disabled?: boolean;
+  label: string;
+  description?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3">
+      <div className="flex-1 pr-2">
+        <p className="text-sm font-medium text-nk-text">{label}</p>
+        {description && (
+          <p className="text-xs text-nk-text-muted mt-0.5">{description}</p>
+        )}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+          checked ? "bg-nk-accent" : "bg-nk-border"
+        }`}
+      >
+        <span
+          className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+            checked ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
 
 import { DRAFT_STORAGE_KEY, type PropertyFormDraft } from "@/lib/propertyDraft";
 
@@ -297,7 +344,7 @@ export default function NewPropertyPage() {
     "Tempat Jemuran",
   ]);
 
-  // Peraturan Kos (Opsional)
+  // Peraturan Kos & Deskripsi
   const [peraturanKos, setPeraturanKos] = useState<string[]>([
     "Akses 24 Jam",
     "Wajib KTP saat Check-in",
@@ -308,22 +355,116 @@ export default function NewPropertyPage() {
     "Kos nyaman, aman, dan tenang di lingkungan strategis dekat kampus dan pusat perbelanjaan. Bangunan bersih terawat dengan sirkulasi udara baik."
   );
 
-  // Accordion state for Step 3
+  // Accordion state for Step 4 (Fasilitas)
   const [accordionOpen, setAccordionOpen] = useState<{
     dasar: boolean;
     lanjutan: boolean;
     bersama: boolean;
-    peraturan: boolean;
   }>({
     dasar: true,
     lanjutan: false,
     bersama: false,
-    peraturan: false,
   });
 
   const toggleAccordion = (key: keyof typeof accordionOpen) => {
     setAccordionOpen((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  // Step 5: Peraturan Kos interactive states
+  const [peraturanAccordionOpen, setPeraturanAccordionOpen] = useState(true);
+  const [kriteriaPenyewa, setKriteriaPenyewa] = useState("Bisa untuk Semua");
+  const [kapasitasMaksimal, setKapasitasMaksimal] = useState(1);
+  const [bolehBawaAnak, setBolehBawaAnak] = useState(false);
+  const [wajibKartuKeluarga, setWajibKartuKeluarga] = useState(true);
+  const [bolehPasutri, setBolehPasutri] = useState(false);
+  const [wajibBukuNikah, setWajibBukuNikah] = useState(true);
+  const [wajibKtp, setWajibKtp] = useState(true);
+  const [bolehBawaHewan, setBolehBawaHewan] = useState(false);
+
+  // Sub-accordions in Peraturan Kos
+  const [subAccordionOpen, setSubAccordionOpen] = useState<{
+    jamMalam: boolean;
+    larangan: boolean;
+    tamu: boolean;
+    lainnya: boolean;
+  }>({
+    jamMalam: false,
+    larangan: false,
+    tamu: false,
+    lainnya: false,
+  });
+
+  const toggleSubAccordion = (key: keyof typeof subAccordionOpen) => {
+    setSubAccordionOpen((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const [aksesJamMalam, setAksesJamMalam] = useState("Akses 24 jam");
+  const [jamMalamText, setJamMalamText] = useState("23:00");
+  const [laranganPenyewa, setLaranganPenyewa] = useState<string[]>([
+    "Dilarang merokok di dalam kamar",
+    "Dilarang membawa minuman keras dan obat-obatan terlarang",
+  ]);
+  const [bolehTerimaTamu, setBolehTerimaTamu] = useState(true);
+  const [peraturanTamu, setPeraturanTamu] = useState<string[]>([
+    "Dilarang membawa tamu lawan jenis ke dalam kamar",
+  ]);
+  const [peraturanLainnya, setPeraturanLainnya] = useState<string[]>([
+    "Denda atas kerusakan fasilitas atau barang inventaris kos",
+  ]);
+
+  // Sync / compile all detailed regulation states into peraturanKos array
+  useEffect(() => {
+    const compiled: string[] = [];
+    if (kriteriaPenyewa && kriteriaPenyewa !== "Bisa untuk Semua") {
+      compiled.push(kriteriaPenyewa);
+    }
+    if (kapasitasMaksimal) {
+      compiled.push(`Maks. ${kapasitasMaksimal} orang per kamar`);
+    }
+    if (wajibKtp) {
+      compiled.push("Wajib sertakan KTP saat pengajuan sewa");
+    }
+    if (bolehPasutri) {
+      compiled.push("Boleh untuk pasutri");
+      if (wajibBukuNikah) compiled.push("Wajib sertakan buku nikah saat pengajuan sewa");
+    }
+    if (bolehBawaAnak) {
+      compiled.push("Boleh bawa anak");
+      if (wajibKartuKeluarga) compiled.push("Wajib sertakan kartu keluarga saat pengajuan sewa");
+    }
+    if (bolehBawaHewan) {
+      compiled.push("Boleh bawa hewan");
+    }
+    if (aksesJamMalam === "Akses 24 jam") {
+      compiled.push("Akses 24 Jam");
+    } else if (jamMalamText) {
+      compiled.push(`Ada jam malam (${jamMalamText})`);
+    }
+    laranganPenyewa.forEach((r) => compiled.push(r));
+    if (bolehTerimaTamu) {
+      peraturanTamu.forEach((r) => compiled.push(r));
+    } else {
+      compiled.push("Tidak diperkenankan menerima tamu");
+    }
+    peraturanLainnya.forEach((r) => compiled.push(r));
+
+    setPeraturanKos(compiled);
+  }, [
+    kriteriaPenyewa,
+    kapasitasMaksimal,
+    bolehBawaAnak,
+    wajibKartuKeluarga,
+    bolehPasutri,
+    wajibBukuNikah,
+    wajibKtp,
+    bolehBawaHewan,
+    aksesJamMalam,
+    jamMalamText,
+    laranganPenyewa,
+    bolehTerimaTamu,
+    peraturanTamu,
+    peraturanLainnya,
+  ]);
 
   // -------------------------------------------------------------
   // STEP 4: DATA REKENING
@@ -380,6 +521,20 @@ export default function NewPropertyPage() {
     fasilitasLanjutan,
     fasilitasBersama,
     peraturanKos,
+    kriteriaPenyewa,
+    kapasitasMaksimal,
+    bolehBawaAnak,
+    wajibKartuKeluarga,
+    bolehPasutri,
+    wajibBukuNikah,
+    wajibKtp,
+    bolehBawaHewan,
+    aksesJamMalam,
+    jamMalamText,
+    laranganPenyewa,
+    bolehTerimaTamu,
+    peraturanTamu,
+    peraturanLainnya,
     deskripsiKos,
     namaPemilik,
     namaBank,
@@ -438,6 +593,20 @@ export default function NewPropertyPage() {
           if (draft.fasilitasLanjutan !== undefined) setFasilitasLanjutan(draft.fasilitasLanjutan);
           if (draft.fasilitasBersama !== undefined) setFasilitasBersama(draft.fasilitasBersama);
           if (draft.peraturanKos !== undefined) setPeraturanKos(draft.peraturanKos);
+          if (draft.kriteriaPenyewa !== undefined) setKriteriaPenyewa(draft.kriteriaPenyewa);
+          if (draft.kapasitasMaksimal !== undefined) setKapasitasMaksimal(draft.kapasitasMaksimal);
+          if (draft.bolehBawaAnak !== undefined) setBolehBawaAnak(draft.bolehBawaAnak);
+          if (draft.wajibKartuKeluarga !== undefined) setWajibKartuKeluarga(draft.wajibKartuKeluarga);
+          if (draft.bolehPasutri !== undefined) setBolehPasutri(draft.bolehPasutri);
+          if (draft.wajibBukuNikah !== undefined) setWajibBukuNikah(draft.wajibBukuNikah);
+          if (draft.wajibKtp !== undefined) setWajibKtp(draft.wajibKtp);
+          if (draft.bolehBawaHewan !== undefined) setBolehBawaHewan(draft.bolehBawaHewan);
+          if (draft.aksesJamMalam !== undefined) setAksesJamMalam(draft.aksesJamMalam);
+          if (draft.jamMalamText !== undefined) setJamMalamText(draft.jamMalamText);
+          if (draft.laranganPenyewa !== undefined) setLaranganPenyewa(draft.laranganPenyewa);
+          if (draft.bolehTerimaTamu !== undefined) setBolehTerimaTamu(draft.bolehTerimaTamu);
+          if (draft.peraturanTamu !== undefined) setPeraturanTamu(draft.peraturanTamu);
+          if (draft.peraturanLainnya !== undefined) setPeraturanLainnya(draft.peraturanLainnya);
           if (draft.deskripsiKos !== undefined) setDeskripsiKos(draft.deskripsiKos);
 
           if (draft.namaPemilik !== undefined) setNamaPemilik(draft.namaPemilik);
@@ -514,6 +683,20 @@ export default function NewPropertyPage() {
     fasilitasLanjutan,
     fasilitasBersama,
     peraturanKos,
+    kriteriaPenyewa,
+    kapasitasMaksimal,
+    bolehBawaAnak,
+    wajibKartuKeluarga,
+    bolehPasutri,
+    wajibBukuNikah,
+    wajibKtp,
+    bolehBawaHewan,
+    aksesJamMalam,
+    jamMalamText,
+    laranganPenyewa,
+    bolehTerimaTamu,
+    peraturanTamu,
+    peraturanLainnya,
     deskripsiKos,
     namaPemilik,
     namaBank,
@@ -576,6 +759,26 @@ export default function NewPropertyPage() {
       bangunanJalan: "",
       lainnya: "",
     });
+    setKriteriaPenyewa("Bisa untuk Semua");
+    setKapasitasMaksimal(1);
+    setBolehBawaAnak(false);
+    setWajibKartuKeluarga(true);
+    setBolehPasutri(false);
+    setWajibBukuNikah(true);
+    setWajibKtp(true);
+    setBolehBawaHewan(false);
+    setAksesJamMalam("Akses 24 jam");
+    setJamMalamText("23:00");
+    setLaranganPenyewa([
+      "Dilarang merokok di dalam kamar",
+      "Dilarang membawa minuman keras dan obat-obatan terlarang",
+    ]);
+    setBolehTerimaTamu(true);
+    setPeraturanTamu(["Dilarang membawa tamu lawan jenis ke dalam kamar"]);
+    setPeraturanLainnya(["Denda atas kerusakan fasilitas atau barang inventaris kos"]);
+    setDeskripsiKos(
+      "Kos nyaman, aman, dan tenang di lingkungan strategis dekat kampus dan pusat perbelanjaan. Bangunan bersih terawat dengan sirkulasi udara baik."
+    );
     setNomorRekening("");
   };
 
@@ -747,17 +950,21 @@ export default function NewPropertyPage() {
     kamarKosong >= 0 &&
     parseInt(hargaPerbulan.replace(/\D/g, "") || "0", 10) >= 100000;
 
-  const isStep3Valid =
-    deskripsiKos.trim().length >= 20 && fasilitasDasar.length >= 2;
+  const uploadedPhotosCount = Object.values(photos).filter(Boolean).length;
+  const isStep3Valid = uploadedPhotosCount >= 1;
 
-  const isStep4Valid =
+  const isStep4Valid = fasilitasDasar.length >= 2;
+
+  const isStep5Valid = deskripsiKos.trim().length >= 20;
+
+  const isStep6Valid =
     namaPemilik.trim().length >= 2 &&
     nomorRekening.trim().length >= 5 &&
     namaPemilikRekening.trim().length >= 2;
 
   // Final submit to API
   const handleSubmitKos = async () => {
-    if (!isStep4Valid || isPending) return;
+    if (!isStep6Valid || isPending) return;
 
     setErrorMsg(null);
     startTransition(async () => {
@@ -862,7 +1069,7 @@ export default function NewPropertyPage() {
             Tambah Properti Kos Baru
           </h1>
           <p className="text-sm text-nk-text-muted">
-            Lengkapi data kos Anda melalui 4 langkah mudah untuk mulai menerima calon penyewa.
+            Lengkapi data kos Anda melalui 6 langkah mudah untuk mulai menerima calon penyewa.
           </p>
         </div>
 
@@ -1548,7 +1755,7 @@ export default function NewPropertyPage() {
                 onClick={() => setStep(3)}
                 className="inline-flex h-11 items-center gap-2 rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-all hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Lanjutkan ke Foto & Fasilitas
+                Lanjutkan ke Foto Kos
                 <ChevronRight className="size-4" />
               </button>
             </div>
@@ -1556,24 +1763,29 @@ export default function NewPropertyPage() {
         )}
 
         {/* ========================================================= */}
-        {/* STEP 3: FOTO & FASILITAS */}
+        {/* STEP 3: FOTO KOS */}
         {/* ========================================================= */}
         {step === 3 && (
           <div className="space-y-8 rounded-xl border border-nk-border bg-nk-surface p-6 sm:p-8 shadow-sm">
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-                3. Foto & Fasilitas Kos
+                3. Foto Properti Kos
               </h2>
               <p className="mt-1 text-sm text-nk-text-muted">
-                Unggah foto properti dan centang fasilitas yang tersedia untuk menarik minat calon penyewa.
+                Unggah foto properti kos yang jelas dan terang untuk menarik minat calon penyewa (minimal 1 foto kamar).
               </p>
             </div>
 
             {/* 7 Foto Upload Slots dengan Ikon Khusus */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-nk-text">
-                Foto Properti Kos (Minimal 3 foto) <span className="text-rose-500">*</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-nk-text">
+                  Foto Properti Kos <span className="text-rose-500">*</span>
+                </label>
+                <span className="text-xs text-nk-text-muted">
+                  {uploadedPhotosCount} dari {PHOTO_SLOTS.length} slot terisi
+                </span>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {PHOTO_SLOTS.map((slot) => {
                   const preview = photos[slot.key];
@@ -1629,16 +1841,58 @@ export default function NewPropertyPage() {
                   );
                 })}
               </div>
+              {!isStep3Valid && (
+                <p className="text-xs text-rose-500 pt-1">
+                  * Unggah minimal 1 foto kamar untuk dapat melanjutkan ke langkah berikutnya.
+                </p>
+              )}
             </div>
 
-            {/* Menu Akordion Fasilitas & Peraturan Kos */}
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between pt-4">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="inline-flex h-11 items-center gap-2 rounded-lg border border-nk-border bg-nk-surface px-5 text-sm font-medium text-nk-text hover:bg-nk-warm transition-colors"
+              >
+                <ChevronLeft className="size-4" />
+                Kembali
+              </button>
+              <button
+                type="button"
+                disabled={!isStep3Valid}
+                onClick={() => setStep(4)}
+                className="inline-flex h-11 items-center gap-2 rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-all hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Lanjutkan ke Fasilitas Kos
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* STEP 4: FASILITAS KOS */}
+        {/* ========================================================= */}
+        {step === 4 && (
+          <div className="space-y-8 rounded-xl border border-nk-border bg-nk-surface p-6 sm:p-8 shadow-sm">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+                4. Fasilitas Kos
+              </h2>
+              <p className="mt-1 text-sm text-nk-text-muted">
+                Centang fasilitas dasar, lanjutan, dan fasilitas bersama yang tersedia di properti kos Anda.
+              </p>
+            </div>
+
+            {/* Menu Akordion Fasilitas Kos */}
             <div className="space-y-4">
               {/* Akordion 1: Fasilitas Dasar (Wajib) */}
               <div className="rounded-xl border border-nk-border bg-nk-surface overflow-hidden transition-all shadow-sm">
                 <button
                   type="button"
                   onClick={() => toggleAccordion("dasar")}
-                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors"
+                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
@@ -1689,7 +1943,7 @@ export default function NewPropertyPage() {
                                 onClick={() =>
                                   toggleArrayItem(fasilitasDasar, setFasilitasDasar, item.label)
                                 }
-                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
                                   checked
                                     ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
                                     : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
@@ -1716,7 +1970,7 @@ export default function NewPropertyPage() {
                 <button
                   type="button"
                   onClick={() => toggleAccordion("lanjutan")}
-                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors"
+                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex size-9 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
@@ -1767,7 +2021,7 @@ export default function NewPropertyPage() {
                                 onClick={() =>
                                   toggleArrayItem(fasilitasLanjutan, setFasilitasLanjutan, item.label)
                                 }
-                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
                                   checked
                                     ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
                                     : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
@@ -1794,7 +2048,7 @@ export default function NewPropertyPage() {
                 <button
                   type="button"
                   onClick={() => toggleAccordion("bersama")}
-                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors"
+                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
@@ -1845,85 +2099,7 @@ export default function NewPropertyPage() {
                                 onClick={() =>
                                   toggleArrayItem(fasilitasBersama, setFasilitasBersama, item.label)
                                 }
-                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
-                                  checked
-                                    ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
-                                    : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
-                                }`}
-                              >
-                                <Icon
-                                  className={`size-4 shrink-0 transition-colors ${
-                                    checked ? "text-white" : "text-nk-text-muted"
-                                  }`}
-                                />
-                                <span className="truncate">{item.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Akordion 4: Peraturan Kos (Opsional) */}
-              <div className="rounded-xl border border-nk-border bg-nk-surface overflow-hidden transition-all shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("peraturan")}
-                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-rose-50 text-rose-700">
-                      <FileText className="size-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-nk-text">
-                        Peraturan Kos (Opsional)
-                      </h3>
-                      <p className="text-xs text-nk-text-muted">
-                        Akses 24 jam, jam malam, kriteria penghuni, dan tata tertib
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    {peraturanKos.length > 0 && (
-                      <span className="rounded-full bg-nk-accent/10 px-2.5 py-0.5 text-xs font-semibold text-nk-accent">
-                        {peraturanKos.length} dipilih
-                      </span>
-                    )}
-                    <ChevronDown
-                      className={`size-4 text-nk-text-muted transition-transform duration-200 ${
-                        accordionOpen.peraturan ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-                </button>
-
-                <AnimatePresence initial={false}>
-                  {accordionOpen.peraturan && (
-                    <motion.div
-                      key="accordion-peraturan"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          {PERATURAN_KOS_ITEMS.map((item) => {
-                            const checked = peraturanKos.includes(item.label);
-                            const Icon = item.icon;
-                            return (
-                              <button
-                                key={item.label}
-                                type="button"
-                                onClick={() =>
-                                  toggleArrayItem(peraturanKos, setPeraturanKos, item.label)
-                                }
-                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
                                   checked
                                     ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
                                     : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
@@ -1946,8 +2122,695 @@ export default function NewPropertyPage() {
               </div>
             </div>
 
-            {/* Deskripsi Kos */}
-            <div className="flex flex-col gap-2">
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between pt-4">
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                className="inline-flex h-11 items-center gap-2 rounded-lg border border-nk-border bg-nk-surface px-5 text-sm font-medium text-nk-text hover:bg-nk-warm transition-colors"
+              >
+                <ChevronLeft className="size-4" />
+                Kembali
+              </button>
+              <button
+                type="button"
+                disabled={!isStep4Valid}
+                onClick={() => setStep(5)}
+                className="inline-flex h-11 items-center gap-2 rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-all hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Lanjutkan ke Peraturan Kos
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* STEP 5: PERATURAN & DESKRIPSI KOS */}
+        {/* ========================================================= */}
+        {step === 5 && (
+          <div className="space-y-8 rounded-xl border border-nk-border bg-nk-surface p-6 sm:p-8 shadow-sm">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+                5. Peraturan & Deskripsi Kos
+              </h2>
+              <p className="mt-1 text-sm text-nk-text-muted">
+                Atur kriteria calon penyewa, tata tertib kos, dan tuliskan deskripsi lengkap mengenai kos Anda.
+              </p>
+            </div>
+
+            {/* Akordion Besar: Peraturan Kos (Opsional) */}
+            <div className="rounded-xl border border-nk-border bg-nk-surface overflow-hidden transition-all shadow-sm">
+              <button
+                type="button"
+                onClick={() => setPeraturanAccordionOpen((prev) => !prev)}
+                className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-rose-50 text-rose-700 shrink-0">
+                    <FileText className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-nk-text">
+                      Peraturan Kos (Opsional)
+                    </h3>
+                    <p className="text-xs text-nk-text-muted">
+                      Dianjurkan diisi agar jelas bagi penyewa
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  {peraturanKos.length > 0 && (
+                    <span className="rounded-full bg-nk-accent/10 px-2.5 py-0.5 text-xs font-semibold text-nk-accent">
+                      {peraturanKos.length} diatur
+                    </span>
+                  )}
+                  <ChevronDown
+                    className={`size-4 text-nk-text-muted transition-transform duration-200 ${
+                      peraturanAccordionOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </div>
+              </button>
+
+              <AnimatePresence initial={false}>
+                {peraturanAccordionOpen && (
+                  <motion.div
+                    key="accordion-peraturan-main"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="border-t border-nk-border bg-nk-warm/10 p-4 sm:p-6 space-y-6">
+                      {/* SECTION 1: Kriteria Calon Penyewa */}
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-nk-text">
+                            Kriteria Calon Penyewa
+                          </h4>
+                          <p className="text-xs text-nk-text-muted">
+                            Pilih kategori calon penyewa yang diperbolehkan tinggal di kos Anda.
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {[
+                            {
+                              label: "Bisa untuk Semua",
+                              icon: Users,
+                              desc: "Terbuka bagi mahasiswa, karyawan, atau umum",
+                            },
+                            {
+                              label: "Khusus Mahasiswa",
+                              icon: GraduationCap,
+                              desc: "Hanya untuk pelajar atau mahasiswa aktif",
+                            },
+                            {
+                              label: "Khusus Karyawan",
+                              icon: Briefcase,
+                              desc: "Hanya untuk karyawan atau pekerja profesional",
+                            },
+                          ].map((item) => {
+                            const isSelected = kriteriaPenyewa === item.label;
+                            const Icon = item.icon;
+                            return (
+                              <button
+                                key={item.label}
+                                type="button"
+                                onClick={() => setKriteriaPenyewa(item.label)}
+                                className={`flex flex-col items-start p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
+                                  isSelected
+                                    ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
+                                    : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <Icon
+                                    className={`size-4 ${
+                                      isSelected ? "text-white" : "text-nk-text-muted"
+                                    }`}
+                                  />
+                                  {isSelected && (
+                                    <CheckCircle2 className="size-3.5 text-white" />
+                                  )}
+                                </div>
+                                <span className="font-semibold text-xs mt-2.5">
+                                  {item.label}
+                                </span>
+                                <span
+                                  className={`text-[11px] mt-1 line-clamp-2 ${
+                                    isSelected ? "text-white/80" : "text-nk-text-muted"
+                                  }`}
+                                >
+                                  {item.desc}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* SECTION 2: Kapasitas Penghuni Maksimum per Kamar */}
+                      <div className="pt-2 border-t border-nk-border space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div>
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-nk-text">
+                              Kapasitas Penghuni Maksimum per Kamar
+                            </h4>
+                            <p className="text-xs text-nk-text-muted">
+                              Batas jumlah orang yang diperbolehkan tinggal di dalam satu kamar.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setKapasitasMaksimal((v) => Math.max(1, v - 1))
+                              }
+                              className="flex size-9 items-center justify-center rounded-lg border border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm transition-colors cursor-pointer"
+                            >
+                              <Minus className="size-4" />
+                            </button>
+                            <span className="min-w-[70px] text-center text-sm font-bold text-nk-text">
+                              {kapasitasMaksimal} Orang
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setKapasitasMaksimal((v) => Math.min(5, v + 1))
+                              }
+                              className="flex size-9 items-center justify-center rounded-lg border border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm transition-colors cursor-pointer"
+                            >
+                              <Plus className="size-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* SECTION 3: Persyaratan dan Dokumen */}
+                      <div className="pt-2 border-t border-nk-border space-y-2">
+                        <div>
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-nk-text">
+                            Persyaratan dan Dokumen
+                          </h4>
+                          <p className="text-xs text-nk-text-muted">
+                            Ketentuan kependudukan serta dokumen resmi yang wajib dilampirkan calon penyewa.
+                          </p>
+                        </div>
+
+                        <div className="divide-y divide-nk-border/60 rounded-lg border border-nk-border bg-nk-surface px-4">
+                          {/* Boleh bawa anak */}
+                          <div>
+                            <ToggleSwitch
+                              checked={bolehBawaAnak}
+                              onChange={setBolehBawaAnak}
+                              label="Boleh bawa anak"
+                              description="Penyewa diperbolehkan membawa anak tinggal di dalam kamar kos"
+                            />
+                            <AnimatePresence initial={false}>
+                              {bolehBawaAnak && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="mb-3 ml-2 rounded-lg border border-nk-accent/20 bg-nk-warm/50 p-3">
+                                    <label className="flex cursor-pointer items-start gap-2.5 text-xs text-nk-text">
+                                      <input
+                                        type="checkbox"
+                                        checked={wajibKartuKeluarga}
+                                        onChange={(e) =>
+                                          setWajibKartuKeluarga(e.target.checked)
+                                        }
+                                        className="mt-0.5 size-4 accent-[#3A2618]"
+                                      />
+                                      <div>
+                                        <span className="font-medium text-nk-text">
+                                          Wajib sertakan kartu keluarga saat pengajuan sewa
+                                        </span>
+                                        <p className="text-[11px] text-nk-text-muted">
+                                          Dokumen untuk membawa anak
+                                        </p>
+                                      </div>
+                                    </label>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Boleh untuk pasutri */}
+                          <div>
+                            <ToggleSwitch
+                              checked={bolehPasutri}
+                              onChange={setBolehPasutri}
+                              label="Boleh untuk pasutri"
+                              description="Pasangan suami-istri sah diperbolehkan menyewa satu kamar bersama"
+                            />
+                            <AnimatePresence initial={false}>
+                              {bolehPasutri && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="mb-3 ml-2 rounded-lg border border-nk-accent/20 bg-nk-warm/50 p-3">
+                                    <label className="flex cursor-pointer items-start gap-2.5 text-xs text-nk-text">
+                                      <input
+                                        type="checkbox"
+                                        checked={wajibBukuNikah}
+                                        onChange={(e) =>
+                                          setWajibBukuNikah(e.target.checked)
+                                        }
+                                        className="mt-0.5 size-4 accent-[#3A2618]"
+                                      />
+                                      <div>
+                                        <span className="font-medium text-nk-text">
+                                          Wajib sertakan buku nikah saat pengajuan sewa
+                                        </span>
+                                        <p className="text-[11px] text-nk-text-muted">
+                                          Dokumen untuk pasutri
+                                        </p>
+                                      </div>
+                                    </label>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Wajib sertakan KTP */}
+                          <ToggleSwitch
+                            checked={wajibKtp}
+                            onChange={setWajibKtp}
+                            label="Wajib sertakan KTP saat pengajuan sewa"
+                            description="Identitas resmi wajib untuk verifikasi keamanan pengelola kos"
+                          />
+
+                          {/* Boleh bawa hewan */}
+                          <ToggleSwitch
+                            checked={bolehBawaHewan}
+                            onChange={setBolehBawaHewan}
+                            label="Boleh bawa hewan"
+                            description="Penyewa diperbolehkan membawa hewan peliharaan di area kos"
+                          />
+                        </div>
+                      </div>
+
+                      {/* SECTION 4: Sub-Akordion Gabungan */}
+                      <div className="pt-2 border-t border-nk-border space-y-3">
+                        <div>
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-nk-text">
+                            Tata Tertib & Ketentuan Lainnya
+                          </h4>
+                          <p className="text-xs text-nk-text-muted">
+                            Atur rincian jam malam, larangan bagi penghuni, peraturan penerimaan tamu, dan denda tata tertib.
+                          </p>
+                        </div>
+
+                        <div className="space-y-3">
+                          {/* Sub-Akordion 1: Akses Jam Malam */}
+                          <div className="rounded-lg border border-nk-border bg-nk-surface overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => toggleSubAccordion("jamMalam")}
+                              className="flex w-full items-center justify-between p-3.5 text-left hover:bg-nk-warm/40 transition-colors cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <Clock className="size-4 text-nk-text-muted" />
+                                <span className="text-xs font-semibold text-nk-text">
+                                  Akses Jam Malam
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-nk-accent font-medium">
+                                  {aksesJamMalam === "Akses 24 jam"
+                                    ? "Akses 24 Jam"
+                                    : `Jam Malam (${jamMalamText})`}
+                                </span>
+                                <ChevronDown
+                                  className={`size-3.5 text-nk-text-muted transition-transform duration-200 ${
+                                    subAccordionOpen.jamMalam ? "rotate-180" : ""
+                                  }`}
+                                />
+                              </div>
+                            </button>
+                            <AnimatePresence initial={false}>
+                              {subAccordionOpen.jamMalam && (
+                                <motion.div
+                                  key="sub-jam-malam"
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="border-t border-nk-border bg-nk-warm/20 p-4 space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                      {[
+                                        {
+                                          val: "Akses 24 jam",
+                                          label: "Akses 24 Jam",
+                                          desc: "Penyewa memegang kunci gerbang bebas keluar masuk",
+                                        },
+                                        {
+                                          val: "Ada jam malam",
+                                          label: "Ada Jam Malam",
+                                          desc: "Pintu gerbang ditutup pada jam yang ditentukan",
+                                        },
+                                      ].map((opt) => {
+                                        const selected = aksesJamMalam === opt.val;
+                                        return (
+                                          <button
+                                            key={opt.val}
+                                            type="button"
+                                            onClick={() => setAksesJamMalam(opt.val)}
+                                            className={`flex flex-col items-start p-3 rounded-lg border text-left text-xs transition-all cursor-pointer ${
+                                              selected
+                                                ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
+                                                : "border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm"
+                                            }`}
+                                          >
+                                            <span className="font-semibold">
+                                              {opt.label}
+                                            </span>
+                                            <span
+                                              className={`text-[11px] mt-0.5 ${
+                                                selected
+                                                  ? "text-white/80"
+                                                  : "text-nk-text-muted"
+                                              }`}
+                                            >
+                                              {opt.desc}
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+
+                                    <AnimatePresence initial={false}>
+                                      {aksesJamMalam === "Ada jam malam" && (
+                                        <motion.div
+                                          initial={{ opacity: 0, height: 0 }}
+                                          animate={{ opacity: 1, height: "auto" }}
+                                          exit={{ opacity: 0, height: 0 }}
+                                          transition={{ duration: 0.2, ease: "easeInOut" }}
+                                          className="overflow-hidden"
+                                        >
+                                          <div className="pt-2 flex items-center gap-3">
+                                            <label className="text-xs text-nk-text font-medium whitespace-nowrap">
+                                              Pukul Gerbang Ditutup:
+                                            </label>
+                                            <select
+                                              value={jamMalamText}
+                                              onChange={(e) =>
+                                                setJamMalamText(e.target.value)
+                                              }
+                                              className="h-9 rounded-md border border-nk-border bg-nk-surface px-3 text-xs text-nk-text focus:border-nk-accent focus:outline-none"
+                                            >
+                                              <option value="21:00">21:00 WIB</option>
+                                              <option value="22:00">22:00 WIB</option>
+                                              <option value="23:00">23:00 WIB</option>
+                                              <option value="24:00">24:00 WIB</option>
+                                            </select>
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Sub-Akordion 2: Larangan Penyewa */}
+                          <div className="rounded-lg border border-nk-border bg-nk-surface overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => toggleSubAccordion("larangan")}
+                              className="flex w-full items-center justify-between p-3.5 text-left hover:bg-nk-warm/40 transition-colors cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <Ban className="size-4 text-nk-text-muted" />
+                                <span className="text-xs font-semibold text-nk-text">
+                                  Larangan Penyewa
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {laranganPenyewa.length > 0 && (
+                                  <span className="text-[11px] text-nk-accent font-medium">
+                                    {laranganPenyewa.length} larangan aktif
+                                  </span>
+                                )}
+                                <ChevronDown
+                                  className={`size-3.5 text-nk-text-muted transition-transform duration-200 ${
+                                    subAccordionOpen.larangan ? "rotate-180" : ""
+                                  }`}
+                                />
+                              </div>
+                            </button>
+                            <AnimatePresence initial={false}>
+                              {subAccordionOpen.larangan && (
+                                <motion.div
+                                  key="sub-larangan"
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="border-t border-nk-border bg-nk-warm/20 p-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                      {[
+                                        "Dilarang merokok di dalam kamar",
+                                        "Dilarang membawa minuman keras dan obat-obatan terlarang",
+                                        "Dilarang membuat kegaduhan / jam tenang setelah 22:00",
+                                        "Dilarang memasak di dalam kamar",
+                                        "Dilarang merusak atau memaku dinding kamar tanpa izin",
+                                        "Dilarang menggunakan alat elektronik watt besar tanpa izin",
+                                      ].map((rule) => {
+                                        const checked = laranganPenyewa.includes(rule);
+                                        return (
+                                          <label
+                                            key={rule}
+                                            className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-xs cursor-pointer transition-all ${
+                                              checked
+                                                ? "border-nk-accent bg-nk-surface shadow-xs text-nk-text font-medium"
+                                                : "border-nk-border bg-nk-surface/60 text-nk-text-muted hover:bg-nk-surface"
+                                            }`}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={checked}
+                                              onChange={() =>
+                                                toggleArrayItem(
+                                                  laranganPenyewa,
+                                                  setLaranganPenyewa,
+                                                  rule
+                                                )
+                                              }
+                                              className="mt-0.5 size-4 accent-[#3A2618]"
+                                            />
+                                            <span>{rule}</span>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Sub-Akordion 3: Peraturan Tamu */}
+                          <div className="rounded-lg border border-nk-border bg-nk-surface overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => toggleSubAccordion("tamu")}
+                              className="flex w-full items-center justify-between p-3.5 text-left hover:bg-nk-warm/40 transition-colors cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <Users className="size-4 text-nk-text-muted" />
+                                <span className="text-xs font-semibold text-nk-text">
+                                  Peraturan Tamu
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-nk-accent font-medium">
+                                  {bolehTerimaTamu
+                                    ? `${peraturanTamu.length} aturan tamu`
+                                    : "Tamu dilarang"}
+                                </span>
+                                <ChevronDown
+                                  className={`size-3.5 text-nk-text-muted transition-transform duration-200 ${
+                                    subAccordionOpen.tamu ? "rotate-180" : ""
+                                  }`}
+                                />
+                              </div>
+                            </button>
+                            <AnimatePresence initial={false}>
+                              {subAccordionOpen.tamu && (
+                                <motion.div
+                                  key="sub-tamu"
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="border-t border-nk-border bg-nk-warm/20 p-4 space-y-3">
+                                    <ToggleSwitch
+                                      checked={bolehTerimaTamu}
+                                      onChange={setBolehTerimaTamu}
+                                      label="Boleh menerima tamu?"
+                                      description="Apakah penyewa diperkenankan menerima tamu di area kos"
+                                    />
+
+                                    <AnimatePresence initial={false}>
+                                      {bolehTerimaTamu && (
+                                        <motion.div
+                                          initial={{ opacity: 0, height: 0 }}
+                                          animate={{ opacity: 1, height: "auto" }}
+                                          exit={{ opacity: 0, height: 0 }}
+                                          transition={{ duration: 0.25, ease: "easeInOut" }}
+                                          className="overflow-hidden"
+                                        >
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+                                            {[
+                                              "Dilarang membawa tamu lawan jenis ke dalam kamar",
+                                              "Tamu menginap dikenakan biaya tambahan",
+                                              "Tamu boleh menginap (maks. 2 hari / seizin pengelola)",
+                                              "Ada jam malam untuk tamu berkunjung",
+                                            ].map((rule) => {
+                                              const checked = peraturanTamu.includes(rule);
+                                              return (
+                                                <label
+                                                  key={rule}
+                                                  className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-xs cursor-pointer transition-all ${
+                                                    checked
+                                                      ? "border-nk-accent bg-nk-surface shadow-xs text-nk-text font-medium"
+                                                      : "border-nk-border bg-nk-surface/60 text-nk-text-muted hover:bg-nk-surface"
+                                                  }`}
+                                                >
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={checked}
+                                                    onChange={() =>
+                                                      toggleArrayItem(
+                                                        peraturanTamu,
+                                                        setPeraturanTamu,
+                                                        rule
+                                                      )
+                                                    }
+                                                    className="mt-0.5 size-4 accent-[#3A2618]"
+                                                  />
+                                                  <span>{rule}</span>
+                                                </label>
+                                              );
+                                            })}
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Sub-Akordion 4: Lainnya */}
+                          <div className="rounded-lg border border-nk-border bg-nk-surface overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => toggleSubAccordion("lainnya")}
+                              className="flex w-full items-center justify-between p-3.5 text-left hover:bg-nk-warm/40 transition-colors cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <AlertTriangle className="size-4 text-nk-text-muted" />
+                                <span className="text-xs font-semibold text-nk-text">
+                                  Lainnya
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {peraturanLainnya.length > 0 && (
+                                  <span className="text-[11px] text-nk-accent font-medium">
+                                    {peraturanLainnya.length} dipilih
+                                  </span>
+                                )}
+                                <ChevronDown
+                                  className={`size-3.5 text-nk-text-muted transition-transform duration-200 ${
+                                    subAccordionOpen.lainnya ? "rotate-180" : ""
+                                  }`}
+                                />
+                              </div>
+                            </button>
+                            <AnimatePresence initial={false}>
+                              {subAccordionOpen.lainnya && (
+                                <motion.div
+                                  key="sub-lainnya"
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="border-t border-nk-border bg-nk-warm/20 p-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                      {[
+                                        "Denda atas kerusakan fasilitas atau barang inventaris kos",
+                                        "Wajib ikut piket kebersihan lingkungan kos",
+                                        "Hemat penggunaan air dan listrik bersama",
+                                        "Memarkir kendaraan dengan tertib dan rapi",
+                                        "Membuang sampah pada tempat yang disediakan tiap hari",
+                                        "Wajib mengunci gerbang utama saat keluar masuk",
+                                      ].map((rule) => {
+                                        const checked = peraturanLainnya.includes(rule);
+                                        return (
+                                          <label
+                                            key={rule}
+                                            className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-xs cursor-pointer transition-all ${
+                                              checked
+                                                ? "border-nk-accent bg-nk-surface shadow-xs text-nk-text font-medium"
+                                                : "border-nk-border bg-nk-surface/60 text-nk-text-muted hover:bg-nk-surface"
+                                            }`}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={checked}
+                                              onChange={() =>
+                                                toggleArrayItem(
+                                                  peraturanLainnya,
+                                                  setPeraturanLainnya,
+                                                  rule
+                                                )
+                                              }
+                                              className="mt-0.5 size-4 accent-[#3A2618]"
+                                            />
+                                            <span>{rule}</span>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Section DI LUAR Akordion: Deskripsi Kos */}
+            <div className="flex flex-col gap-2 pt-2">
               <label className="text-sm font-medium text-nk-text">
                 Deskripsi Kos <span className="text-rose-500">*</span>
               </label>
@@ -1968,7 +2831,7 @@ export default function NewPropertyPage() {
             <div className="flex items-center justify-between pt-4">
               <button
                 type="button"
-                onClick={() => setStep(2)}
+                onClick={() => setStep(4)}
                 className="inline-flex h-11 items-center gap-2 rounded-lg border border-nk-border bg-nk-surface px-5 text-sm font-medium text-nk-text hover:bg-nk-warm transition-colors"
               >
                 <ChevronLeft className="size-4" />
@@ -1976,11 +2839,11 @@ export default function NewPropertyPage() {
               </button>
               <button
                 type="button"
-                disabled={!isStep3Valid}
-                onClick={() => setStep(4)}
+                disabled={!isStep5Valid}
+                onClick={() => setStep(6)}
                 className="inline-flex h-11 items-center gap-2 rounded-lg bg-nk-accent px-6 text-sm font-medium text-nk-text-inverse transition-all hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Lengkapi Data Diri
+                Lengkapi Data Rekening
                 <ChevronRight className="size-4" />
               </button>
             </div>
@@ -1988,13 +2851,13 @@ export default function NewPropertyPage() {
         )}
 
         {/* ========================================================= */}
-        {/* STEP 4: DATA REKENING & FINISH */}
+        {/* STEP 6: DATA REKENING & FINISH */}
         {/* ========================================================= */}
-        {step === 4 && (
+        {step === 6 && (
           <div className="space-y-8 rounded-xl border border-nk-border bg-nk-surface p-6 sm:p-8 shadow-sm">
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-                4. Lengkapi Data Diri & Rekening Anda
+                6. Lengkapi Data Diri & Rekening Anda
               </h2>
               <p className="mt-1 text-sm text-nk-text-muted">
                 Rekening bank ini digunakan untuk penyaluran dana pembayaran sewa dari penyewa kos.
@@ -2098,7 +2961,7 @@ export default function NewPropertyPage() {
             <div className="flex items-center justify-between pt-4">
               <button
                 type="button"
-                onClick={() => setStep(3)}
+                onClick={() => setStep(5)}
                 className="inline-flex h-11 items-center gap-2 rounded-lg border border-nk-border bg-nk-surface px-5 text-sm font-medium text-nk-text hover:bg-nk-warm transition-colors"
               >
                 <ChevronLeft className="size-4" />
@@ -2106,7 +2969,7 @@ export default function NewPropertyPage() {
               </button>
               <button
                 type="button"
-                disabled={!isStep4Valid || isPending}
+                disabled={!isStep6Valid || isPending}
                 onClick={handleSubmitKos}
                 className="inline-flex h-12 items-center gap-2 rounded-lg bg-nk-accent px-8 text-sm font-medium text-nk-text-inverse shadow-sm transition-all hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
               >
