@@ -104,47 +104,7 @@ const STEPS = [
   { id: 4, label: "Data Rekening", icon: CreditCard },
 ];
 
-const DRAFT_STORAGE_KEY = "ngekos_owner_property_draft";
-
-interface PropertyFormDraft {
-  step: number;
-  namaKos: string;
-  alamatSearch: string;
-  lat: number;
-  lon: number;
-  detailLokasi: string;
-  kelurahan: string;
-  kecamatan: string;
-  kabupatenKota: string;
-  provinsi: string;
-  kodePos: string;
-  patokanAlamat: string;
-  tipeKamar: string;
-  gender: "MALE" | "FEMALE" | "MIXED";
-  ukuranKamar: string;
-  totalKamar: number;
-  kamarKosong: number;
-  hargaPerbulan: string;
-  enableHargaSpesial: boolean;
-  hargaSpesial: string;
-  durasiSpesial: string;
-  enableUangJaminan: boolean;
-  persenDp: number;
-  nominalJaminan: string;
-  enableBiayaTambahan: boolean;
-  biayaTambahanList: { id: string; nominal: string; nama: string }[];
-  photos: { [key: string]: string };
-  fasilitasDasar: string[];
-  fasilitasLanjutan: string[];
-  fasilitasBersama: string[];
-  peraturanKos: string[];
-  deskripsiKos: string;
-  namaPemilik: string;
-  namaBank: string;
-  nomorRekening: string;
-  namaPemilikRekening: string;
-  savedAt: number;
-}
+import { DRAFT_STORAGE_KEY, type PropertyFormDraft } from "@/lib/propertyDraft";
 
 const PHOTO_SLOTS = [
   { key: "kamarTidur", label: "Foto Kamar Tidur", icon: Bed, required: true },
