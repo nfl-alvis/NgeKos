@@ -15,7 +15,7 @@ import {
 import { usePathname, useRouter } from "@/i18n/navigation";
 
 const LANGUAGES = [
-  { value: "id", label: "Bahasa Indonesia", flag: "🇮🇩" },
+  { value: "id", label: "Bahasa Indonesia", flag: "ID" },
   { value: "en", label: "English", flag: "EN" },
 ] as const;
 
