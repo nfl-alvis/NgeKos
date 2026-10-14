@@ -6,10 +6,65 @@ import { listPublicProperties, propertyDto } from "@/server/property-service";
 import { getVerifiedProperties } from "@/lib/data/properties";
 import type { Property, Facility, Gender } from "@/lib/data/types";
 
-export function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-  return params.then(({ locale }) => ({
-    title: locale === "en" ? "Explore Boarding Houses" : "Jelajahi Kost",
-  }));
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.ngekos.biz.id";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const isEn = locale === "en";
+
+  const title = isEn
+    ? "Explore Boarding Houses (Kost) in Malang & Indonesia | NgeKos"
+    : "Daftar Kost Murah & Eksklusif Terverifikasi di Malang | NgeKos";
+
+  const description = isEn
+    ? "Search verified boarding houses in Malang near UB, UM, Polinema, ITN, UIN. Filter by monthly price, room amenities, and gender (male/female/mixed)."
+    : "Cari dan sewa kost terverifikasi di Malang dekat UB, UM, Polinema, ITN, UIN. Filter harga bulanan, fasilitas lengkap (AC, WiFi, K.Mandi Dalam), putra/putri/campur.";
+
+  return {
+    title,
+    description,
+    keywords: [
+      "kost malang",
+      "cari kost malang",
+      "sewa kost malang",
+      "kost dekat ub",
+      "kost dekat um",
+      "kost dekat polinema",
+      "kost putri malang",
+      "kost putra malang",
+      "kost bebas malang",
+      "kost campur malang",
+      "kost eksklusif malang",
+      "ngekos",
+    ],
+    alternates: {
+      canonical: `/${locale}/kost`,
+      languages: {
+        "id-ID": "/id/kost",
+        "en-US": "/en/kost",
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${BASE_URL}/${locale}/kost`,
+      siteName: "NgeKos",
+      locale: isEn ? "en_US" : "id_ID",
+      type: "website",
+      images: [
+        {
+          url: `${BASE_URL}/assets/hero-bg.png`,
+          width: 1200,
+          height: 630,
+          alt: "Daftar Kost Terverifikasi - NgeKos",
+        },
+      ],
+    },
+  };
 }
 
 function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {

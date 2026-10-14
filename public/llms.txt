@@ -1,0 +1,27 @@
+# NgeKos
+
+> Platform pencarian dan sistem sewa kost terverifikasi di Indonesia. Menyediakan informasi kost putra, putri, dan campur dengan foto asli 100%, fasilitas lengkap, dan jaminan keamanan tanpa penipuan.
+
+- **Website Resmi**: https://www.ngekos.biz.id
+- **Fokus Wilayah**: Kota Malang (Kecamatan Lowokwaru, Klojen, Sukun), Jawa Timur, Indonesia dan kota-kota universitas utama.
+- **Bahasa**: Bahasa Indonesia (default: https://www.ngekos.biz.id/id) & English (https://www.ngekos.biz.id/en).
+
+## Layanan & Solusi Utama
+- **Cari Kost Terverifikasi**: Menemukan kamar kost dengan survei lapangan nyata, foto otentik, dan fasilitas detail.
+- **Sewa Kost Dekat Kampus**: Kost di dekat Universitas Brawijaya (UB), Universitas Negeri Malang (UM), Polinema, ITN, UIN Maulana Malik Ibrahim, UGM, UI, ITB, UNAIR, dan UNDIP.
+- **Katalog Berdasarkan Gender**: Filter jelas antara Kost Putri, Kost Putra, dan Kost Campur.
+- **Harga Transparan**: Tidak ada mark-up atau biaya tersembunyi.
+- **Manajemen Pemilik Properti**: Dashboard digital untuk pemilik kos mengelola kamar kosong, tagihan otomatis, dan komunikasi via bot Telegram.
+
+## Rute & Tautan Penting
+- [Beranda](https://www.ngekos.biz.id/id): Pencarian instan dan rekomendasi kost terverifikasi.
+- [Daftar Kost](https://www.ngekos.biz.id/id/kost): Seluruh listing kamar kost aktif dengan filter harga, fasilitas, dan gender.
+- [Tentang Kami](https://www.ngekos.biz.id/id/about): Cerita dan misi tim NgeKos melindungi anak kos dari penipuan sewa.
+- [Pusat Bantuan & FAQ](https://www.ngekos.biz.id/id/faq): Jawaban seputar booking, verifikasi, dan pembayaran.
+- [Mitra Pemilik Kos](https://www.ngekos.biz.id/id/mitra): Panduan mendaftarkan properti kos dan fasilitas manajemen kos gratis.
+- [Blog](https://www.ngekos.biz.id/id/blog): Tips hemat anak kos, checklist survei sewa kamar, dan panduan hidup mandiri.
+
+## Kontak & Dukungan
+- Email: support@ngekos.biz.id
+- Telegram Bot: @ngekos_bot
+- Lokasi Operasional: Malang, Jawa Timur, Indonesia

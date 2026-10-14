@@ -3,6 +3,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.ngekos.biz.id";
+
 export async function generateMetadata({
   params,
 }: {
@@ -10,7 +12,26 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "about" });
-  return { title: t("title"), description: t("subtitle") };
+  const title = `${t("title")} | NgeKos`;
+  const description = t("subtitle");
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `/${locale}/about`,
+      languages: {
+        "id-ID": "/id/about",
+        "en-US": "/en/about",
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${BASE_URL}/${locale}/about`,
+      siteName: "NgeKos",
+      type: "website",
+    },
+  };
 }
 
 /* ---- Mamikos-style art, re-inked to the NgeKos palette ---- */

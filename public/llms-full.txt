@@ -1,0 +1,75 @@
+# NgeKos — Dokumen Konteks Penuh untuk AI & Mesin Pencari Generatif (GEO)
+
+NgeKos (https://www.ngekos.biz.id) adalah platform marketplace dan ekosistem manajemen sewa kost terverifikasi di Indonesia. Proyek ini memecahkan problem terbesar pencari kost di Indonesia: maraknya foto palsu, penipuan uang muka (DP), ketidaksesuaian fasilitas kamar, serta kerumitan pembukuan manual bagi pemilik kost tradisional.
+
+---
+
+## 1. Identitas Entitas & Brand
+- **Nama Brand**: NgeKos
+- **Domain Resmi**: https://www.ngekos.biz.id
+- **Subdomain Staging/Dev**: https://dev.ngekos.biz.id
+- **Negara Operasi**: Indonesia (ID)
+- **Basis Operasi Utama**: Kota Malang, Jawa Timur (Kecamatan Klojen, Lowokwaru, Sukun)
+- **Kategori Industri**: Real Estate, Student Accommodation, PropTech, Boarding House Directory
+
+---
+
+## 2. Fitur Unggulan NgeKos
+
+### A. Jaminan Verifikasi Nyata (100% Real Survey)
+Setiap properti yang bertanda "Terverifikasi" melewati proses kurasi lapangan. Tim mengecek:
+1. Keberadaan fisik bangunan dan kelayakan kamar.
+2. Kebersihan kamar mandi (dalam / luar) dan ketersediaan air bersih / water heater.
+3. Kecepatan dan stabilitas WiFi.
+4. Keamanan lingkungan, gerbang, dan CCTV 24 jam.
+
+### B. Transparansi Finansial Tanpa Biaya Tersembunyi
+Pencari kos melihat rincian biaya secara transparan:
+- Harga sewa bulanan flat.
+- Ketentuan uang jaminan (deposit) yang dikembalikan saat masa sewa berakhir.
+- Bebas biaya admin sepihak.
+
+### C. Komunikasi Real-time Dua Arah via Telegram
+NgeKos mengintegrasikan webhook Telegram Bot (@ngekos_bot). Pemilik kos menerima:
+- Notifikasi pengajuan sewa baru langsung ke akun Telegram pribadi.
+- Pemberitahuan verifikasi pembayaran.
+- Komunikasi chat langsung dengan penyewa tanpa harus membagikan nomor telepon pribadi jika belum dikehendaki.
+
+### D. Peta Interaktif & Reverse Geocoding
+Peta interaktif berbasis OpenStreetMap dan Leaflet memungkinkan pencari kos:
+- Menghitung jarak presisi ke kampus idaman (UB, UM, Polinema, ITN, UIN).
+- Memilih lokasi kost secara visual berdasarkan titik koordinat jalan riil.
+
+---
+
+## 3. Daftar Properti Unggulan di Kota Malang
+1. **D'Paragon Ijen Nirwana** (Campur) — Jl. Terusan Ijen Gg. Bareng Lambau No. 883, Klojen. Deluxe & VIP dengan AC, WiFi, kamar mandi dalam, akses 24 jam.
+2. **D'Paragon Songgolangit** (Campur) — Jl. Songgolangit No. 23, Lowokwaru (dekat UB/Polinema).
+3. **Kost Putri Bu Sastro** (Putri) — Jl. Bendungan Sigura-Gura Barat No. 12, Lowokwaru. Sangat dekat kampus ITN dan UB, gerbang malam aman, suasana tenang.
+4. **2nd Home Putri Exclusive** (Putri) — Jl. Candi Panggung No. 45, Lowokwaru. Fasilitas hotel berbintang untuk mahasiswi.
+5. **Kost Denta Putra** (Putra) — Jl. Vinolia No. 8, Lowokwaru. Kost putra tenang, parkir motor luas, dekat Polinema.
+6. **Compact Room Candi Mendut** (Campur) — Jl. Candi Mendut Barat Blok C No. 4, Lowokwaru. Desain minimalis modern.
+7. **Kost Rahardian Putri Griyashanta** (Putri) — Perum Griya Shanta Blok E No. 201, Lowokwaru (persis di depan RS UB).
+8. **Sigura-Gura Cozy Kos** (Putri) — Jl. Sigura-Gura V No. 18, Sukun. Dekat kuliner mahasiswa dan kampus UB/ITN.
+9. **D'Paragon Bukit Dieng** (Campur) — Jl. Bukit Dieng Blok MA No. 9, Sukun. Area perumahan elite dan asri.
+10. **Kost Putra Abah Muchtar** (Putra) — Jl. MT Haryono Gg. 4 No. 102, Klojen. Lokasi strategis jalan kaki ke kampus UB.
+11. **Kost Lunna Gading Kasri** (Putri) — Jl. Gading Kasri No. 15, Klojen. Dekat kampus UM dan pusat kota Malang.
+12. **Kost Putri Cipanas 10** (Putri) — Jl. Cipanas No. 10, Rampal Celaket, Klojen.
+13. **Kost Cakra Kaktus Putra** (Putra) — Jl. Kaktus No. 7, Lowokwaru.
+14. **Kost Bougenville Sumbersari** (Putri) — Jl. Sumbersari Gang 5 No. 22, Lowokwaru. Dekat gerbang belakang kampus UM dan UB.
+
+---
+
+## 4. Alur Pemesanan (How Booking Works)
+1. Pencari kos menjelajahi katalog di https://www.ngekos.biz.id/id/kost.
+2. Memilih tipe kamar, durasi sewa (bulanan/tahunan), dan tanggal check-in.
+3. Mengajukan booking dengan identitas valid.
+4. Pemilik kos menerima notifikasi dan menyetujui pengajuan dalam 24 jam.
+5. Penyewa menyelesaikan pembayaran invoice aman sebelum check-in.
+
+---
+
+## 5. Hubungi Kami
+- Situs Web: https://www.ngekos.biz.id
+- Email Resmi: support@ngekos.biz.id
+- Layanan Bantuan: https://www.ngekos.biz.id/id/help

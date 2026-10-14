@@ -9,14 +9,64 @@ import ExploreCitiesAccordion from "@/components/ExploreCitiesAccordion";
 import { getVerifiedProperties } from "@/lib/data/properties";
 import { getCampusImage } from "@/lib/kosImages";
 
+import JsonLd from "@/components/seo/JsonLd";
+import { getFaqSchema } from "@/lib/seo/schema";
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  const isEn = locale === "en";
+  const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.ngekos.biz.id";
+  const title = isEn
+    ? "NgeKos - Find Verified Boarding Houses & Kost Rentals in Indonesia"
+    : "NgeKos - Cari & Sewa Kost Terverifikasi Bebas Penipuan di Indonesia";
+  const description = isEn
+    ? "Search verified boarding houses in Malang and major Indonesian student cities. Real room photos, transparent pricing, zero hidden fees, and verified amenities."
+    : "Platform cari dan sewa kost terverifikasi di Indonesia. Temukan kost putra, putri, dan campur dekat kampus UB, UM, Polinema dengan foto asli, harga transparan, fasilitas lengkap, dan jaminan bebas penipuan.";
+
   return {
-    title: locale === "en" ? "Find Verified Boarding Houses" : "Cari Kost Terverifikasi",
+    title,
+    description,
+    keywords: [
+      "ngekos",
+      "ngekost",
+      "cari kost",
+      "sewa kost",
+      "kost malang",
+      "kost terverifikasi",
+      "kost dekat ub",
+      "kost dekat um",
+      "kost putri malang",
+      "kost putra malang",
+      "kost eksklusif malang",
+      "aplikasi kost",
+    ],
+    alternates: {
+      canonical: `/${locale}`,
+      languages: {
+        "id-ID": "/id",
+        "en-US": "/en",
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${BASE_URL}/${locale}`,
+      siteName: "NgeKos",
+      locale: isEn ? "en_US" : "id_ID",
+      type: "website",
+      images: [
+        {
+          url: `${BASE_URL}/assets/hero-bg.png`,
+          width: 1200,
+          height: 630,
+          alt: "NgeKos - Cari Kost Terverifikasi",
+        },
+      ],
+    },
   };
 }
 
@@ -65,8 +115,29 @@ export default async function HomePage({
   const props = getVerifiedProperties();
   const featured = props.slice(0, 4);
 
+  const faqs = [
+    {
+      q: t("why.faq.items.0.q"),
+      a: t("why.faq.items.0.a"),
+    },
+    {
+      q: t("why.faq.items.1.q"),
+      a: t("why.faq.items.1.a"),
+    },
+    {
+      q: t("why.faq.items.2.q"),
+      a: t("why.faq.items.2.a"),
+    },
+    {
+      q: t("why.faq.items.3.q"),
+      a: t("why.faq.items.3.a"),
+    },
+  ];
+  const faqSchema = getFaqSchema(faqs);
+
   return (
     <>
+      <JsonLd data={faqSchema} />
       {/* ===== HERO - giant type + search ===== */}
       <section className="relative overflow-hidden border-b border-nk-border">
         {/* full-bleed background video (mirror of hero-bg-flipped), opaque */}

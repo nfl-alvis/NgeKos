@@ -55,12 +55,15 @@ export async function generateStaticParams() {
   return props.map((p) => ({ slug: p.slug }));
 }
 
+import JsonLd from "@/components/seo/JsonLd";
+import { getPropertySchema, getBreadcrumbSchema } from "@/lib/seo/schema";
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   let p: Property | null = getPropertyBySlug(slug) ?? null;
   if (!p) {
     try {
@@ -70,10 +73,79 @@ export async function generateMetadata({
       p = null;
     }
   }
-  if (!p) return { title: "Not Found" };
+  if (!p) return { title: "Kost Tidak Ditemukan" };
+
+  const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.ngekos.biz.id";
+  const isEn = locale === "en";
+  const genderLabel =
+    p.gender === "female"
+      ? (isEn ? "Female" : "Putri")
+      : p.gender === "male"
+      ? (isEn ? "Male" : "Putra")
+      : (isEn ? "Mixed" : "Campur");
+
+  const title = `${p.name} - Kost ${genderLabel} di ${p.district}, ${p.city}`;
+  const description = `${p.name} (${genderLabel}) di ${p.district}, ${p.city}. Sewa mulai ${formatIDR(p.minPrice)}/bulan. Fasilitas: ${p.facilities.slice(0, 5).join(", ")}. Dekat kampus, foto asli 100%, aman & terverifikasi di NgeKos.`;
+  const kosImages = getKosGalleryItems(p.slug, p.name);
+  const mainImage = kosImages[0]?.url
+    ? kosImages[0].url.startsWith("http")
+      ? kosImages[0].url
+      : `${BASE_URL}${kosImages[0].url}`
+    : `${BASE_URL}/assets/hero-bg.png`;
+
   return {
-    title: `${p.name} - ${p.district}, ${p.city}`,
-    description: p.tagline,
+    title,
+    description,
+    keywords: [
+      p.name,
+      `kost ${p.name.toLowerCase()}`,
+      `kost ${p.district.toLowerCase()}`,
+      `kost ${p.city.toLowerCase()}`,
+      `kost ${genderLabel.toLowerCase()} ${p.city.toLowerCase()}`,
+      `sewa kost ${p.city.toLowerCase()}`,
+      `kost murah ${p.city.toLowerCase()}`,
+      "ngekos",
+      "kost malang",
+    ],
+    alternates: {
+      canonical: `/${locale}/kost/${slug}`,
+      languages: {
+        "id-ID": `/id/kost/${slug}`,
+        "en-US": `/en/kost/${slug}`,
+      },
+    },
+    openGraph: {
+      title: `${title} | NgeKos`,
+      description,
+      url: `${BASE_URL}/${locale}/kost/${slug}`,
+      siteName: "NgeKos",
+      locale: isEn ? "en_US" : "id_ID",
+      type: "article",
+      images: [
+        {
+          url: mainImage,
+          width: 1200,
+          height: 800,
+          alt: p.name,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | NgeKos`,
+      description,
+      images: [mainImage],
+    },
+    other: {
+      "geo.region": "ID-JI",
+      "geo.placename": `${p.city}, Jawa Timur, Indonesia`,
+      ...(p.latitude && p.longitude
+        ? {
+            "geo.position": `${p.latitude};${p.longitude}`,
+            "ICBM": `${p.latitude}, ${p.longitude}`,
+          }
+        : {}),
+    },
   };
 }
 
@@ -97,9 +169,24 @@ export default async function DetailPage({
 
   if (!p) notFound();
 
+  const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.ngekos.biz.id";
+  const kosImages = getKosGalleryItems(p.slug, p.name);
+  const imageUrls = kosImages.map((img) =>
+    img.url.startsWith("http") ? img.url : `${BASE_URL}${img.url}`
+  );
+
+  const propertySchema = getPropertySchema(p, locale, imageUrls);
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: locale === "en" ? "Home" : "Beranda", url: `/${locale}` },
+    { name: locale === "en" ? "Boarding Houses" : "Daftar Kost", url: `/${locale}/kost` },
+    { name: p.name, url: `/${locale}/kost/${p.slug}` },
+  ]);
+
   return (
     <BookingFlowProvider>
-    <>      {/* Back link */}
+      <JsonLd data={propertySchema} />
+      <JsonLd data={breadcrumbSchema} />
+      <>      {/* Back link */}
       <div className="mx-auto w-full max-w-7xl px-6 pt-8 lg:px-10">
         <Link
           href="/kost"
