@@ -20,29 +20,41 @@ export async function generateMetadata({
   const { locale } = await params;
   const isEn = locale === "en";
   const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.ngekos.biz.id";
-  const title = isEn
-    ? "NgeKos - Find Verified Boarding Houses & Kost Rentals in Indonesia"
-    : "NgeKos - Cari & Sewa Kost Terverifikasi Bebas Penipuan di Indonesia";
+  const siteTitle = isEn
+    ? "NgeKos — Verified Boarding House & Kost Rental Platform in Indonesia"
+    : "NgeKos — Platform Cari, Sewa & Kelola Kost Terpercaya di Indonesia";
   const description = isEn
-    ? "Search verified boarding houses in Malang and major Indonesian student cities. Real room photos, transparent pricing, zero hidden fees, and verified amenities."
-    : "Platform cari dan sewa kost terverifikasi di Indonesia. Temukan kost putra, putri, dan campur dekat kampus UB, UM, Polinema dengan foto asli, harga transparan, fasilitas lengkap, dan jaminan bebas penipuan.";
+    ? "NgeKos: Verified boarding house & kost rental platform in Indonesia. 100% real photos, transparent prices, and zero scams. Find and book your dream room today!"
+    : "NgeKos: Platform cari, sewa & kelola kost terverifikasi di Indonesia. Foto 100% asli, harga transparan, bebas penipuan. Cari kamar kost impianmu sekarang!";
 
   return {
-    title,
+    title: {
+      absolute: siteTitle,
+    },
     description,
     keywords: [
       "ngekos",
       "ngekost",
+      "ngekos.biz.id",
+      "ngekos online",
+      "ngekos indonesia",
+      "aplikasi ngekos",
+      "web ngekos",
       "cari kost",
       "sewa kost",
+      "kelola kost",
+      "manajemen kost",
       "kost malang",
       "kost terverifikasi",
       "kost dekat ub",
       "kost dekat um",
+      "kost polinema",
       "kost putri malang",
       "kost putra malang",
       "kost eksklusif malang",
-      "aplikasi kost",
+      "kost murah bebas penipuan",
+      "kost mahasiswa",
+      "juragan kos",
     ],
     alternates: {
       canonical: `/${locale}`,
@@ -52,7 +64,7 @@ export async function generateMetadata({
       },
     },
     openGraph: {
-      title,
+      title: siteTitle,
       description,
       url: `${BASE_URL}/${locale}`,
       siteName: "NgeKos",
@@ -63,9 +75,17 @@ export async function generateMetadata({
           url: `${BASE_URL}/assets/hero-bg.png`,
           width: 1200,
           height: 630,
-          alt: "NgeKos - Cari Kost Terverifikasi",
+          alt: siteTitle,
         },
       ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: siteTitle,
+      description,
+      images: [`${BASE_URL}/assets/hero-bg.png`],
+      site: "@ngekosid",
+      creator: "@ngekosid",
     },
   };
 }

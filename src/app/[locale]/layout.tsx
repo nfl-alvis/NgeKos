@@ -34,18 +34,25 @@ export async function generateMetadata({
   const isEn = locale === "en";
 
   const defaultTitle = isEn
-    ? "NgeKos - Verified Boarding House & Kost Rental in Indonesia"
-    : "NgeKos - Cari Kost Terverifikasi & Sewa Kos Murah Bebas Ribet";
+    ? "NgeKos — Verified Boarding House & Kost Rental Platform in Indonesia"
+    : "NgeKos — Platform Cari, Sewa & Kelola Kost Terpercaya di Indonesia";
 
   const description = isEn
-    ? "Discover verified boarding houses (kost) across Indonesia with 100% genuine photos, transparent pricing, complete amenities, and zero hidden fees. Book safely on NgeKos."
-    : "Platform cari dan sewa kost terverifikasi di Indonesia. Temukan kost putra, putri, dan campur dekat kampus dengan foto asli, harga transparan, fasilitas lengkap, dan jaminan bebas penipuan.";
+    ? "NgeKos: Verified boarding house & kost rental platform in Indonesia. 100% real photos, transparent prices, and zero scams. Find and book your dream room today!"
+    : "NgeKos: Platform cari, sewa & kelola kost terverifikasi di Indonesia. Foto 100% asli, harga transparan, bebas penipuan. Cari kamar kost impianmu sekarang!";
 
   const keywords = [
     "ngekos",
     "ngekost",
+    "ngekos.biz.id",
+    "ngekos online",
+    "ngekos indonesia",
+    "aplikasi ngekos",
+    "web ngekos",
     "cari kost",
     "sewa kost",
+    "kelola kost",
+    "manajemen kost",
     "kost malang",
     "kost terverifikasi",
     "kost dekat kampus",
@@ -61,7 +68,7 @@ export async function generateMetadata({
     "sewa kamar kos",
     "kost indonesia",
     "boarding house malang",
-    "ngekos.biz.id",
+    "juragan kos",
   ];
 
   return {

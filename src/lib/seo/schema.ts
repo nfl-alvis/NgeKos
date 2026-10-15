@@ -15,10 +15,14 @@ export function getWebSiteSchema(locale: string = "id") {
       "Ngekos Malang",
       "ngekos.biz.id",
       "NgeKost",
+      "Ngekos Online",
+      "Aplikasi Ngekos",
     ],
     url: `${BASE_URL}/${locale}`,
     description:
-      "Platform pencarian dan sewa kost terverifikasi di Indonesia. Foto asli, harga transparan, fasilitas lengkap, dan jaminan bebas penipuan.",
+      locale === "en"
+        ? "NgeKos: Verified boarding house & kost rental platform in Indonesia. 100% real photos, transparent prices, and zero scams."
+        : "NgeKos: Platform cari, sewa & kelola kost terverifikasi di Indonesia. Foto 100% asli, harga transparan, bebas penipuan.",
     inLanguage: ["id-ID", "en-US"],
     publisher: {
       "@id": `${BASE_URL}/#organization`,
