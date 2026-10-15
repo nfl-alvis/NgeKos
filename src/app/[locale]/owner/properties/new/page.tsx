@@ -152,6 +152,9 @@ function ToggleSwitch({
 }
 
 import { DRAFT_STORAGE_KEY, type PropertyFormDraft } from "@/lib/propertyDraft";
+import { isValidLuhn } from "@/lib/luhn";
+
+export const SAVED_BANK_ACCOUNT_KEY = "ngekos_owner_saved_bank_account";
 
 const PHOTO_SLOTS = [
   { key: "kamarTidur", label: "Foto Kamar Tidur", icon: Bed, required: true },
@@ -467,20 +470,52 @@ export default function NewPropertyPage() {
   ]);
 
   // -------------------------------------------------------------
-  // STEP 4: DATA REKENING
+  // STEP 6: DATA REKENING
   // -------------------------------------------------------------
   const [namaPemilik, setNamaPemilik] = useState("");
   const [namaBank, setNamaBank] = useState("BCA");
   const [nomorRekening, setNomorRekening] = useState("");
   const [namaPemilikRekening, setNamaPemilikRekening] = useState("");
+  const [simpanRekeningUtama, setSimpanRekeningUtama] = useState(true);
+  const [isUsingSavedAccount, setIsUsingSavedAccount] = useState(false);
+  const [samaDenganNamaAkun, setSamaDenganNamaAkun] = useState(true);
+  const [bypassLuhn, setBypassLuhn] = useState(false);
 
-  // Sync initial user name if available
+  // Sync initial user name & check saved bank account
   useEffect(() => {
+    try {
+      const savedRaw = localStorage.getItem(SAVED_BANK_ACCOUNT_KEY);
+      if (savedRaw) {
+        const saved = JSON.parse(savedRaw);
+        if (saved?.accountNumber && !nomorRekening) {
+          if (saved.bank) setNamaBank(saved.bank);
+          setNomorRekening(saved.accountNumber);
+          if (saved.accountHolder) setNamaPemilikRekening(saved.accountHolder);
+          if (saved.ownerName) setNamaPemilik(saved.ownerName);
+          setIsUsingSavedAccount(true);
+        }
+      }
+    } catch {}
+
     if (user?.name) {
       if (!namaPemilik) setNamaPemilik(user.name);
       if (!namaPemilikRekening) setNamaPemilikRekening(user.name);
     }
   }, [user]);
+
+  const handleNamaPemilikChange = (val: string) => {
+    setNamaPemilik(val);
+    if (samaDenganNamaAkun) {
+      setNamaPemilikRekening(val);
+    }
+  };
+
+  const handleNomorRekeningChange = (val: string) => {
+    const cleaned = val.replace(/\D/g, "");
+    setNomorRekening(cleaned);
+    setIsUsingSavedAccount(false);
+    if (bypassLuhn) setBypassLuhn(false);
+  };
 
   // -------------------------------------------------------------
   // DRAFT STATE & AUTO-SAVE / RESTORE LOGIC
@@ -957,9 +992,13 @@ export default function NewPropertyPage() {
 
   const isStep5Valid = deskripsiKos.trim().length >= 20;
 
+  const isLuhnValid = isValidLuhn(nomorRekening);
+  const isAccountValid =
+    nomorRekening.trim().length >= 5 && (isLuhnValid || bypassLuhn);
+
   const isStep6Valid =
     namaPemilik.trim().length >= 2 &&
-    nomorRekening.trim().length >= 5 &&
+    isAccountValid &&
     namaPemilikRekening.trim().length >= 2;
 
   // Final submit to API
@@ -1043,6 +1082,17 @@ export default function NewPropertyPage() {
         // Successfully created! Show success popup modal
         try {
           localStorage.removeItem(DRAFT_STORAGE_KEY);
+          if (simpanRekeningUtama && nomorRekening.trim().length >= 5) {
+            localStorage.setItem(
+              SAVED_BANK_ACCOUNT_KEY,
+              JSON.stringify({
+                bank: namaBank,
+                accountNumber: nomorRekening.trim(),
+                accountHolder: namaPemilikRekening.trim(),
+                ownerName: namaPemilik.trim(),
+              })
+            );
+          }
         } catch {}
         setShowSuccessModal(true);
       } catch (err) {
@@ -2833,12 +2883,54 @@ export default function NewPropertyPage() {
         {step === 6 && (
           <div className="space-y-8 rounded-xl border border-nk-border bg-nk-surface p-6 sm:p-8 shadow-sm">
             <div>
-              <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-                6. Lengkapi Data Diri & Rekening Anda
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+                  6. Lengkapi Data Diri & Rekening Anda
+                </h2>
+                {isUsingSavedAccount && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-medium text-emerald-800">
+                    <CheckCircle2 className="size-3.5 text-emerald-600" />
+                    Rekening Utama Tersimpan
+                  </span>
+                )}
+              </div>
               <p className="mt-1 text-sm text-nk-text-muted">
                 Rekening bank ini digunakan untuk penyaluran dana pembayaran sewa dari penyewa kos.
               </p>
+            </div>
+
+            {/* Catatan Edukasi Pencairan Dana & Kesesuaian KTP */}
+            <div className="rounded-xl border border-nk-border bg-nk-warm/30 p-4 sm:p-5 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-nk-accent/10 text-nk-accent shrink-0 mt-0.5">
+                  <ShieldCheck className="size-5" />
+                </div>
+                <div className="space-y-2 flex-1">
+                  <h3 className="text-sm font-semibold text-nk-text">
+                    Ketentuan Pencairan Dana & Verifikasi Rekening
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs text-nk-text-muted leading-relaxed">
+                    <div className="rounded-lg border border-nk-border/60 bg-nk-surface p-3 space-y-1">
+                      <span className="font-semibold text-nk-text flex items-center gap-1.5">
+                        <Clock className="size-3.5 text-nk-accent" />
+                        Pencairan Pasca Check-In
+                      </span>
+                      <p>
+                        Pembayaran penyewa ditampung aman oleh sistem penampungan (Midtrans) dan baru dicairkan ke rekening Anda setelah penyewa tiba di lokasi kos dan mengonfirmasi check-in.
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-nk-border/60 bg-nk-surface p-3 space-y-1">
+                      <span className="font-semibold text-nk-text flex items-center gap-1.5">
+                        <IdCard className="size-3.5 text-nk-accent" />
+                        Kesesuaian Identitas KTP
+                      </span>
+                      <p>
+                        Pastikan nama pemilik rekening sesuai atau terafiliasi dengan identitas KTP Anda demi kelancaran proses audit pencairan dana dan mencegah penolakan transfer antar-bank.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -2850,7 +2942,7 @@ export default function NewPropertyPage() {
                   type="text"
                   required
                   value={namaPemilik}
-                  onChange={(e) => setNamaPemilik(e.target.value)}
+                  onChange={(e) => handleNamaPemilikChange(e.target.value)}
                   placeholder="Nama lengkap sesuai KTP"
                   className="h-11 rounded-lg border border-nk-border bg-nk-bg px-4 text-sm text-nk-text placeholder:text-nk-text-muted focus:border-nk-accent focus:outline-none"
                 />
@@ -2862,7 +2954,10 @@ export default function NewPropertyPage() {
                 </span>
                 <select
                   value={namaBank}
-                  onChange={(e) => setNamaBank(e.target.value)}
+                  onChange={(e) => {
+                    setNamaBank(e.target.value);
+                    setIsUsingSavedAccount(false);
+                  }}
                   className="h-11 rounded-lg border border-nk-border bg-nk-surface px-4 text-sm text-nk-text focus:border-nk-accent focus:outline-none"
                 >
                   <option value="BCA">Bank Central Asia (BCA)</option>
@@ -2876,21 +2971,74 @@ export default function NewPropertyPage() {
                 </select>
               </label>
 
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-medium text-nk-text">
-                  Nomor Rekening <span className="text-rose-500">*</span>
-                </span>
+              {/* Nomor Rekening dengan Validasi Algoritma Luhn */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-nk-text">
+                    Nomor Rekening / Kartu Bank <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[11px] text-nk-text-muted">
+                    Divalidasi Checksum Luhn (Mod 10)
+                  </span>
+                </div>
                 <input
                   type="text"
                   required
                   value={nomorRekening}
-                  onChange={(e) => setNomorRekening(e.target.value.replace(/\D/g, ""))}
-                  placeholder="Contoh: 1234567890"
-                  className="h-11 rounded-lg border border-nk-border bg-nk-bg px-4 text-sm text-nk-text placeholder:text-nk-text-muted focus:border-nk-accent focus:outline-none"
+                  onChange={(e) => handleNomorRekeningChange(e.target.value)}
+                  placeholder="Contoh: 79927398713 (atau nomor rekening bank Anda)"
+                  className={`h-11 rounded-lg border bg-nk-bg px-4 text-sm text-nk-text placeholder:text-nk-text-muted focus:outline-none transition-colors ${
+                    nomorRekening.length >= 8
+                      ? isLuhnValid
+                        ? "border-emerald-500 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500"
+                        : bypassLuhn
+                        ? "border-nk-border focus:border-nk-accent"
+                        : "border-amber-400 focus:border-amber-500 focus:ring-1 focus:ring-amber-400"
+                      : "border-nk-border focus:border-nk-accent"
+                  }`}
                 />
-              </label>
 
-              <label className="flex flex-col gap-1.5">
+                {/* Feedback Algoritma Luhn */}
+                {nomorRekening.length >= 8 && (
+                  <div className="space-y-1.5 pt-0.5">
+                    {isLuhnValid ? (
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
+                        <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />
+                        <span>Format nomor tervalidasi (Algoritma Luhn Mod 10 Valid)</span>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-2.5 space-y-1.5">
+                        <div className="flex items-start gap-2 text-xs text-amber-800">
+                          <AlertCircle className="size-3.5 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold">Checksum Algoritma Luhn tidak cocok.</span>{" "}
+                            Pastikan digit nomor rekening tidak salah ketik (typo).
+                          </div>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer pt-0.5 text-xs text-nk-text">
+                          <input
+                            type="checkbox"
+                            checked={bypassLuhn}
+                            onChange={(e) => setBypassLuhn(e.target.checked)}
+                            className="size-3.5 accent-[#3A2618]"
+                          />
+                          <span>
+                            Nomor rekening saya sudah benar (Abaikan pemeriksaan Luhn untuk format khusus bank ini)
+                          </span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {nomorRekening.length > 0 && nomorRekening.length < 8 && (
+                  <p className="text-xs text-nk-text-muted">
+                    Masukkan minimal 8 digit nomor rekening.
+                  </p>
+                )}
+              </div>
+
+              {/* Nama Pemilik Rekening */}
+              <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-nk-text">
                   Nama Pemilik Rekening <span className="text-rose-500">*</span>
                 </span>
@@ -2898,11 +3046,51 @@ export default function NewPropertyPage() {
                   type="text"
                   required
                   value={namaPemilikRekening}
-                  onChange={(e) => setNamaPemilikRekening(e.target.value)}
+                  disabled={samaDenganNamaAkun}
+                  onChange={(e) => {
+                    setNamaPemilikRekening(e.target.value);
+                    setIsUsingSavedAccount(false);
+                  }}
                   placeholder="Nama sesuai buku tabungan"
-                  className="h-11 rounded-lg border border-nk-border bg-nk-bg px-4 text-sm text-nk-text placeholder:text-nk-text-muted focus:border-nk-accent focus:outline-none"
+                  className="h-11 rounded-lg border border-nk-border bg-nk-bg px-4 text-sm text-nk-text placeholder:text-nk-text-muted focus:border-nk-accent focus:outline-none disabled:bg-nk-warm/60 disabled:cursor-not-allowed"
                 />
-              </label>
+                <label className="flex items-center gap-2 cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={samaDenganNamaAkun}
+                    onChange={(e) => {
+                      setSamaDenganNamaAkun(e.target.checked);
+                      if (e.target.checked) {
+                        setNamaPemilikRekening(namaPemilik);
+                      }
+                    }}
+                    className="size-4 accent-[#3A2618]"
+                  />
+                  <span className="text-xs text-nk-text-muted">
+                    Nama pemilik rekening sama dengan nama pemilik kos di atas
+                  </span>
+                </label>
+              </div>
+
+              {/* Opsi Simpan Rekening untuk Kos Berikutnya */}
+              <div className="rounded-lg border border-nk-border bg-nk-warm/20 p-3.5">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={simpanRekeningUtama}
+                    onChange={(e) => setSimpanRekeningUtama(e.target.checked)}
+                    className="mt-0.5 size-4 accent-[#3A2618]"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-nk-text">
+                      Simpan sebagai rekening utama untuk properti kos berikutnya
+                    </span>
+                    <p className="text-xs text-nk-text-muted mt-0.5">
+                      Pilihan bank dan nomor rekening ini akan otomatis terisi saat Anda mendaftarkan properti kos baru di masa mendatang.
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
 
             {/* Review Summary Card */}
