@@ -116,3 +116,10 @@ Ngekos-Logo.png
 .e2e/videos/
 e2e.config.ts
 tests/
+
+# Python cache & virtualenv
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
