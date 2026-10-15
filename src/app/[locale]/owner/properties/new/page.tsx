@@ -479,7 +479,6 @@ export default function NewPropertyPage() {
   const [simpanRekeningUtama, setSimpanRekeningUtama] = useState(true);
   const [isUsingSavedAccount, setIsUsingSavedAccount] = useState(false);
   const [samaDenganNamaAkun, setSamaDenganNamaAkun] = useState(true);
-  const [bypassLuhn, setBypassLuhn] = useState(false);
 
   // Sync initial user name & check saved bank account
   useEffect(() => {
@@ -514,7 +513,6 @@ export default function NewPropertyPage() {
     const cleaned = val.replace(/\D/g, "");
     setNomorRekening(cleaned);
     setIsUsingSavedAccount(false);
-    if (bypassLuhn) setBypassLuhn(false);
   };
 
   // -------------------------------------------------------------
@@ -993,12 +991,10 @@ export default function NewPropertyPage() {
   const isStep5Valid = deskripsiKos.trim().length >= 20;
 
   const isLuhnValid = isValidLuhn(nomorRekening);
-  const isAccountValid =
-    nomorRekening.trim().length >= 5 && (isLuhnValid || bypassLuhn);
 
   const isStep6Valid =
     namaPemilik.trim().length >= 2 &&
-    isAccountValid &&
+    isLuhnValid &&
     namaPemilikRekening.trim().length >= 2;
 
   // Final submit to API
@@ -2987,45 +2983,27 @@ export default function NewPropertyPage() {
                   value={nomorRekening}
                   onChange={(e) => handleNomorRekeningChange(e.target.value)}
                   placeholder="Contoh: 79927398713 (atau nomor rekening bank Anda)"
-                  className={`h-11 rounded-lg border bg-nk-bg px-4 text-sm text-nk-text placeholder:text-nk-text-muted focus:outline-none transition-colors ${
+                  className={`h-11 rounded-lg border bg-nk-bg px-4 text-sm placeholder:text-nk-text-muted focus:outline-none transition-colors ${
                     nomorRekening.length >= 8
                       ? isLuhnValid
-                        ? "border-emerald-500 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500"
-                        : bypassLuhn
-                        ? "border-nk-border focus:border-nk-accent"
-                        : "border-amber-400 focus:border-amber-500 focus:ring-1 focus:ring-amber-400"
-                      : "border-nk-border focus:border-nk-accent"
+                        ? "border-emerald-500 text-nk-text focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500"
+                        : "border-rose-500 text-rose-900 focus:border-rose-600 focus:ring-1 focus:ring-rose-500"
+                      : "border-nk-border text-nk-text focus:border-nk-accent"
                   }`}
                 />
 
                 {/* Feedback Algoritma Luhn */}
                 {nomorRekening.length >= 8 && (
-                  <div className="space-y-1.5 pt-0.5">
+                  <div className="pt-0.5">
                     {isLuhnValid ? (
                       <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
                         <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />
                         <span>Format nomor tervalidasi (Algoritma Luhn Mod 10 Valid)</span>
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-2.5 space-y-1.5">
-                        <div className="flex items-start gap-2 text-xs text-amber-800">
-                          <AlertCircle className="size-3.5 text-amber-600 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="font-semibold">Checksum Algoritma Luhn tidak cocok.</span>{" "}
-                            Pastikan digit nomor rekening tidak salah ketik (typo).
-                          </div>
-                        </div>
-                        <label className="flex items-center gap-2 cursor-pointer pt-0.5 text-xs text-nk-text">
-                          <input
-                            type="checkbox"
-                            checked={bypassLuhn}
-                            onChange={(e) => setBypassLuhn(e.target.checked)}
-                            className="size-3.5 accent-[#3A2618]"
-                          />
-                          <span>
-                            Nomor rekening saya sudah benar (Abaikan pemeriksaan Luhn untuk format khusus bank ini)
-                          </span>
-                        </label>
+                      <div className="flex items-center gap-1.5 text-xs text-rose-600 font-medium">
+                        <AlertCircle className="size-3.5 text-rose-500 shrink-0" />
+                        <span>Checksum Algoritma Luhn tidak cocok. Pastikan digit nomor rekening tidak salah ketik (typo).</span>
                       </div>
                     )}
                   </div>
