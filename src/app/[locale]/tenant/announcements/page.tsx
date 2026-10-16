@@ -27,14 +27,24 @@ export default function TenantAnnouncementsPage() {
   const t = useTranslations("tenantPages.announcements");
   const locale = useLocale();
   const { tenant } = useTenantSession();
-  const [list, setList] = useState<AnnouncementItem[]>([]);
+  const [list, setList] = useState<AnnouncementItem[]>(
+    staticAnnouncements.map((a) => ({
+      id: a.id,
+      titleId: a.titleId,
+      titleEn: a.titleEn,
+      bodyId: a.bodyId,
+      bodyEn: a.bodyEn,
+      at: a.at.slice(0, 10),
+      read: false,
+    }))
+  );
   const [seen, setSeen] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/announcements")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data)) {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
           const mapped: AnnouncementItem[] = json.data.map((item: any) => ({
             id: item.id,
             titleId: item.title,

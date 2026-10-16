@@ -404,4 +404,15 @@ export function getPropertyBySlug(slug: string): Property | undefined {
   return properties.find((p) => p.slug === slug);
 }
 
-export const CITIES = [...new Set(getVerifiedProperties().map((p) => p.city))].sort();
+export const SUPPORTED_CITIES = [
+  "Bandung",
+  "Jakarta",
+  "Malang",
+  "Semarang",
+  "Surabaya",
+  "Yogyakarta",
+] as const;
+
+export const CITIES = [
+  ...new Set([...SUPPORTED_CITIES, ...getVerifiedProperties().map((p) => p.city)]),
+].sort();

@@ -35,6 +35,12 @@ export default function ExploreCitiesAccordion() {
       link: "/kost?kota=Malang",
       alt: "Pilihan Kost di Malang",
     },
+    {
+      label: "Semarang",
+      image: CITY_IMAGES.semarang,
+      link: "/kost?kota=Semarang",
+      alt: "Pilihan Kost di Semarang",
+    },
   ];
 
   return (

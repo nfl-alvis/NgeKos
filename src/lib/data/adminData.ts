@@ -199,6 +199,7 @@ export const popularCities: CityItem[] = [
   { name: "Jakarta", propertyCount: 10, seekerCount: 280, status: "tayang" },
   { name: "Surabaya", propertyCount: 6, seekerCount: 170, status: "tayang" },
   { name: "Malang", propertyCount: 5, seekerCount: 150, status: "tayang" },
+  { name: "Semarang", propertyCount: 8, seekerCount: 210, status: "tayang" },
 ];
 
 export const faqGroups: FaqGroupItem[] = [

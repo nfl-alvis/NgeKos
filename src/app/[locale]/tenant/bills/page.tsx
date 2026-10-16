@@ -26,13 +26,13 @@ export default function TenantBillsPage() {
   const ops = useTenantOps();
   const { tenant } = useTenantSession();
   const property = getPropertyBySlug(tenant.propertySlug);
-  const [bills, setBills] = useState<(typeof invoices)>([]);
+  const [bills, setBills] = useState<(typeof invoices)>(invoices);
 
   useEffect(() => {
     fetch("/api/invoices")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data)) {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
           const mapped = json.data.map((item: any) => ({
             id: item.code || item.id,
             tenantName: item.tenant?.fullName || item.tenantName || tenant.name,

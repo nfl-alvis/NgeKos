@@ -15,16 +15,18 @@ import { formatIDR } from "@/lib/utils";
 export default function OwnerInvoicesPage() {
   const t = useTranslations("owner.invoices");
   const [filter, setFilter] = useState<"all" | "lunas" | "belum">("all");
-  const [rows, setRows] = useState<Invoice[]>([]);
+  const [rows, setRows] = useState<Invoice[]>(seedInvoices);
   const [createOpen, setCreateOpen] = useState(false);
   const [newInv, setNewInv] = useState({ tenant: "", period: "", amount: "" });
-  const [tenantList, setTenantList] = useState<Array<{ id: string; name: string; agreementId?: string; monthlyPrice?: number }>>([]);
+  const [tenantList, setTenantList] = useState<Array<{ id: string; name: string; agreementId?: string; monthlyPrice?: number }>>(
+    tenants.map((t) => ({ id: t.id, name: t.name, agreementId: `agr-${t.id}`, monthlyPrice: t.monthlyRent }))
+  );
 
   useEffect(() => {
     fetch("/api/invoices")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data)) {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
           const mapped: Invoice[] = json.data.map((item: any) => ({
             id: item.code || item.id,
             tenantName: item.tenant?.fullName || item.tenantName || "Penyewa",
@@ -46,13 +48,15 @@ export default function OwnerInvoicesPage() {
       .then((json) => {
         if (json?.data && Array.isArray(json.data)) {
           const activeBookings = json.data.filter((b: any) => b.status === "ACTIVE");
-          const mapped = activeBookings.map((b: any) => ({
-            id: b.id,
-            name: b.applicant?.fullName || b.applicantName || "Penyewa",
-            agreementId: b.agreement?.id || b.id,
-            monthlyPrice: Number(b.monthlyPriceSnapshot || 0),
-          }));
-          setTenantList(mapped);
+          if (activeBookings.length > 0) {
+            const mapped = activeBookings.map((b: any) => ({
+              id: b.id,
+              name: b.applicant?.fullName || b.applicantName || "Penyewa",
+              agreementId: b.agreement?.id || b.id,
+              monthlyPrice: Number(b.monthlyPriceSnapshot || 0),
+            }));
+            setTenantList(mapped);
+          }
         }
       })
       .catch(() => {});

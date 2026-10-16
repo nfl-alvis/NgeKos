@@ -287,6 +287,12 @@ export default function AccordionGallery({
                   src={item.image}
                   alt={item.alt || item.label || ""}
                   draggable={false}
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    if (!target.src.includes("/images/cities/jakarta.jpg")) {
+                      target.src = "/images/cities/jakarta.jpg";
+                    }
+                  }}
                   className="block h-full w-full select-none object-cover [-webkit-user-drag:none]"
                 />
               </span>

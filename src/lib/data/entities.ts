@@ -73,22 +73,31 @@ export const OWNER_PROPERTY_SLUGS = [
   "kost-bougenville-summbersari",
 ];
 
+import {
+  ENABLE_TENANT_DUMMIES,
+  dummyBookings,
+  dummyTenants,
+  dummyRentalAgreements,
+  dummyInvoices,
+  dummyConversations,
+} from "./tenantDummies";
+
 /* ===== booking (Halaman 6, 7, 11) ===== */
 
-export const bookings: Booking[] = [];
+export const bookings: Booking[] = ENABLE_TENANT_DUMMIES ? [...dummyBookings] : [];
 
 /* booking masuk ke owner - terpisah dari booking penyewa demo */
-export const ownerBookings: Booking[] = [];
+export const ownerBookings: Booking[] = ENABLE_TENANT_DUMMIES ? [...dummyBookings] : [];
 
 /* ===== tenant (Halaman 12) ===== */
 
-export const tenants: Tenant[] = [];
+export const tenants: Tenant[] = ENABLE_TENANT_DUMMIES ? [...dummyTenants] : [];
 
-export const rentalAgreements: RentalAgreement[] = [];
+export const rentalAgreements: RentalAgreement[] = ENABLE_TENANT_DUMMIES ? [...dummyRentalAgreements] : [];
 
 /* ===== invoice (Halaman 13) ===== */
 
-export const invoices: Invoice[] = [];
+export const invoices: Invoice[] = ENABLE_TENANT_DUMMIES ? [...dummyInvoices] : [];
 
 /* ===== notifikasi (Halaman 14) ===== */
 
@@ -96,7 +105,7 @@ export const notifications: NotificationItem[] = [];
 
 /* ===== pesan (Halaman 15) ===== */
 
-export const conversations: Conversation[] = [];
+export const conversations: Conversation[] = ENABLE_TENANT_DUMMIES ? [...dummyConversations] : [];
 
 export const messageTemplates = [
   { id: "tpl-1", label: "Pengingat pembayaran", body: "Halo, kami ingatkan bahwa tagihan bulan ini sudah terbit. Mohon selesaikan pembayaran sebelum tanggal 5 ya. Terima kasih." },

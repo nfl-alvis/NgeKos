@@ -37,37 +37,70 @@ export interface TenantData {
   hasActiveBooking: boolean;
 }
 
-const fallbackProperty = properties[0];
+import { ENABLE_TENANT_DUMMIES, dummyTenants } from "@/lib/data/tenantDummies";
 
-const initialTenantData: TenantData = {
-  id: "",
-  name: "",
-  email: "",
-  phone: "",
-  roomNumber: "",
-  roomType: "",
-  floor: 1,
-  sizeM2: 0,
-  monthlyRent: 0,
-  startDate: "",
-  endDate: "",
-  durationMonths: 1,
-  depositAmount: 0,
-  depositInfo: "",
-  noticePeriodId: contractInfo.noticePeriodId,
-  noticePeriodEn: contractInfo.noticePeriodEn,
-  joinedAt: "",
-  propertyName: "",
-  propertySlug: "",
-  propertyAddress: "",
-  propertyCity: "",
-  property: fallbackProperty,
-  ownerName: "",
-  ownerPhone: "",
-  ownerEmail: "",
-  isDemo: false,
-  hasActiveBooking: false,
-};
+const fallbackProperty = properties[0];
+const primaryTenant = dummyTenants[0];
+
+const initialTenantData: TenantData = ENABLE_TENANT_DUMMIES
+  ? {
+      id: primaryTenant.id,
+      name: primaryTenant.name,
+      email: primaryTenant.email,
+      phone: primaryTenant.phone,
+      roomNumber: primaryTenant.roomNumber,
+      roomType: "Deluxe",
+      floor: 1,
+      sizeM2: 20,
+      monthlyRent: primaryTenant.monthlyRent,
+      startDate: "2026-08-01",
+      endDate: "2027-07-31",
+      durationMonths: 12,
+      depositAmount: 500000,
+      depositInfo: "DP Rp 500.000",
+      noticePeriodId: contractInfo.noticePeriodId,
+      noticePeriodEn: contractInfo.noticePeriodEn,
+      joinedAt: primaryTenant.joinedAt,
+      propertyName: primaryTenant.propertyName,
+      propertySlug: primaryTenant.propertySlug,
+      propertyAddress: fallbackProperty.address,
+      propertyCity: fallbackProperty.city,
+      property: fallbackProperty,
+      ownerName: ownerContact.name,
+      ownerPhone: ownerContact.phone,
+      ownerEmail: ownerContact.email,
+      isDemo: true,
+      hasActiveBooking: true,
+    }
+  : {
+      id: "",
+      name: "",
+      email: "",
+      phone: "",
+      roomNumber: "",
+      roomType: "",
+      floor: 1,
+      sizeM2: 0,
+      monthlyRent: 0,
+      startDate: "",
+      endDate: "",
+      durationMonths: 1,
+      depositAmount: 0,
+      depositInfo: "",
+      noticePeriodId: contractInfo.noticePeriodId,
+      noticePeriodEn: contractInfo.noticePeriodEn,
+      joinedAt: "",
+      propertyName: "",
+      propertySlug: "",
+      propertyAddress: "",
+      propertyCity: "",
+      property: fallbackProperty,
+      ownerName: "",
+      ownerPhone: "",
+      ownerEmail: "",
+      isDemo: false,
+      hasActiveBooking: false,
+    };
 
 export function useTenantSession() {
   const { user, ready } = useSession();
@@ -157,7 +190,7 @@ export function useTenantSession() {
             name: user.name || prev.name,
             email: user.email || prev.email,
             isDemo: true,
-            hasActiveBooking: false,
+            hasActiveBooking: (user.email === primaryTenant.email && ENABLE_TENANT_DUMMIES) || prev.hasActiveBooking,
           }));
         }
       } catch {

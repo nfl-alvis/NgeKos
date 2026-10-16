@@ -21,8 +21,10 @@ export default function OwnerTenantsPage() {
   const ti = useTranslations("owner.invoices");
   const router = useRouter();
 
-  const [propsList, setPropsList] = useState<Array<{ slug: string; name: string }>>([]);
-  const [tenantsList, setTenantsList] = useState<Tenant[]>([]);
+  const [propsList, setPropsList] = useState<Array<{ slug: string; name: string }>>(
+    getOwnerProperties().map((p) => ({ slug: p.slug, name: p.name }))
+  );
+  const [tenantsList, setTenantsList] = useState<Tenant[]>(seedTenants);
   const [filter, setFilter] = useState<string>("all");
   const [detail, setDetail] = useState<Tenant | null>(null);
 
@@ -30,7 +32,7 @@ export default function OwnerTenantsPage() {
     fetch("/api/properties?mine=true")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data)) {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
           const dbProps = json.data.map((p: any) => ({ slug: p.slug, name: p.name }));
           setPropsList(dbProps);
         }
@@ -42,18 +44,20 @@ export default function OwnerTenantsPage() {
       .then((json) => {
         if (json?.data && Array.isArray(json.data)) {
           const active = json.data.filter((b: any) => b.status === "ACTIVE");
-          const mapped: Tenant[] = active.map((b: any) => ({
-            id: b.id,
-            name: b.applicant?.fullName || b.applicantName || "Penyewa",
-            phone: b.applicant?.phone || "-",
-            propertySlug: b.property?.slug || "",
-            propertyName: b.property?.name || "Kost",
-            roomNumber: b.roomUnit?.number || "-",
-            monthlyRent: Number(b.monthlyPriceSnapshot || 0),
-            startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "2026-09-01",
-            paymentStatus: "lunas",
-          }));
-          setTenantsList(mapped);
+          if (active.length > 0) {
+            const mapped: Tenant[] = active.map((b: any) => ({
+              id: b.id,
+              name: b.applicant?.fullName || b.applicantName || "Penyewa",
+              phone: b.applicant?.phone || "-",
+              propertySlug: b.property?.slug || "",
+              propertyName: b.property?.name || "Kost",
+              roomNumber: b.roomUnit?.number || "-",
+              monthlyRent: Number(b.monthlyPriceSnapshot || 0),
+              startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "2026-09-01",
+              paymentStatus: "lunas",
+            }));
+            setTenantsList(mapped);
+          }
         }
       })
       .catch(() => {});

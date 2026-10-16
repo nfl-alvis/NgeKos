@@ -33,10 +33,18 @@ export interface UserReview {
   bodyEn: string;
 }
 
-export const seedUserReviews: UserReview[] = [];
+import {
+  ENABLE_TENANT_DUMMIES,
+  dummyComplaints,
+  dummyAnnouncements,
+  dummyUserPayments,
+  dummyUserReviews,
+} from "./tenantDummies";
+
+export const seedUserReviews: UserReview[] = ENABLE_TENANT_DUMMIES ? [...dummyUserReviews] : [];
 
 /** kos yang pernah ditinggali user → bisa direview */
-export const reviewableSlugs: string[] = [];
+export const reviewableSlugs: string[] = ENABLE_TENANT_DUMMIES ? ["kost-dparagon-ijen-nirwana"] : [];
 
 /* ===== favorit ===== */
 
@@ -56,7 +64,7 @@ export interface BookingPayment {
   at: string;
 }
 
-export const seedUserPayments: BookingPayment[] = [];
+export const seedUserPayments: BookingPayment[] = ENABLE_TENANT_DUMMIES ? [...dummyUserPayments] : [];
 
 /* ===== pengaduan penyewa ===== */
 
@@ -99,7 +107,7 @@ export interface Complaint {
   noteEn: string;
 }
 
-export const seedComplaints: Complaint[] = [];
+export const seedComplaints: Complaint[] = ENABLE_TENANT_DUMMIES ? [...dummyComplaints] : [];
 
 /* ===== pengumuman owner untuk penghuni kos ===== */
 
@@ -114,7 +122,7 @@ export interface Announcement {
   at: string;
 }
 
-export const announcements: Announcement[] = [];
+export const announcements: Announcement[] = ENABLE_TENANT_DUMMIES ? [...dummyAnnouncements] : [];
 
 /** kontak owner untuk halaman tenant (nama = OWNER_PROFILE di entities) */
 export const ownerContact = {

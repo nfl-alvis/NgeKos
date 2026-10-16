@@ -161,12 +161,18 @@ export function getKosGalleryItems(
 }
 
 export const CITY_IMAGES: Record<string, string> = {
-  bandung: "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&w=1000&q=80",
-  yogyakarta: "https://images.unsplash.com/photo-1584810359583-96fc3448beaa?auto=format&fit=crop&w=1000&q=80",
-  jakarta: "https://images.unsplash.com/photo-1555899434-94d1368aa7af?auto=format&fit=crop&w=1000&q=80",
-  malang: "https://images.unsplash.com/photo-1589394815804-964ed0be2eb5?auto=format&fit=crop&w=1000&q=80",
-  surabaya: "https://images.unsplash.com/photo-1605809462701-44bb5b6b8043?auto=format&fit=crop&w=1000&q=80",
-  tangerang: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1000&q=80",
+  jakarta: "/images/cities/jakarta.jpg",
+  bandung: "/images/cities/bandung.jpg",
+  yogyakarta: "/images/cities/yogyakarta.jpg",
+  surabaya: "/images/cities/surabaya.jpg",
+  malang: "/images/cities/malang.jpg",
+  semarang: "/images/cities/semarang.jpg",
+  solo: "/images/cities/solo.jpg",
+  bali: "/images/cities/bali.jpg",
+  medan: "/images/cities/medan.jpg",
+  bogor: "/images/cities/bogor.jpg",
+  depok: "/images/cities/depok.jpg",
+  tangerang: "/images/cities/tangerang.jpg",
 };
 
 export function getCityImage(cityOrSeed: string): string {
