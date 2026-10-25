@@ -1,5 +1,5 @@
 import { requireUser } from "@/server/auth";
-import { successResponse, withApi } from "@/server/http";
+import { successResponse, withApi, ApiError } from "@/server/http";
 import { prisma } from "@/lib/prisma";
 
 export const POST = withApi(async (_request: Request, context: { params: Promise<{ id: string }> }) => {
@@ -9,13 +9,21 @@ export const POST = withApi(async (_request: Request, context: { params: Promise
   const conv = await prisma.conversation.findFirst({
     where: { id, deletedAt: null },
   });
-
   if (!conv) {
-    return successResponse({ readCount: 0 });
+    throw new ApiError(404, "NOT_FOUND", "Conversation not found.");
   }
 
-  const isOwner = auth.profile.id === conv.ownerId;
-  const targetSenderRole = isOwner ? "CONTACT" : "OWNER";
+  // Hardening: hanya peserta percakapan yang boleh menandai baca. Tanpa ini,
+  // pengguna terautentikasi mana pun yang mengetahui id percakapan dapat
+  // mengubah `readAt` pesan orang lain.
+  const isParticipant =
+    auth.profile.id === conv.ownerId ||
+    (conv.contactId !== null && auth.profile.id === conv.contactId);
+  if (!isParticipant) {
+    throw new ApiError(403, "FORBIDDEN", "You do not have access to this conversation.");
+  }
+
+  const targetSenderRole = auth.profile.id === conv.ownerId ? "CONTACT" : "OWNER";
 
   const updated = await prisma.message.updateMany({
     where: {

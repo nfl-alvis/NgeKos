@@ -2,10 +2,67 @@ import { requireUser } from "@/server/auth";
 import { parseJson, successResponse, withApi, ApiError } from "@/server/http";
 import { prisma } from "@/lib/prisma";
 import { sendTelegramMessage } from "@/server/telegram-service";
+import {
+  encodeMessageCursor,
+  MESSAGE_PAGE_DEFAULT,
+  MESSAGE_PAGE_MAX,
+  messagePageWhere,
+  parseMessageCursor,
+} from "@/server/message-cursor";
 import { z } from "zod";
 
 const sendMessageSchema = z.object({
-  text: z.string().trim().min(1, "Pesan tidak boleh kosong").max(4000, "Pesan maksimal 4000 karakter"),
+  text: z.string().trim().min(1, "Message must not be empty").max(4000, "Message must be at most 4000 characters"),
+});
+
+const listQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(MESSAGE_PAGE_MAX).default(MESSAGE_PAGE_DEFAULT),
+  cursor: z.string().trim().optional(),
+});
+
+// Baca riwayat pesan: identitas via sesi server-side, akses terbatas pada
+// peserta percakapan (owner, atau contact terkait; `contact_id` NULL hanya
+// owner). Read tidak pernah bermutasi — tidak ada auto-link seperti POST.
+export const GET = withApi(async (request: Request, context: { params: Promise<{ id: string }> }) => {
+  const auth = await requireUser(["OWNER", "SEEKER"]);
+  const { id } = await context.params;
+  const query = listQuerySchema.parse(Object.fromEntries(new URL(request.url).searchParams));
+  const cursor = query.cursor ? parseMessageCursor(query.cursor) : null;
+  if (query.cursor && !cursor) {
+    throw new ApiError(400, "INVALID_CURSOR", "Invalid pagination cursor");
+  }
+
+  const conv = await prisma.conversation.findFirst({ where: { id, deletedAt: null } });
+  if (!conv) {
+    throw new ApiError(404, "NOT_FOUND", "Conversation not found.");
+  }
+  const isOwner = auth.profile.id === conv.ownerId;
+  const isContact = conv.contactId !== null && auth.profile.id === conv.contactId;
+  if (!isOwner && !isContact) {
+    throw new ApiError(403, "FORBIDDEN", "You do not have access to this conversation.");
+  }
+
+  const rows = await prisma.message.findMany({
+    where: { conversationId: conv.id, deletedAt: null, ...(cursor ? messagePageWhere(cursor) : {}) },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: query.limit + 1,
+  });
+  const hasMore = rows.length > query.limit;
+  const page = hasMore ? rows.slice(0, query.limit) : rows;
+  const messages = [...page].reverse().map((m) => ({
+    id: m.id,
+    senderId: m.senderId,
+    senderRole: m.senderRole,
+    channel: m.channel,
+    body: m.body,
+    readAt: m.readAt ? m.readAt.toISOString() : null,
+    createdAt: m.createdAt.toISOString(),
+  }));
+
+  return successResponse({
+    messages,
+    nextCursor: hasMore ? encodeMessageCursor(page[page.length - 1]) : null,
+  });
 });
 
 export const POST = withApi(async (request: Request, context: { params: Promise<{ id: string }> }) => {
@@ -40,7 +97,7 @@ export const POST = withApi(async (request: Request, context: { params: Promise<
         },
       });
     } else {
-      throw new ApiError(404, "NOT_FOUND", "Percakapan tidak ditemukan.");
+      throw new ApiError(404, "NOT_FOUND", "Conversation not found.");
     }
   }
 
@@ -50,7 +107,7 @@ export const POST = withApi(async (request: Request, context: { params: Promise<
 
   // Jika bukan owner dan bukan contact (kecuali contactId masih null dan auth bukan owner)
   if (!isOwner && !isContact && conv.contactId !== null) {
-    throw new ApiError(403, "FORBIDDEN", "Anda tidak memiliki akses ke percakapan ini.");
+    throw new ApiError(403, "FORBIDDEN", "You do not have access to this conversation.");
   }
 
   // Jika contactId masih kosong dan yang mengirim bukan owner, tautkan contactId
