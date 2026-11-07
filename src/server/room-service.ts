@@ -16,8 +16,8 @@ async function ownedProperty(profile: Profile, propertyId: string) {
     },
     select: { id: true, ownerId: true },
   });
-  if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Properti tidak ditemukan");
-  if (profile.role !== "ADMIN" && property.ownerId !== profile.id) throw new ApiError(403, "FORBIDDEN", "Properti ini bukan milik Anda");
+  if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Property not found");
+  if (profile.role !== "ADMIN" && property.ownerId !== profile.id) throw new ApiError(403, "FORBIDDEN", "You do not own this property");
   return property;
 }
 
@@ -53,16 +53,52 @@ export async function createRoomType(profile: Profile, propertyId: string, input
 export async function createRoomUnit(profile: Profile, propertyId: string, input: RoomUnitInput) {
   await ownedProperty(profile, propertyId);
   const roomType = await prisma.roomType.findFirst({ where: { id: input.roomTypeId, propertyId, deletedAt: null }, select: { id: true } });
-  if (!roomType) throw new ApiError(422, "ROOM_TYPE_MISMATCH", "Tipe kamar tidak tersedia pada properti ini");
+  if (!roomType) throw new ApiError(422, "ROOM_TYPE_MISMATCH", "This room type is not available on this property");
   return prisma.roomUnit.create({ data: { ...input, propertyId } });
 }
 
 export async function updateRoomUnitStatus(profile: Profile, propertyId: string, roomId: string, status: "AVAILABLE" | "MAINTENANCE" | "OCCUPIED") {
   await ownedProperty(profile, propertyId);
   const unit = await prisma.roomUnit.findFirst({ where: { id: roomId, propertyId, deletedAt: null } });
-  if (!unit) throw new ApiError(404, "ROOM_NOT_FOUND", "Kamar tidak ditemukan");
-  if (unit.status === "RESERVED") throw new ApiError(409, "ROOM_IN_USE", "Status kamar yang sedang dipesan (reserved) tidak dapat diubah manual");
+  if (!unit) throw new ApiError(404, "ROOM_NOT_FOUND", "Room not found");
+  if (unit.status === "RESERVED") throw new ApiError(409, "ROOM_IN_USE", "A reserved room's status cannot be changed manually");
   return prisma.roomUnit.update({ where: { id: roomId }, data: { status } });
+}
+
+export async function deleteRoomUnit(profile: Profile, propertyId: string, roomId: string) {
+  await ownedProperty(profile, propertyId);
+  const unit = await prisma.roomUnit.findFirst({ where: { id: roomId, propertyId, deletedAt: null } });
+  if (!unit) throw new ApiError(404, "ROOM_NOT_FOUND", "Room not found");
+  if (unit.status === "RESERVED" || unit.status === "OCCUPIED") {
+    throw new ApiError(409, "ROOM_IN_USE", "The room is reserved or occupied and cannot be deleted");
+  }
+  await prisma.roomUnit.update({ where: { id: roomId }, data: { deletedAt: new Date() } });
+  return { success: true, id: roomId };
+}
+
+export async function deleteRoomType(profile: Profile, propertyId: string, roomTypeId: string) {
+  await ownedProperty(profile, propertyId);
+  const existing = await prisma.roomType.findFirst({
+    where: { id: roomTypeId, propertyId, deletedAt: null },
+  });
+  if (!existing) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Room type not found");
+
+  const [activeUnits, activeBookings] = await Promise.all([
+    prisma.roomUnit.count({ where: { roomTypeId, deletedAt: null } }),
+    prisma.booking.count({ where: { roomTypeId, status: { in: ["PENDING", "APPROVED_AWAITING_PAYMENT", "ACTIVE"] } } }),
+  ]);
+  if (activeBookings > 0) {
+    throw new ApiError(409, "ROOM_TYPE_IN_USE", "This room type still has active bookings and cannot be deleted");
+  }
+  if (activeUnits > 0) {
+    throw new ApiError(409, "ROOM_TYPE_IN_USE", `Tipe kamar masih memiliki ${activeUnits} unit kamar. Hapus unit kamarnya terlebih dahulu.`);
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.roomType.update({ where: { id: roomTypeId }, data: { deletedAt: new Date() } });
+    await refreshMinPrice(tx, propertyId);
+    return { success: true, id: roomTypeId };
+  });
 }
 
 export async function updateRoomType(
@@ -75,7 +111,7 @@ export async function updateRoomType(
   const existing = await prisma.roomType.findFirst({
     where: { id: roomTypeId, propertyId, deletedAt: null },
   });
-  if (!existing) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Tipe kamar tidak ditemukan");
+  if (!existing) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Room type not found");
 
   return prisma.$transaction(async (tx) => {
     const updated = await tx.roomType.update({

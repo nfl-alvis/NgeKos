@@ -2,6 +2,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { parseJson, successResponse, withApi, ApiError } from "@/server/http";
+import { recordAuditLog } from "@/server/audit-service";
 
 const signInSchema = z
   .object({
@@ -21,8 +22,8 @@ export const POST = withApi(async (request: Request) => {
     if (input.role) {
       const requestedRole = input.role === "admin" ? "ADMIN" : input.role === "owner" ? "OWNER" : "SEEKER";
       if (localUser.role !== requestedRole) {
-        const roleName = input.role === "admin" ? "admin" : input.role === "owner" ? "pemilik kos" : "pencari kos";
-        throw new ApiError(403, "ROLE_MISMATCH", `Akun ini bukan akun ${roleName}`);
+        const roleName = input.role === "admin" ? "admin" : input.role === "owner" ? "kost owner" : "kost seeker";
+        throw new ApiError(403, "ROLE_MISMATCH", `This account is not a ${roleName} account`);
       }
     }
 
@@ -67,6 +68,27 @@ export const POST = withApi(async (request: Request) => {
       await supabase.auth.signInWithPassword({ email: input.email, password: input.password }).catch(() => {});
     } catch {}
 
+    if (localUser.role === "ADMIN") {
+      await recordAuditLog({
+        actor: {
+          id: localUser.id,
+          fullName: localUser.fullName,
+          email: localUser.email,
+          role: localUser.role,
+        },
+        action: "auth.login",
+        entityType: "SESSION",
+        entityId: localUser.id,
+        description: `Admin ${localUser.fullName} logged in successfully`,
+        metadata: {
+          target: localUser.email,
+          email: localUser.email,
+          role: localUser.role,
+        },
+        request,
+      });
+    }
+
     return successResponse({ user: { id: localUser.id, email: localUser.email, role: localUser.role } });
   }
 
@@ -80,7 +102,7 @@ export const POST = withApi(async (request: Request) => {
     const { data, error } = await Promise.race([loginPromise, timeoutPromise]);
 
     if (error || !data.user) {
-      throw new ApiError(401, "INVALID_CREDENTIALS", "Email atau kata sandi tidak sesuai");
+      throw new ApiError(401, "INVALID_CREDENTIALS", "Email or password is incorrect");
     }
 
     let role: "SEEKER" | "OWNER" | "ADMIN" = "SEEKER";
@@ -106,7 +128,7 @@ export const POST = withApi(async (request: Request) => {
       if (dbProfile) {
         if (dbProfile.status !== "ACTIVE") {
           await supabase.auth.signOut();
-          throw new ApiError(403, "ACCOUNT_DISABLED", "Akun tidak aktif");
+          throw new ApiError(403, "ACCOUNT_DISABLED", "Account is not active");
         }
         role = dbProfile.role;
       } else {
@@ -122,8 +144,8 @@ export const POST = withApi(async (request: Request) => {
       const requestedRole = input.role === "admin" ? "ADMIN" : input.role === "owner" ? "OWNER" : "SEEKER";
       if (role !== requestedRole) {
         await supabase.auth.signOut().catch(() => {});
-        const roleName = input.role === "admin" ? "admin" : input.role === "owner" ? "pemilik kos" : "pencari kos";
-        throw new ApiError(403, "ROLE_MISMATCH", `Akun ini bukan akun ${roleName}`);
+        const roleName = input.role === "admin" ? "admin" : input.role === "owner" ? "kost owner" : "kost seeker";
+        throw new ApiError(403, "ROLE_MISMATCH", `This account is not a ${roleName} account`);
       }
     }
 
@@ -137,9 +159,30 @@ export const POST = withApi(async (request: Request) => {
       telegramConnectedAt: dbProfile?.telegramConnectedAt ? dbProfile.telegramConnectedAt.toISOString() : null,
     });
 
+    if (role === "ADMIN") {
+      await recordAuditLog({
+        actor: {
+          id: data.user.id,
+          fullName: data.user.user_metadata?.full_name ?? input.email.split("@")[0],
+          email: data.user.email ?? input.email,
+          role: "ADMIN",
+        },
+        action: "auth.login",
+        entityType: "SESSION",
+        entityId: data.user.id,
+        description: `Admin ${data.user.email ?? input.email} logged in successfully`,
+        metadata: {
+          target: data.user.email ?? input.email,
+          email: data.user.email ?? input.email,
+          role: "ADMIN",
+        },
+        request,
+      });
+    }
+
     return successResponse({ user: { id: data.user.id, email: data.user.email, role } });
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    throw new ApiError(401, "INVALID_CREDENTIALS", "Email atau kata sandi tidak sesuai");
+    throw new ApiError(401, "INVALID_CREDENTIALS", "Email or password is incorrect");
   }
 });

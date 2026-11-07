@@ -6,7 +6,7 @@ import type { ReportStatus, ReportTarget } from "@prisma/client";
 
 const createReportSchema = z.object({
   targetType: z.enum(["PROPERTY", "USER", "REVIEW", "CONTENT"] as const),
-  targetId: z.string().min(1, "Target ID wajib diisi"),
+  targetId: z.string().min(1, "Target ID is required"),
   reason: z.string().min(3, "Alasan pelaporan minimal 3 karakter"),
   details: z.string().max(1000).optional(),
 });

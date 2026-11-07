@@ -25,7 +25,17 @@ import AdminPageShell, { AdminSection, useAdminToast } from "@/components/admin/
 import { StatusBadge } from "@/components/StatusBadge";
 import { useSession } from "@/components/SessionProvider";
 import { adminRoleOverride, recordOp, useAdminOps } from "@/lib/adminOpsStore";
-import { adminAccounts as staticAdminAccounts, type AdminRole } from "@/lib/data/adminData";
+
+export type AdminRole = "super" | "verifikator" | "keuangan" | "dukungan";
+
+interface AdminAccountItem {
+  id: string;
+  name: string;
+  email: string;
+  role: AdminRole;
+  lastActive: string;
+  status: "aktif" | "nonaktif";
+}
 
 const ROLES: AdminRole[] = ["super", "verifikator", "keuangan", "dukungan"];
 
@@ -42,8 +52,9 @@ export default function AdminAdminsPage() {
   const { show } = useAdminToast();
   const { user } = useSession();
   const ops = useAdminOps();
-  const [adminList, setAdminList] = useState(staticAdminAccounts);
-  const [editing, setEditing] = useState<(typeof staticAdminAccounts)[number] | null>(null);
+  const [adminList, setAdminList] = useState<AdminAccountItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [editing, setEditing] = useState<AdminAccountItem | null>(null);
   const [pendingRole, setPendingRole] = useState<AdminRole | null>(null);
 
   const myEmail = user?.email;
@@ -52,22 +63,21 @@ export default function AdminAdminsPage() {
     fetch("/api/admin/users")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const adminsFromDb = json.data.filter((u: any) => u.role === "ADMIN");
-          if (adminsFromDb.length > 0) {
-            const mapped = adminsFromDb.map((u: any, idx: number) => ({
-              id: u.id,
-              name: u.fullName || u.email.split("@")[0],
-              email: u.email,
-              role: (idx === 0 ? "super" : "verifikator") as AdminRole,
-              lastActive: u.lastSeenAt || u.createdAt || new Date().toISOString(),
-              status: (u.status === "ACTIVE" ? "aktif" : "nonaktif") as "aktif" | "nonaktif",
-            }));
-            setAdminList(mapped);
-          }
+          const mapped: AdminAccountItem[] = adminsFromDb.map((u: any, idx: number) => ({
+            id: u.id,
+            name: u.fullName || u.email.split("@")[0],
+            email: u.email,
+            role: (idx === 0 ? "super" : "verifikator") as AdminRole,
+            lastActive: u.lastSeenAt || u.createdAt || new Date().toISOString(),
+            status: (u.status === "ACTIVE" ? "aktif" : "nonaktif") as "aktif" | "nonaktif",
+          }));
+          setAdminList(mapped);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
   const save = async () => {
@@ -157,6 +167,11 @@ export default function AdminAdminsPage() {
               })}
             </TableBody>
           </Table>
+          {isLoading ? (
+            <p className="p-5 text-sm text-nk-text-muted">Memuat data admin...</p>
+          ) : adminList.length === 0 ? (
+            <p className="p-5 text-sm text-nk-text-muted">Tidak ada akun admin.</p>
+          ) : null}
         </div>
       </AdminSection>
 

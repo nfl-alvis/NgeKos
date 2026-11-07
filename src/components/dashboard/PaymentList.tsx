@@ -49,18 +49,51 @@ export default function PaymentList() {
   const [selectedPayment, setSelectedPayment] = useState<BookingPayment | null>(null);
 
   useEffect(() => {
-    fetch("/api/invoices")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-          const mapped: BookingPayment[] = json.data.map((inv: any) => ({
-            id: inv.code || inv.id,
-            bookingId: inv.booking?.code || inv.bookingId || inv.code || inv.id,
-            propertyName: inv.property?.name || inv.propertyName || "Kost",
-            amount: Number(inv.amount || inv.amountSnapshot || 0),
-            status: (inv.status === "PAID" ? "paid" : "pending") as BookingPaymentStatus,
-            at: typeof inv.dueDate === "string" ? inv.dueDate : new Date().toISOString(),
-          }));
+    Promise.all([
+      fetch("/api/invoices").then((res) => (res.ok ? res.json() : null)),
+      fetch("/api/refunds").then((res) => (res.ok ? res.json() : null)),
+    ])
+      .then(([invJson, refundJson]) => {
+        const refundsMap = new Map<string, string>();
+        if (refundJson?.data && Array.isArray(refundJson.data)) {
+          for (const rf of refundJson.data) {
+            const key = rf.bookingId || rf.rawBookingId;
+            if (key) refundsMap.set(key, rf.status);
+          }
+        }
+
+        if (invJson?.data && Array.isArray(invJson.data) && invJson.data.length > 0) {
+          const mapped: BookingPayment[] = (
+            invJson.data as Array<{
+              id?: string;
+              code?: string;
+              bookingId?: string;
+              booking?: { code?: string };
+              property?: { name?: string };
+              propertyName?: string;
+              amount?: number;
+              amountSnapshot?: number;
+              status?: string;
+              dueDate?: string;
+            }>
+          ).map((inv) => {
+            const bId = inv.booking?.code || inv.bookingId || inv.code || inv.id || "-";
+            let status: BookingPaymentStatus = inv.status === "PAID" ? "paid" : "pending";
+            const rfStatus = refundsMap.get(bId) || (inv.bookingId ? refundsMap.get(inv.bookingId) : undefined);
+            if (rfStatus === "PENDING" || rfStatus === "APPROVED") {
+              status = "refunding";
+            } else if (rfStatus === "PROCESSED") {
+              status = "refunded";
+            }
+            return {
+              id: inv.code || inv.id || "INV-0",
+              bookingId: bId,
+              propertyName: inv.property?.name || inv.propertyName || "Kost",
+              amount: Number(inv.amount || inv.amountSnapshot || 0),
+              status,
+              at: typeof inv.dueDate === "string" ? inv.dueDate : new Date().toISOString(),
+            };
+          });
           setDbPayments(mapped);
         }
       })

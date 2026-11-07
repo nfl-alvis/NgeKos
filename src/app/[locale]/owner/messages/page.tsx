@@ -11,9 +11,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { conversations, messageTemplates } from "@/lib/data/entities";
-import type { MessageStatus } from "@/lib/data/types";
+import type { Conversation, MessageStatus } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
+
+const MESSAGE_TEMPLATES = [
+  { id: "tpl-1", label: "Pengingat pembayaran", body: "Halo, kami ingatkan bahwa tagihan bulan ini sudah terbit. Mohon selesaikan pembayaran sebelum tanggal 5 ya. Terima kasih." },
+  { id: "tpl-2", label: "Konfirmasi booking diterima", body: "Halo, booking kamu sudah disetujui. Silakan lanjut ke halaman pembayaran sebelum batas waktu 24 jam." },
+  { id: "tpl-3", label: "Info kunjungan teknisi", body: "Halo, kunjungan teknisi dijadwalkan besok pagi pukul 09.00. Mohon pastikan kamar bisa diakses ya." },
+];
 
 function getMessageStatus(
   m: {
@@ -111,7 +116,7 @@ export default function OwnerMessagesPage() {
   const t = useTranslations("owner.messages");
   const locale = useLocale();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [threads, setThreads] = useState<typeof conversations>([]);
+  const [threads, setThreads] = useState<Conversation[]>([]);
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -555,7 +560,7 @@ export default function OwnerMessagesPage() {
             <div className="border-t border-nk-border p-3">
               {templatesOpen && (
                 <div className="mb-2 flex flex-col gap-0.5 rounded-lg border border-nk-border bg-nk-bg p-1.5">
-                  {messageTemplates.map((tpl) => (
+                  {MESSAGE_TEMPLATES.map((tpl) => (
                     <button
                       key={tpl.id}
                       type="button"

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { requireUser } from "@/server/auth";
 import { successResponse, withApi, ApiError } from "@/server/http";
 import { prisma } from "@/lib/prisma";
@@ -5,6 +6,10 @@ import { prisma } from "@/lib/prisma";
 export const POST = withApi(async (_request: Request, context: { params: Promise<{ id: string }> }) => {
   const auth = await requireUser(["OWNER", "SEEKER"]);
   const { id } = await context.params;
+
+  if (!z.string().uuid().safeParse(id).success) {
+    throw new ApiError(404, "NOT_FOUND", "Conversation not found.");
+  }
 
   const conv = await prisma.conversation.findFirst({
     where: { id, deletedAt: null },

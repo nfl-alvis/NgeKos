@@ -12,8 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import AdminPageShell, { AdminSection, AdminStat, useAdminToast } from "@/components/admin/AdminPageShell";
-import { roomUnits as staticRoomUnits } from "@/lib/data/entities";
-import { properties as staticProperties } from "@/lib/data/properties";
 import { cn } from "@/lib/utils";
 
 const STATUS_TINT: Record<string, string> = {
@@ -24,7 +22,7 @@ const STATUS_TINT: Record<string, string> = {
 };
 
 interface RoomUnitItem {
-  id?: string;
+  id: string;
   number: string;
   status: "kosong" | "terisi" | "dipesan" | "maintenance";
   typeName?: string;
@@ -41,11 +39,10 @@ export default function AdminRoomsPage() {
   const t = useTranslations("admin.rooms");
   const { show } = useAdminToast();
 
-  const [propList, setPropList] = useState<PropertyItem[]>(
-    staticProperties.map((p) => ({ id: p.id ?? p.slug, slug: p.slug, name: p.name }))
-  );
-  const [selectedSlug, setSelectedSlug] = useState(staticProperties[0]?.slug || "kost-arjuna-ugm");
-  const [units, setUnits] = useState<RoomUnitItem[]>(staticRoomUnits[selectedSlug] ?? []);
+  const [propList, setPropList] = useState<PropertyItem[]>([]);
+  const [selectedSlug, setSelectedSlug] = useState<string>("");
+  const [units, setUnits] = useState<RoomUnitItem[]>([]);
+  const [loadingProps, setLoadingProps] = useState(true);
   const [loading, setLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -61,25 +58,32 @@ export default function AdminRoomsPage() {
             name: p.name,
           }));
           setPropList(list);
-          if (!list.some((p) => p.slug === selectedSlug)) {
-            setSelectedSlug(list[0].slug);
-          }
+          setSelectedSlug((prev) => (list.some((p) => p.slug === prev) ? prev : list[0].slug));
+        } else {
+          setPropList([]);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setPropList([]);
+      })
+      .finally(() => {
+        setLoadingProps(false);
+      });
   }, []);
 
   const currentProp = propList.find((p) => p.slug === selectedSlug);
 
   // Fetch unit kamar untuk properti terpilih
   useEffect(() => {
-    if (!currentProp) return;
-    setLoading(true);
+    if (!currentProp) {
+      setUnits([]);
+      return;
+    }
 
     fetch(`/api/properties/${currentProp.id}/rooms`)
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const mapped: RoomUnitItem[] = json.data.map((u: any) => ({
             id: u.id,
             number: u.number,
@@ -95,16 +99,16 @@ export default function AdminRoomsPage() {
           }));
           setUnits(mapped);
         } else {
-          setUnits(staticRoomUnits[selectedSlug] ?? []);
+          setUnits([]);
         }
       })
       .catch(() => {
-        setUnits(staticRoomUnits[selectedSlug] ?? []);
+        setUnits([]);
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [selectedSlug, currentProp?.id]);
+  }, [selectedSlug, currentProp]);
 
   const count = (s: string) => units.filter((u) => u.status === s).length;
 
@@ -120,35 +124,39 @@ export default function AdminRoomsPage() {
           ? "terisi"
           : "maintenance";
 
+    const prevUnits = [...units];
+
     // Optimistic update
     setUnits((prev) =>
-      prev.map((u) => (u.number === unit.number ? { ...u, status: uiStatus } : u))
+      prev.map((u) => (u.id === unit.id ? { ...u, status: uiStatus } : u))
     );
 
-    if (unit.id) {
-      setUpdatingId(unit.id);
-      try {
-        const res = await fetch(
-          `/api/properties/${currentProp.id}/rooms/${unit.id}`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: newStatus }),
-          }
-        );
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          show(err.message || "Gagal mengubah status kamar");
-        } else {
-          show(`Status kamar ${unit.number} berhasil diubah ke ${t(`st${uiStatus.charAt(0).toUpperCase()}${uiStatus.slice(1)}`)}`);
+    setUpdatingId(unit.id);
+    try {
+      const res = await fetch(
+        `/api/properties/${currentProp.id}/rooms/${unit.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
         }
-      } catch {
-        show(`Status kamar ${unit.number} diubah (offline)`);
-      } finally {
-        setUpdatingId(null);
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setUnits(prevUnits);
+        show(err.message || "Gagal mengubah status kamar");
+      } else {
+        show(
+          `Status kamar ${unit.number} berhasil diubah ke ${t(
+            `st${uiStatus.charAt(0).toUpperCase()}${uiStatus.slice(1)}`
+          )}`
+        );
       }
-    } else {
-      show(`Status kamar ${unit.number} berhasil diubah ke ${t(`st${uiStatus.charAt(0).toUpperCase()}${uiStatus.slice(1)}`)}`);
+    } catch {
+      setUnits(prevUnits);
+      show("Gagal menghubungi server");
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -159,117 +167,112 @@ export default function AdminRoomsPage() {
           label={t("statTotal")}
           value={String(units.length)}
           icon={DoorOpen}
-          tint={{ card: "bg-nk-section", icon: "bg-nk-warm text-nk-text-muted" }}
+          tint={{ card: "bg-nk-section", icon: "bg-nk-warm text-nk-text" }}
+          note={currentProp?.name}
         />
         <AdminStat
-          label={t("stTerisi")}
-          value={String(count("terisi"))}
-          icon={DoorOpen}
-          tint={{ card: "bg-[#E8EFF8]", icon: "bg-[#D3E0F0] text-[#33517C]" }}
-        />
-        <AdminStat
-          label={t("stKosong")}
+          label={t("statVacant")}
           value={String(count("kosong"))}
           icon={DoorOpen}
           tint={{ card: "bg-[#E9F4EC]", icon: "bg-[#CFE8D6] text-[#2F6B3C]" }}
+          note={units.length > 0 ? `${Math.round((count("kosong") / units.length) * 100)}% total` : undefined}
         />
         <AdminStat
-          label={t("stMaintenance")}
+          label={t("statOccupied")}
+          value={String(count("terisi"))}
+          icon={DoorOpen}
+          tint={{ card: "bg-[#E8EFF8]", icon: "bg-[#D3E0F0] text-[#33517C]" }}
+          note={units.length > 0 ? `${Math.round((count("terisi") / units.length) * 100)}% total` : undefined}
+        />
+        <AdminStat
+          label={t("statMaintenance")}
           value={String(count("maintenance"))}
           icon={DoorOpen}
           tint={{ card: "bg-[#FAEAE8]", icon: "bg-[#F3D7D3] text-[#9C3B32]" }}
+          note={count("maintenance") > 0 ? t("statMaintenanceNote") : undefined}
         />
       </div>
 
       <AdminSection
         title={t("gridTitle")}
         right={
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className="flex items-center gap-1.5 rounded-md bg-nk-surface px-3 py-1.5 text-sm text-nk-text ring-1 ring-foreground/10 transition-colors hover:bg-nk-accent-subtle focus:outline-none focus-visible:outline-2 focus-visible:outline-nk-accent"
-              aria-label={t("gridTitle")}
-            >
-              {currentProp?.name ?? selectedSlug}
-              <ChevronDown className="size-3.5 text-nk-text-muted" aria-hidden="true" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuRadioGroup value={selectedSlug} onValueChange={setSelectedSlug}>
-                {propList.map((p) => (
-                  <DropdownMenuRadioItem key={p.slug} value={p.slug}>
-                    {p.name}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-nk-text-muted">{t("selectProp")}</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex h-11 items-center gap-2 rounded-lg border border-nk-border bg-nk-surface px-3 text-sm text-nk-text hover:bg-nk-warm md:h-9">
+                <span className="max-w-[200px] truncate">{loadingProps ? "Memuat..." : (currentProp?.name || "Pilih Kos")}</span>
+                <ChevronDown className="size-4 text-nk-text-muted" aria-hidden="true" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuRadioGroup value={selectedSlug} onValueChange={setSelectedSlug}>
+                  {propList.map((p) => (
+                    <DropdownMenuRadioItem key={p.slug} value={p.slug}>
+                      {p.name}
+                    </DropdownMenuRadioItem>
+                  ))}
+                  {propList.length === 0 && (
+                    <div className="p-2 text-xs text-nk-text-muted">Tidak ada properti</div>
+                  )}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         }
         bodyClass="p-4 sm:p-6"
       >
-        {loading ? (
-          <div className="flex items-center justify-center py-12 text-sm text-nk-text-muted">
-            <Loader2 className="mr-2 size-4 animate-spin" />
-            <span>Memuat data kamar...</span>
+        {loading || loadingProps ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="size-6 animate-spin text-nk-accent" />
+            <span className="ml-2 text-sm text-nk-text-muted">Memuat unit kamar...</span>
           </div>
+        ) : units.length === 0 ? (
+          <p className="py-8 text-center text-sm text-nk-text-muted">{t("empty")}</p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {units.map((u) => (
-              <DropdownMenu key={u.number}>
-                <DropdownMenuTrigger
-                  disabled={u.status === "dipesan"}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+            {units.map((u) => {
+              const isUpdating = updatingId === u.id;
+              return (
+                <div
+                  key={u.id}
                   className={cn(
-                    "group relative flex flex-col rounded-lg border px-3 py-2.5 text-left text-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-nk-accent",
-                    STATUS_TINT[u.status],
-                    u.status !== "dipesan" && "hover:shadow-xs cursor-pointer"
+                    "group relative flex flex-col items-center justify-center rounded-lg border p-3 text-center transition-all",
+                    STATUS_TINT[u.status] || "border-nk-border bg-nk-section text-nk-text-muted"
                   )}
                 >
-                  <div className="flex items-center justify-between">
-                    <p className="font-mono text-xs font-semibold">{u.number}</p>
-                    {u.status !== "dipesan" && (
-                      <Edit2 className="size-3 opacity-0 transition-opacity group-hover:opacity-70" />
-                    )}
-                  </div>
-                  <p className="mt-0.5 text-xs">
-                    {t(`st${u.status.charAt(0).toUpperCase()}${u.status.slice(1)}`)}
-                  </p>
-                  {u.typeName && (
-                    <p className="text-[10px] opacity-75 truncate mt-0.5">{u.typeName}</p>
+                  {isUpdating ? (
+                    <Loader2 className="size-5 animate-spin text-nk-text-muted" />
+                  ) : (
+                    <>
+                      <span className="font-mono text-base font-semibold tracking-tight">{u.number}</span>
+                      <span className="mt-0.5 text-[10px] uppercase tracking-wider">{t(`st${u.status.charAt(0).toUpperCase()}${u.status.slice(1)}`)}</span>
+                      {u.typeName && <span className="mt-1 line-clamp-1 text-[9px] text-nk-text-muted">{u.typeName}</span>}
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          className="absolute right-1 top-1 rounded p-1 opacity-0 transition-opacity hover:bg-black/5 group-hover:opacity-100"
+                          aria-label={`Ubah status kamar ${u.number}`}
+                        >
+                          <Edit2 className="size-3 text-nk-text-muted" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(u, "AVAILABLE")}>
+                            {t("stKosong")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(u, "OCCUPIED")}>
+                            {t("stTerisi")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(u, "MAINTENANCE")}>
+                            {t("stMaintenance")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
                   )}
-                </DropdownMenuTrigger>
-                {u.status !== "dipesan" && (
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem
-                      onClick={() => handleUpdateStatus(u, "AVAILABLE")}
-                      className="cursor-pointer text-xs text-[#2F6B3C]"
-                    >
-                      {t("stKosong")} (AVAILABLE)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleUpdateStatus(u, "OCCUPIED")}
-                      className="cursor-pointer text-xs text-[#33517C]"
-                    >
-                      {t("stTerisi")} (OCCUPIED)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleUpdateStatus(u, "MAINTENANCE")}
-                      className="cursor-pointer text-xs text-[#9C3B32]"
-                    >
-                      {t("stMaintenance")} (MAINTENANCE)
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                )}
-              </DropdownMenu>
-            ))}
+                </div>
+              );
+            })}
           </div>
         )}
-
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-nk-text-muted">
-          {(["kosong", "terisi", "dipesan", "maintenance"] as const).map((s) => (
-            <span key={s} className="flex items-center gap-1.5">
-              <span className={cn("size-2 rounded-full border", STATUS_TINT[s])} />
-              {t(`st${s.charAt(0).toUpperCase()}${s.slice(1)}`)} · {count(s)}
-            </span>
-          ))}
-        </div>
       </AdminSection>
     </AdminPageShell>
   );

@@ -70,7 +70,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
 
     if (profile) {
       if (profile.status !== "ACTIVE") {
-        throw new ApiError(403, "ACCOUNT_DISABLED", "Akun tidak aktif");
+        throw new ApiError(403, "ACCOUNT_DISABLED", "Account is not active");
       }
       return { authUser: authUserFromProfile(profile), profile };
     }
@@ -107,7 +107,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
       });
 
       if (profile.status !== "ACTIVE") {
-        throw new ApiError(403, "ACCOUNT_DISABLED", "Akun tidak aktif");
+        throw new ApiError(403, "ACCOUNT_DISABLED", "Account is not active");
       }
       return { authUser: user, profile };
     } catch (dbErr) {
@@ -147,15 +147,15 @@ export async function getAuthContext(): Promise<AuthContext | null> {
 
 export async function requireUser(allowedRoles?: readonly UserRole[]): Promise<AuthContext> {
   const auth = await getAuthContext();
-  if (!auth) throw new ApiError(401, "UNAUTHENTICATED", "Silakan masuk terlebih dahulu");
+  if (!auth) throw new ApiError(401, "UNAUTHENTICATED", "Please sign in first");
   if (allowedRoles && !allowedRoles.includes(auth.profile.role)) {
-    throw new ApiError(403, "FORBIDDEN", "Anda tidak memiliki izin untuk tindakan ini");
+    throw new ApiError(403, "FORBIDDEN", "You do not have permission to perform this action");
   }
   return auth;
 }
 
 export function assertOwnerOrAdmin(profile: Profile, ownerId: string) {
   if (profile.role !== "ADMIN" && profile.id !== ownerId) {
-    throw new ApiError(403, "FORBIDDEN", "Anda tidak memiliki akses ke data ini");
+    throw new ApiError(403, "FORBIDDEN", "You do not have access to this data");
   }
 }

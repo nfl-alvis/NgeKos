@@ -5,7 +5,6 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import DashboardShell from "@/components/DashboardShell";
 import { StatusBadge } from "@/components/StatusBadge";
-import { subscriptionState } from "@/lib/data/entities";
 import CreatePropertyDialog from "@/components/owner/CreatePropertyDialog";
 import type { Property } from "@/lib/data/types";
 import { getKosImage } from "@/lib/kosImages";
@@ -131,8 +130,7 @@ export default function OwnerPropertiesPage() {
   }, []);
 
   const isOwnerUnlimited = user?.email?.toLowerCase() === "owner@ngekost.id";
-  const isTrial = !isOwnerUnlimited && subscriptionState.status === "trial";
-  const LIMIT = isTrial ? 5 : Infinity;
+  const LIMIT = 10;
   const atLimit = !isOwnerUnlimited && props.filter((p) => p.verificationStatus === "verified").length >= LIMIT;
 
   // Filtered properties based on search query

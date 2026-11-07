@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CreditCard, Search, TrendingUp, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,8 @@ import {
 import AdminPageShell, { AdminSection, AdminStat } from "@/components/admin/AdminPageShell";
 import { StatusBadge, type StatusColor } from "@/components/StatusBadge";
 import { formatIDR } from "@/lib/utils";
-import { platformTransactions, type TxStatus } from "@/lib/data/adminData";
+
+export type TxStatus = "settlement" | "pending" | "expired" | "cancel" | "refund";
 
 const TX_COLOR: Record<TxStatus, StatusColor> = {
   settlement: "green",
@@ -37,6 +38,9 @@ const METHOD_LABEL: Record<string, string> = {
   "va-bni": "BNI VA",
   qris: "QRIS",
   gopay: "GoPay",
+  bank_transfer: "Transfer Bank",
+  midtrans: "Midtrans",
+  cash: "Tunai",
 };
 
 function TxStatusBadge({ status }: { status: TxStatus }) {
@@ -45,32 +49,63 @@ function TxStatusBadge({ status }: { status: TxStatus }) {
   return <StatusBadge color={TX_COLOR[status]}>{t(`st${camel}`)}</StatusBadge>;
 }
 
-/** Pantau transaksi pembayaran Midtrans. */
 export default function AdminPaymentsPage() {
   const t = useTranslations("admin.payments");
   const locale = useLocale();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | TxStatus>("all");
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/payments")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          setTransactions(json.data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return platformTransactions
+    return transactions
       .filter((x) => (status === "all" ? true : x.status === status))
       .filter((x) =>
         q ? `${x.id} ${x.bookingId} ${x.payer} ${x.propertyName}`.toLowerCase().includes(q) : true
       );
-  }, [search, status]);
+  }, [transactions, search, status]);
 
-  const settled = platformTransactions.filter((x) => x.status === "settlement");
-  const gross = settled.reduce((a, x) => a + x.amount, 0);
-  const fee = settled.reduce((a, x) => a + x.fee, 0);
+  const settled = transactions.filter((x) => x.status === "settlement");
+  const gross = settled.reduce((a, x) => a + Number(x.amount || 0), 0);
+  const fee = settled.reduce((a, x) => a + Number(x.fee || 0), 0);
 
   return (
     <AdminPageShell title={t("title")}>
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <AdminStat label={t("statSettled")} value={String(settled.length)} icon={TrendingUp} tint={{ card: "bg-[#E9F4EC]", icon: "bg-[#CFE8D6] text-[#2F6B3C]" }} note={t("statSettledNote")} />
-        <AdminStat label={t("statGross")} value={formatIDR(gross)} icon={Wallet} tint={{ card: "bg-[#E8EFF8]", icon: "bg-[#D3E0F0] text-[#33517C]" }} note={t("statGrossNote", { fee: formatIDR(fee) })} />
-        <AdminStat label={t("statPending")} value={String(platformTransactions.filter((x) => x.status === "pending").length)} icon={CreditCard} tint={{ card: "bg-[#FBF3DC]", icon: "bg-[#F3E3B8] text-[#8A6A1F]" }} note={t("statPendingNote")} />
+        <AdminStat
+          label={t("statSettled")}
+          value={String(settled.length)}
+          icon={TrendingUp}
+          tint={{ card: "bg-[#E9F4EC]", icon: "bg-[#CFE8D6] text-[#2F6B3C]" }}
+          note={t("statSettledNote")}
+        />
+        <AdminStat
+          label={t("statGross")}
+          value={formatIDR(gross)}
+          icon={Wallet}
+          tint={{ card: "bg-[#E8EFF8]", icon: "bg-[#D3E0F0] text-[#33517C]" }}
+          note={t("statGrossNote", { fee: formatIDR(fee) })}
+        />
+        <AdminStat
+          label={t("statPending")}
+          value={String(transactions.filter((x) => x.status === "pending").length)}
+          icon={CreditCard}
+          tint={{ card: "bg-[#FBF3DC]", icon: "bg-[#F3E3B8] text-[#8A6A1F]" }}
+          note={t("statPendingNote")}
+        />
       </div>
 
       <AdminSection
@@ -78,7 +113,10 @@ export default function AdminPaymentsPage() {
         right={
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-nk-text-muted" aria-hidden="true" />
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-nk-text-muted"
+                aria-hidden="true"
+              />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -93,7 +131,9 @@ export default function AdminPaymentsPage() {
               <SelectContent>
                 <SelectItem value="all">{t("filterAll")}</SelectItem>
                 {(Object.keys(TX_COLOR) as TxStatus[]).map((s) => (
-                  <SelectItem key={s} value={s}>{t(`st${s.charAt(0).toUpperCase()}${s.slice(1)}`)}</SelectItem>
+                  <SelectItem key={s} value={s}>
+                    {t(`st${s.charAt(0).toUpperCase()}${s.slice(1)}`)}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -124,19 +164,37 @@ export default function AdminPaymentsPage() {
                     <p className="truncate text-nk-text">{x.propertyName}</p>
                     <p className="truncate font-mono text-[10px] text-nk-text-muted">{x.bookingId}</p>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-nk-text-muted">{METHOD_LABEL[x.method]}</TableCell>
-                  <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text">{formatIDR(x.amount)}</TableCell>
-                  <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text-muted">{formatIDR(x.fee)}</TableCell>
-                  <TableCell className="px-4 py-3"><TxStatusBadge status={x.status} /></TableCell>
+                  <TableCell className="px-4 py-3 text-nk-text-muted">
+                    {METHOD_LABEL[x.method?.toLowerCase()] || x.method || "VA"}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text">
+                    {formatIDR(x.amount)}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 whitespace-nowrap tabular-nums text-nk-text-muted">
+                    {formatIDR(x.fee)}
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
+                    <TxStatusBadge status={x.status} />
+                  </TableCell>
                   <TableCell className="px-4 py-3 whitespace-nowrap text-nk-text-muted">
-                    {new Date(x.at).toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", { day: "numeric", month: "short" })}{" "}
-                    {new Date(x.at).toLocaleTimeString(locale === "id" ? "id-ID" : "en-GB", { hour: "2-digit", minute: "2-digit" })}
+                    {new Date(x.at).toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
+                      day: "numeric",
+                      month: "short",
+                    })}{" "}
+                    {new Date(x.at).toLocaleTimeString(locale === "id" ? "id-ID" : "en-GB", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          {rows.length === 0 && <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>}
+          {isLoading ? (
+            <p className="p-5 text-sm text-nk-text-muted">Memuat data transaksi...</p>
+          ) : rows.length === 0 ? (
+            <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>
+          ) : null}
         </div>
       </AdminSection>
     </AdminPageShell>

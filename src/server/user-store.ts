@@ -113,6 +113,15 @@ export function registerLocalUser(data: {
   return newUser;
 }
 
+/** Perbarui kata sandi user lokal (dipakai alur lupa password). */
+export function updateLocalPassword(email: string, password: string): boolean {
+  const user = findLocalUser(email);
+  if (!user) return false;
+  user.passwordHash = password;
+  userStore.set(email.toLowerCase().trim(), user);
+  return true;
+}
+
 export function verifyLocalPassword(email: string, password: string): StoredUser | null {
   const user = findLocalUser(email);
   if (!user) return null;

@@ -58,7 +58,7 @@ export function getSessionSecretWarnings(): string[] {
   const explicit = process.env.SESSION_SECRET?.trim();
   if (!explicit || explicit.length < 32) {
     warnings.push(
-      "SESSION_SECRET belum diisi (minimal 32 karakter). Sesi saat ini ditandatangani dengan rahasia turunan — setel SESSION_SECRET eksplisit sebelum produksi.",
+      "SESSION_SECRET is not set (minimum 32 characters). Sessions are currently signed with a derived secret — set SESSION_SECRET explicitly before production.",
     );
   }
   return warnings;

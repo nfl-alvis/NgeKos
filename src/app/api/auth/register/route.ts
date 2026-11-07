@@ -22,7 +22,7 @@ export const POST = withApi(async (request: Request) => {
 
   const existingLocal = findLocalUser(normalizedEmail);
   if (existingLocal) {
-    throw new ApiError(409, "EMAIL_EXISTS", "Email sudah terdaftar");
+    throw new ApiError(409, "EMAIL_EXISTS", "Email is already registered");
   }
 
   const existingProfile = await prisma.profile.findUnique({
@@ -30,10 +30,10 @@ export const POST = withApi(async (request: Request) => {
     select: { id: true },
   });
   if (existingProfile) {
-    throw new ApiError(409, "EMAIL_EXISTS", "Email sudah terdaftar");
+    throw new ApiError(409, "EMAIL_EXISTS", "Email is already registered");
   }
 
-  // Attempt Supabase signUp via custom SMTP (Resend)
+  // Supabase signUp — custom SMTP (Resend) mengirim email OTP verifikasi.
   const supabase = await createClient(10_000);
   const { data, error } = await supabase.auth.signUp({
     email: normalizedEmail,
@@ -55,7 +55,7 @@ export const POST = withApi(async (request: Request) => {
     throw new ApiError(
       duplicate ? 409 : 400,
       duplicate ? "EMAIL_EXISTS" : "SIGNUP_FAILED",
-      duplicate ? "Email sudah terdaftar" : (error.message || "Pendaftaran gagal"),
+      duplicate ? "Email is already registered" : (error.message || "Registration failed"),
     );
   }
 
@@ -88,7 +88,8 @@ export const POST = withApi(async (request: Request) => {
     );
   }
 
-  // Email confirmation is required (OTP / verification link sent via Resend)
+  // Email confirmation is required — the 8-digit OTP code is sent by Supabase
+  // via Resend; the user verifies it through POST /api/auth/verify-otp.
   return successResponse(
     { userId: localUser.id, requiresEmailConfirmation: true },
     { status: 201 },

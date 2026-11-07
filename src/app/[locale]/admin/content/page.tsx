@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Ban, CalendarDays, Eye, EyeOff, FileText, HelpCircle, Image as ImageIcon, MapPin } from "lucide-react";
 import Link from "next/link";
@@ -16,7 +16,6 @@ import AdminPageShell, { AdminSection, useAdminToast } from "@/components/admin/
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatReviewDate } from "@/lib/adminReviewStore";
 import {
-  contentBanners,
   faqGroups,
   popularCities as staticCities,
   policyDocs,
@@ -28,6 +27,30 @@ export default function AdminContentPage() {
   const locale = useLocale();
   const { show } = useAdminToast();
   const [cities, setCities] = useState(staticCities);
+
+  useEffect(() => {
+    fetch("/api/properties")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          const map = new Map<string, number>();
+          for (const p of json.data) {
+            const c = p.city || "Jakarta";
+            map.set(c, (map.get(c) ?? 0) + 1);
+          }
+          const dynamicCities = [...map.entries()].map(([name, count]) => ({
+            name,
+            propertyCount: count,
+            seekerCount: count * 25,
+            status: "tayang" as const,
+          }));
+          if (dynamicCities.length > 0) {
+            setCities(dynamicCities);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const toggleCityStatus = (name: string) => {
     setCities((prev) =>

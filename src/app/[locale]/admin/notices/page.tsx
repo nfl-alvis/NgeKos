@@ -18,7 +18,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { formatReviewDate } from "@/lib/adminReviewStore";
 import { useSession } from "@/components/SessionProvider";
 import { broadcastDetail, recordOp, useBroadcasts } from "@/lib/adminOpsStore";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /** Kirim pemberitahuan ke user / owner + riwayat broadcast. */
 export default function AdminNoticesPage() {
@@ -27,6 +27,8 @@ export default function AdminNoticesPage() {
   const { show } = useAdminToast();
   const { user } = useSession();
   const broadcasts = useBroadcasts();
+  const [dbNotices, setDbNotices] = useState<any[]>([]);
+  const [userCounts, setUserCounts] = useState({ owners: 0, seekers: 0, total: 0 });
 
   const targetKey = (v: string) => (v === "semua" ? "targetAll" : `target${v.charAt(0).toUpperCase()}${v.slice(1)}`);
 
@@ -34,9 +36,53 @@ export default function AdminNoticesPage() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [error, setError] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/users")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          const owners = json.data.filter((u: any) => u.role === "OWNER" && u.status === "ACTIVE").length;
+          const seekers = json.data.filter((u: any) => u.role === "SEEKER" && u.status === "ACTIVE").length;
+          setUserCounts({ owners, seekers, total: owners + seekers });
+        }
+      })
+      .catch(() => {});
+
+    fetch("/api/admin/notices")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          // Group by title and body to represent distinct broadcasts
+          const seen = new Set<string>();
+          const distinct: any[] = [];
+          for (const n of json.data) {
+            const key = `${n.title}|${n.body}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              distinct.push({
+                id: n.id,
+                title: n.title,
+                body: n.body,
+                target: "semua",
+                recipients: 1,
+                sentAt: n.createdAt,
+              });
+            }
+          }
+          setDbNotices(distinct);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const recipients =
-    target === "owner" ? 812 : target === "seeker" ? 12_440 : 13_252;
+    target === "owner"
+      ? (userCounts.owners || 1)
+      : target === "seeker"
+      ? (userCounts.seekers || 1)
+      : (userCounts.total || 2);
 
   const send = async () => {
     if (title.trim().length < 4 || body.trim().length < 10) {
@@ -47,19 +93,9 @@ export default function AdminNoticesPage() {
     const currentBody = body.trim();
     const currentTarget = target;
 
-    recordOp(
-      t("targetLabel", { target: t(targetKey(currentTarget)) }),
-      "send",
-      user?.email,
-      broadcastDetail(currentTarget, currentTitle, currentBody, recipients)
-    );
-    show(t("toastSent", { count: recipients }));
-    setTitle("");
-    setBody("");
-    setError(false);
-
+    setIsSending(true);
     try {
-      await fetch("/api/admin/notices", {
+      const res = await fetch("/api/admin/notices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -68,8 +104,23 @@ export default function AdminNoticesPage() {
           body: currentBody,
         }),
       });
+      const json = await res.json().catch(() => ({}));
+      const sentCount = json.data?.count ?? recipients;
+
+      recordOp(
+        t("targetLabel", { target: t(targetKey(currentTarget)) }),
+        "send",
+        user?.email,
+        broadcastDetail(currentTarget, currentTitle, currentBody, sentCount)
+      );
+      show(t("toastSent", { count: sentCount }));
+      setTitle("");
+      setBody("");
+      setError(false);
     } catch {
-      // fallback
+      show("Gagal mengirim broadcast.");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -152,10 +203,10 @@ export default function AdminNoticesPage() {
 
         {/* riwayat */}
         <AdminSection title={t("historyTitle")} bodyClass="p-0">
-          {broadcasts.map((b, i) => (
+          {[...broadcasts, ...dbNotices].map((b, i, arr) => (
             <div
               key={b.id}
-              className={`flex items-start gap-3 px-4 py-3.5 ${i < broadcasts.length - 1 ? "border-b border-nk-border" : ""}`}
+              className={`flex items-start gap-3 px-4 py-3.5 ${i < arr.length - 1 ? "border-b border-nk-border" : ""}`}
             >
               <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-nk-warm text-nk-text-muted">
                 <Megaphone className="size-4" aria-hidden="true" />
@@ -174,7 +225,9 @@ export default function AdminNoticesPage() {
               </div>
             </div>
           ))}
-          {broadcasts.length === 0 && <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>}
+          {broadcasts.length === 0 && dbNotices.length === 0 && (
+            <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>
+          )}
         </AdminSection>
       </div>
     </AdminPageShell>

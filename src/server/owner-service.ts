@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { Prisma, type InvoiceStatus, type Profile } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/server/http";
+import { recordAuditLog } from "@/server/audit-service";
 import type { z } from "zod";
 import type { announcementCreateSchema, invoiceCreateSchema } from "@/server/validation";
 
@@ -18,7 +19,22 @@ export async function listInvoices(profile: Profile) {
   const invoices = await prisma.invoice.findMany({
     where,
     orderBy: [{ dueDate: "desc" }, { createdAt: "desc" }],
-    include: { property: { select: { id: true, name: true, slug: true } }, tenant: { select: { id: true, fullName: true, email: true } }, payments: { orderBy: { createdAt: "desc" } } },
+    include: {
+      property: { select: { id: true, name: true, slug: true } },
+      tenant: { select: { id: true, fullName: true, email: true } },
+      payments: {
+        select: {
+          id: true,
+          invoiceId: true,
+          amount: true,
+          status: true,
+          method: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+      },
+    },
   });
   return invoices.map((invoice) => ({
     ...invoice,
@@ -32,7 +48,7 @@ export async function createInvoice(profile: Profile, input: InvoiceInput) {
     where: { id: input.agreementId, ...(profile.role === "ADMIN" ? {} : { property: { ownerId: profile.id } }) },
     select: { id: true, tenantId: true, propertyId: true },
   });
-  if (!agreement) throw new ApiError(404, "AGREEMENT_NOT_FOUND", "Kontrak tidak ditemukan");
+  if (!agreement) throw new ApiError(404, "AGREEMENT_NOT_FOUND", "Agreement not found");
   const invoice = await prisma.invoice.create({
     data: {
       code: invoiceCode(), agreementId: agreement.id, tenantId: agreement.tenantId, propertyId: agreement.propertyId,
@@ -46,9 +62,9 @@ export async function createInvoice(profile: Profile, input: InvoiceInput) {
 export async function updateInvoice(profile: Profile, id: string, status: Extract<InvoiceStatus, "ISSUED" | "CANCELLED" | "PAID">, note?: string) {
   return prisma.$transaction(async (tx) => {
     const invoice = await tx.invoice.findUnique({ where: { id }, include: { property: { select: { ownerId: true } } } });
-    if (!invoice) throw new ApiError(404, "INVOICE_NOT_FOUND", "Tagihan tidak ditemukan");
-    if (profile.role !== "ADMIN" && invoice.property.ownerId !== profile.id) throw new ApiError(403, "FORBIDDEN", "Tagihan ini bukan untuk properti Anda");
-    if (["PAID", "CANCELLED"].includes(invoice.status)) throw new ApiError(409, "INVOICE_FINAL", "Tagihan ini sudah berstatus final");
+    if (!invoice) throw new ApiError(404, "INVOICE_NOT_FOUND", "Invoice not found");
+    if (profile.role !== "ADMIN" && invoice.property.ownerId !== profile.id) throw new ApiError(403, "FORBIDDEN", "This invoice does not belong to your property");
+    if (["PAID", "CANCELLED"].includes(invoice.status)) throw new ApiError(409, "INVOICE_FINAL", "This invoice is already final");
     if (status === "PAID") {
       await tx.payment.create({ data: { invoiceId: id, recordedById: profile.id, method: "MANUAL", status: "VERIFIED", amount: invoice.amount, note, paidAt: new Date(), verifiedAt: new Date() } });
     }
@@ -69,13 +85,13 @@ export async function listAnnouncements(profile: Profile) {
 
 export async function createAnnouncement(profile: Profile, input: AnnouncementInput) {
   const property = await prisma.property.findFirst({ where: { id: input.propertyId, deletedAt: null, ...(profile.role === "ADMIN" ? {} : { ownerId: profile.id }) }, select: { id: true } });
-  if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Properti tidak ditemukan");
+  if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Property not found");
   return prisma.announcement.create({ data: { propertyId: input.propertyId, authorId: profile.id, title: input.title, body: input.body, expiresAt: input.expiresAt ? new Date(input.expiresAt) : null } });
 }
 
 export async function markAnnouncementRead(profile: Profile, id: string) {
   const announcement = await prisma.announcement.findFirst({ where: { id, property: { agreements: { some: { tenantId: profile.id, status: "ACTIVE" } } } }, select: { id: true } });
-  if (!announcement) throw new ApiError(404, "ANNOUNCEMENT_NOT_FOUND", "Pengumuman tidak ditemukan");
+  if (!announcement) throw new ApiError(404, "ANNOUNCEMENT_NOT_FOUND", "Announcement not found");
   await prisma.announcementRead.upsert({ where: { announcementId_profileId: { announcementId: id, profileId: profile.id } }, update: { readAt: new Date() }, create: { announcementId: id, profileId: profile.id } });
 }
 
@@ -110,9 +126,9 @@ export async function submitPropertyVerification(profile: Profile, propertyId: s
       },
       include: { _count: { select: { roomTypes: true, images: true } } },
     });
-    if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Properti tidak ditemukan");
+    if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Property not found");
     if (!["DRAFT", "REJECTED", "PENDING"].includes(property.status)) {
-      throw new ApiError(409, "INVALID_PROPERTY_STATUS", "Properti tidak dapat diajukan pada status saat ini");
+      throw new ApiError(409, "INVALID_PROPERTY_STATUS", "The property cannot be submitted in its current status");
     }
 
     // Auto add default room type if missing
@@ -177,16 +193,16 @@ export async function decidePropertyVerification(
   reason?: string
 ) {
   if (profile.role !== "ADMIN") {
-    throw new ApiError(403, "FORBIDDEN", "Role admin tidak dapat memverifikasi properti");
+    throw new ApiError(403, "FORBIDDEN", "Admin accounts cannot verify properties");
   }
   if (decision === "REJECTED" && !reason) {
-    throw new ApiError(422, "REJECTION_REASON_REQUIRED", "Alasan penolakan wajib diisi");
+    throw new ApiError(422, "REJECTION_REASON_REQUIRED", "A rejection reason is required");
   }
 
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(verificationId);
 
   try {
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // Find verification by id, or propertyId, or property slug
       const verification = await tx.propertyVerification.findFirst({
         where: isUuid
@@ -237,10 +253,10 @@ export async function decidePropertyVerification(
               data: {
                 profileId: property.ownerId,
                 type: "SYSTEM",
-                title: decision === "APPROVED" ? "Properti Berhasil Diverifikasi" : "Verifikasi Properti Ditolak",
+                title: decision === "APPROVED" ? "Property Verification Approved" : "Property Verification Rejected",
                 body: decision === "APPROVED"
                   ? `Properti "${property.name}" Anda telah diverifikasi dan aktif dipublikasikan.`
-                  : `Pengajuan verifikasi properti "${property.name}" ditolak.${reason ? ` Alasan: ${reason}` : ""}`,
+                  : `The property verification request for "${property.name}" was rejected.${reason ? ` Reason: ${reason}` : ""}`,
                 linkUrl: "/owner/properties",
               },
             });
@@ -307,10 +323,10 @@ export async function decidePropertyVerification(
             data: {
               profileId: verification.property.ownerId,
               type: "SYSTEM",
-              title: decision === "APPROVED" ? "Properti Berhasil Diverifikasi" : "Verifikasi Properti Ditolak",
+              title: decision === "APPROVED" ? "Property Verification Approved" : "Property Verification Rejected",
               body: decision === "APPROVED"
                 ? `Properti "${verification.property.name}" Anda telah diverifikasi dan aktif dipublikasikan.`
-                : `Pengajuan verifikasi properti "${verification.property.name}" ditolak.${reason ? ` Alasan: ${reason}` : ""}`,
+                : `The property verification request for "${verification.property.name}" was rejected.${reason ? ` Reason: ${reason}` : ""}`,
               linkUrl: "/owner/properties",
             },
           });
@@ -321,6 +337,22 @@ export async function decidePropertyVerification(
 
       return updated;
     });
+
+    await recordAuditLog({
+      actor: profile,
+      action: decision === "APPROVED" ? "verify.approve" : "verify.reject",
+      entityType: "PROPERTY",
+      entityId: result && typeof result === "object" && "propertyId" in result ? (result.propertyId as string) : verificationId,
+      description: `Admin ${profile.fullName} decided property verification: ${decision}`,
+      metadata: {
+        target: `Property verification (${decision})`,
+        decision,
+        reason,
+        verificationId,
+      },
+    });
+
+    return result;
   } catch (err) {
     if (err instanceof ApiError) throw err;
     return {

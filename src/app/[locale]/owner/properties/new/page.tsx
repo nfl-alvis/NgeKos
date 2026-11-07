@@ -152,7 +152,6 @@ function ToggleSwitch({
 }
 
 import { DRAFT_STORAGE_KEY, type PropertyFormDraft } from "@/lib/propertyDraft";
-import { isValidLuhn } from "@/lib/luhn";
 
 export const SAVED_BANK_ACCOUNT_KEY = "ngekos_owner_saved_bank_account";
 
@@ -990,11 +989,14 @@ export default function NewPropertyPage() {
 
   const isStep5Valid = deskripsiKos.trim().length >= 20;
 
-  const isLuhnValid = isValidLuhn(nomorRekening);
+  const isAccountNumberValid =
+    nomorRekening.length >= 8 &&
+    nomorRekening.length <= 20 &&
+    /^\d+$/.test(nomorRekening);
 
   const isStep6Valid =
     namaPemilik.trim().length >= 2 &&
-    isLuhnValid &&
+    isAccountNumberValid &&
     namaPemilikRekening.trim().length >= 2;
 
   // Final submit to API
@@ -2967,14 +2969,14 @@ export default function NewPropertyPage() {
                 </select>
               </label>
 
-              {/* Nomor Rekening dengan Validasi Algoritma Luhn */}
+              {/* Nomor Rekening Bank */}
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-nk-text">
-                    Nomor Rekening / Kartu Bank <span className="text-rose-500">*</span>
+                    Nomor Rekening Bank <span className="text-rose-500">*</span>
                   </label>
                   <span className="text-[11px] text-nk-text-muted">
-                    Divalidasi Checksum Luhn (Mod 10)
+                    8–20 digit angka
                   </span>
                 </div>
                 <input
@@ -2982,28 +2984,28 @@ export default function NewPropertyPage() {
                   required
                   value={nomorRekening}
                   onChange={(e) => handleNomorRekeningChange(e.target.value)}
-                  placeholder="Contoh: 79927398713 (atau nomor rekening bank Anda)"
+                  placeholder="Contoh: 1234567890 (nomor rekening bank Anda)"
                   className={`h-11 rounded-lg border bg-nk-bg px-4 text-sm placeholder:text-nk-text-muted focus:outline-none transition-colors ${
                     nomorRekening.length >= 8
-                      ? isLuhnValid
+                      ? isAccountNumberValid
                         ? "border-emerald-500 text-nk-text focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500"
                         : "border-rose-500 text-rose-900 focus:border-rose-600 focus:ring-1 focus:ring-rose-500"
                       : "border-nk-border text-nk-text focus:border-nk-accent"
                   }`}
                 />
 
-                {/* Feedback Algoritma Luhn */}
+                {/* Feedback Nomor Rekening */}
                 {nomorRekening.length >= 8 && (
                   <div className="pt-0.5">
-                    {isLuhnValid ? (
+                    {isAccountNumberValid ? (
                       <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
                         <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />
-                        <span>Format nomor tervalidasi (Algoritma Luhn Mod 10 Valid)</span>
+                        <span>Nomor rekening valid ({nomorRekening.length} digit)</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 text-xs text-rose-600 font-medium">
                         <AlertCircle className="size-3.5 text-rose-500 shrink-0" />
-                        <span>Checksum Algoritma Luhn tidak cocok. Pastikan digit nomor rekening tidak salah ketik (typo).</span>
+                        <span>Nomor rekening maksimal 20 digit angka.</span>
                       </div>
                     )}
                   </div>

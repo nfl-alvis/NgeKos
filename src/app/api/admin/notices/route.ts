@@ -2,6 +2,7 @@ import { z } from "zod";
 import { requireUser } from "@/server/auth";
 import { parseJson, successResponse, withApi } from "@/server/http";
 import { prisma } from "@/lib/prisma";
+import { recordAuditLog } from "@/server/audit-service";
 
 const noticeSchema = z.object({
   target: z.enum(["owner", "seeker", "semua"]),
@@ -10,7 +11,7 @@ const noticeSchema = z.object({
 }).strict();
 
 export const POST = withApi(async (request: Request) => {
-  await requireUser(["ADMIN"]);
+  const { profile } = await requireUser(["ADMIN"]);
   const input = await parseJson(request, noticeSchema);
 
   const roleFilter =
@@ -38,6 +39,22 @@ export const POST = withApi(async (request: Request) => {
       })),
     });
   }
+
+  await recordAuditLog({
+    actor: profile,
+    action: "notify.send",
+    entityType: "NOTICE",
+    entityId: `broadcast-${Date.now()}`,
+    description: `Admin ${profile.fullName} broadcasted announcement "${input.title}" to ${input.target}`,
+    metadata: {
+      target: `${input.target}: ${input.title}`,
+      title: input.title,
+      body: input.body,
+      audience: input.target,
+      recipients: targetUsers.length,
+    },
+    request,
+  });
 
   return successResponse({
     count: targetUsers.length,

@@ -44,7 +44,6 @@ import { formatIDR } from "@/lib/utils";
 import { recordOp, propertyStatus, useAdminOps } from "@/lib/adminOpsStore";
 import { useSession } from "@/components/SessionProvider";
 import { getKosImage } from "@/lib/kosImages";
-import { properties } from "@/lib/data/properties";
 import type { Property } from "@/lib/data/types";
 
 type FilterStatus = "all" | "aktif" | "nonaktif" | "dihapus";
@@ -60,13 +59,14 @@ export default function AdminPropertiesPage() {
   const [deleting, setDeleting] = useState<Property | null>(null);
   const [reason, setReason] = useState("");
   const [reasonError, setReasonError] = useState(false);
-  const [propertiesList, setPropertiesList] = useState<Property[]>(properties);
+  const [propertiesList, setPropertiesList] = useState<Property[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/properties")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const mapped: Property[] = json.data.map((dto: any) => ({
             id: dto.id,
             slug: dto.slug,
@@ -79,16 +79,16 @@ export default function AdminPropertiesPage() {
             gender: dto.gender ? dto.gender.toLowerCase() : "mixed",
             verified: dto.status === "VERIFIED",
             active: dto.status === "VERIFIED",
-            rating: dto.rating ?? 0,
+            rating: Number(dto.averageRating ?? dto.rating ?? 0),
             reviewCount: dto.reviewCount ?? 0,
             imageSeed: dto.slug,
             facilities: (dto.facilities || []).map((f: any) => f.key || f),
-            minPrice: dto.minPrice ?? 0,
+            minPrice: Number(dto.minMonthlyPrice ?? dto.minPrice ?? 0),
             distanceToCampusM: dto.distanceToCampusM ?? 0,
             depositInfo: dto.depositAmount
-              ? `DP Rp ${dto.depositAmount.toLocaleString("id-ID")}`
+              ? `DP Rp ${Number(dto.depositAmount).toLocaleString("id-ID")}`
               : "Tanpa deposit",
-            depositAmount: dto.depositAmount,
+            depositAmount: dto.depositAmount ? Number(dto.depositAmount) : undefined,
             verificationStatus:
               dto.status === "VERIFIED"
                 ? "verified"
@@ -99,16 +99,18 @@ export default function AdminPropertiesPage() {
             roomTypes: (dto.roomTypes || []).map((rt: any) => ({
               id: rt.id,
               name: rt.name,
-              pricePerMonth: rt.pricePerMonth,
-              available: rt.available ?? 0,
-              total: rt.total ?? 0,
-              sizeM2: rt.sizeM2 ?? 12,
+              pricePerMonth: Number(rt.pricePerMonth),
+              sizeM2: rt.sizeM2 ? Number(rt.sizeM2) : 12,
+              capacity: rt.capacity || 1,
+              total: rt.total || 1,
+              available: rt.available || 1,
+              features: rt.features || [],
             })),
           }));
           setPropertiesList(mapped);
         }
       })
-      .catch(() => {});
+      .finally(() => setIsLoading(false));
   }, []);
 
   const rows = useMemo(() => {
@@ -292,9 +294,11 @@ export default function AdminPropertiesPage() {
               })}
             </TableBody>
           </Table>
-          {rows.length === 0 && (
+          {isLoading ? (
+            <p className="p-5 text-sm text-nk-text-muted">Memuat data properti...</p>
+          ) : rows.length === 0 ? (
             <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>
-          )}
+          ) : null}
         </div>
       </AdminSection>
 

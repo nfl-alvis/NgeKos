@@ -115,7 +115,9 @@ Ngekos-Logo.png
 .e2e/logs/
 .e2e/videos/
 e2e.config.ts
-tests/
+tests/*.e2e.ts
+tests/**/*.e2e.ts
+tests/helpers/db.ts
 
 # Python cache & virtualenv
 __pycache__/

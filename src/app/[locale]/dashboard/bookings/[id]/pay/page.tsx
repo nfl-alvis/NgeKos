@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, Check, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Check, RefreshCw, ShieldAlert } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import Logo from "@/components/Logo";
 import { bookings as staticBookings } from "@/lib/data/entities";
@@ -152,36 +152,24 @@ function PaymentContent() {
   async function checkPaymentStatus() {
     setChecking(true);
     try {
+      const orderIdParam = searchParams.get("order_id");
+      if (orderIdParam) {
+        try {
+          await fetch("/api/payments/midtrans/status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId: orderIdParam }),
+          });
+        } catch {
+          // Abaikan bila sinkronisasi status gateway gagal, lanjut ke refresh booking
+        }
+      }
       setBooking(await fetchBooking(id));
       setError(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Status pembayaran belum dapat diperiksa.");
     } finally {
       setChecking(false);
-    }
-  }
-
-  const [simulating, setSimulating] = useState(false);
-
-  async function simulatePayment() {
-    if (!booking) return;
-    setSimulating(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/payments/simulate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookingId: booking.id }),
-      });
-      const body = await res.json();
-      if (!res.ok) {
-        throw new Error(body?.error?.message || "Gagal mensimulasikan pembayaran.");
-      }
-      await checkPaymentStatus();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal mensimulasikan pembayaran.");
-    } finally {
-      setSimulating(false);
     }
   }
 
@@ -202,7 +190,7 @@ function PaymentContent() {
         throw new Error(body?.error?.message || "Pembayaran belum dapat dimulai. Coba lagi.");
       }
       if (!body?.data?.isConfigured) {
-        throw new Error("Midtrans belum dikonfigurasi. Anda dapat menggunakan tombol 'Simulasi Pembayaran (Uji Coba)' di bawah.");
+        throw new Error("Layanan pembayaran Midtrans belum dikonfigurasi di server.");
       }
       if (!body?.data?.redirectUrl) {
         throw new Error("Midtrans tidak mengirim halaman pembayaran. Coba lagi.");
@@ -302,28 +290,30 @@ function PaymentContent() {
           {booking.isDemo && !returnedFromMidtrans && (
             <p className="mt-6 text-xs leading-5 text-nk-text-muted">Booking contoh untuk menguji alur checkout Midtrans.</p>
           )}
+          {/* Demo Mode Notice */}
+          <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900" role="note" aria-label="Pemberitahuan mode demo">
+            <div className="flex items-center gap-2 font-semibold text-amber-800">
+              <ShieldAlert className="size-4 shrink-0 text-amber-600" aria-hidden="true" />
+              <span>DEMO MODE — Midtrans Sandbox</span>
+            </div>
+            <p className="mt-1.5 leading-relaxed text-amber-800/90">
+              Transaksi ini diproses melalui <strong>Midtrans Sandbox</strong> untuk simulasi staging/demo.
+              Jangan gunakan nomor kartu atau saldo bank sungguhan. Gunakan nomor kartu uji coba Midtrans.
+            </p>
+          </div>
+
           {error && <p className="mt-6 text-sm text-destructive" role="alert">{error}</p>}
 
           {canPay && (
-            <>
-              <button
-                type="button"
-                onClick={() => void continueToMidtrans()}
-                disabled={processing || simulating}
-                className="mt-7 flex min-h-12 w-full items-center justify-center gap-2 bg-nk-accent px-5 py-3 text-sm font-semibold text-nk-text-inverse transition-colors hover:bg-nk-accent-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent disabled:cursor-wait disabled:opacity-60"
-              >
-                {processing ? "Menghubungkan ke Midtrans..." : "Lanjut ke Midtrans"}
-                {!processing && <ArrowUpRight className="size-4" aria-hidden="true" />}
-              </button>
-              <button
-                type="button"
-                onClick={() => void simulatePayment()}
-                disabled={simulating || processing}
-                className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 border border-nk-border bg-nk-warm px-4 py-2.5 text-xs font-medium text-nk-text transition-colors hover:bg-nk-border/60 disabled:opacity-60"
-              >
-                {simulating ? "Memproses verifikasi..." : "Simulasi Pembayaran Berhasil (Uji Coba)"}
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={() => void continueToMidtrans()}
+              disabled={processing}
+              className="mt-7 flex min-h-12 w-full items-center justify-center gap-2 bg-nk-accent px-5 py-3 text-sm font-semibold text-nk-text-inverse transition-colors hover:bg-nk-accent-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent disabled:cursor-wait disabled:opacity-60"
+            >
+              {processing ? "Menghubungkan ke Midtrans..." : "Lanjut ke Midtrans"}
+              {!processing && <ArrowUpRight className="size-4" aria-hidden="true" />}
+            </button>
           )}
           {paid && (
             <div className="mt-7 flex items-center gap-2 border-t border-nk-border pt-5 text-sm font-medium" role="status">

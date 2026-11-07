@@ -39,7 +39,7 @@ export async function addFavorite(profile: Profile, propertyIdOrSlug: string) {
       : { slug: propertyIdOrSlug, status: "VERIFIED", deletedAt: null },
     select: { id: true },
   });
-  if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Properti tidak ditemukan");
+  if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Property not found");
   await prisma.favorite.upsert({
     where: { profileId_propertyId: { profileId: profile.id, propertyId: property.id } },
     update: {},
@@ -60,12 +60,20 @@ export async function removeFavorite(profile: Profile, propertyIdOrSlug: string)
 }
 
 export async function listReviews(profile: Profile | null, propertyId?: string) {
+  if (propertyId) {
+    return prisma.review.findMany({
+      where: { propertyId, status: "PUBLISHED", deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, propertyId: true, agreementId: true, rating: true, body: true, status: true, createdAt: true, updatedAt: true, author: { select: { id: true, fullName: true, avatarUrl: true } } },
+    });
+  }
+  if (!profile) {
+    return [];
+  }
   return prisma.review.findMany({
-    where: propertyId
-      ? { propertyId, status: "PUBLISHED", deletedAt: null }
-      : profile
-        ? { authorId: profile.id, deletedAt: null }
-        : { id: "00000000-0000-0000-0000-000000000000" },
+    where: profile.role === "OWNER"
+      ? { property: { ownerId: profile.id }, status: "PUBLISHED", deletedAt: null }
+      : { authorId: profile.id, deletedAt: null },
     orderBy: { createdAt: "desc" },
     select: { id: true, propertyId: true, agreementId: true, rating: true, body: true, status: true, createdAt: true, updatedAt: true, author: { select: { id: true, fullName: true, avatarUrl: true } } },
   });
@@ -115,7 +123,7 @@ async function resolveUserAgreement(profile: Profile, options: { agreementId?: s
     });
     propertyId = firstProp?.id;
   }
-  if (!propertyId) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Properti tidak ditemukan");
+  if (!propertyId) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Property not found");
 
   let roomUnit = await prisma.roomUnit.findFirst({
     where: { propertyId, deletedAt: null },
@@ -128,7 +136,7 @@ async function resolveUserAgreement(profile: Profile, options: { agreementId?: s
       });
     }
   }
-  if (!roomUnit) throw new ApiError(404, "ROOM_NOT_FOUND", "Kamar tidak ditemukan");
+  if (!roomUnit) throw new ApiError(404, "ROOM_NOT_FOUND", "Room not found");
 
   return prisma.rentalAgreement.create({
     data: {
@@ -166,7 +174,7 @@ export async function createReview(profile: Profile, input: ReviewInput) {
 
 export async function updateReview(profile: Profile, id: string, input: { rating?: number; body?: string }) {
   const review = await prisma.review.findFirst({ where: { id, authorId: profile.id, deletedAt: null }, select: { propertyId: true } });
-  if (!review) throw new ApiError(404, "REVIEW_NOT_FOUND", "Ulasan tidak ditemukan");
+  if (!review) throw new ApiError(404, "REVIEW_NOT_FOUND", "Review not found");
   return prisma.$transaction(async (tx) => {
     const updated = await tx.review.update({ where: { id }, data: input });
     await refreshPropertyRating(tx, review.propertyId);
@@ -176,7 +184,7 @@ export async function updateReview(profile: Profile, id: string, input: { rating
 
 export async function deleteReview(profile: Profile, id: string) {
   const review = await prisma.review.findFirst({ where: { id, authorId: profile.id, deletedAt: null }, select: { propertyId: true } });
-  if (!review) throw new ApiError(404, "REVIEW_NOT_FOUND", "Ulasan tidak ditemukan");
+  if (!review) throw new ApiError(404, "REVIEW_NOT_FOUND", "Review not found");
   await prisma.$transaction(async (tx) => {
     await tx.review.update({ where: { id }, data: { deletedAt: new Date() } });
     await refreshPropertyRating(tx, review.propertyId);
@@ -224,9 +232,9 @@ const complaintTransitions: Record<ComplaintStatus, readonly ComplaintStatus[]> 
 export async function updateComplaint(profile: Profile, id: string, status: ComplaintStatus, note?: string) {
   return prisma.$transaction(async (tx) => {
     const complaint = await tx.complaint.findUnique({ where: { id }, include: { property: { select: { ownerId: true } } } });
-    if (!complaint) throw new ApiError(404, "COMPLAINT_NOT_FOUND", "Pengaduan tidak ditemukan");
-    if (profile.role !== "ADMIN" && complaint.property.ownerId !== profile.id) throw new ApiError(403, "FORBIDDEN", "Pengaduan ini bukan untuk properti Anda");
-    if (!complaintTransitions[complaint.status].includes(status)) throw new ApiError(409, "INVALID_COMPLAINT_TRANSITION", "Perubahan status pengaduan tidak diizinkan");
+    if (!complaint) throw new ApiError(404, "COMPLAINT_NOT_FOUND", "Complaint not found");
+    if (profile.role !== "ADMIN" && complaint.property.ownerId !== profile.id) throw new ApiError(403, "FORBIDDEN", "This complaint does not belong to your property");
+    if (!complaintTransitions[complaint.status].includes(status)) throw new ApiError(409, "INVALID_COMPLAINT_TRANSITION", "This complaint status change is not allowed");
     return tx.complaint.update({ where: { id }, data: { status, ownerNote: note, ...(status === "RESOLVED" ? { resolvedAt: new Date() } : {}), ...(status === "CLOSED" ? { closedAt: new Date() } : {}), history: { create: { status, note, updatedById: profile.id } } } });
   });
 }

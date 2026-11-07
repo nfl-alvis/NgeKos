@@ -1,15 +1,7 @@
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { parseJson, successResponse, withApi, ApiError } from "@/server/http";
-
-const verifyOtpSchema = z
-  .object({
-    email: z.email().trim(),
-    token: z.string().trim().min(6).max(10),
-    role: z.enum(["seeker", "owner"]).optional(),
-  })
-  .strict();
+import { verifyOtpSchema } from "@/server/validation";
 
 export const POST = withApi(async (request: Request) => {
   const input = await parseJson(request, verifyOtpSchema);
@@ -29,7 +21,8 @@ export const POST = withApi(async (request: Request) => {
       type: "email",
     });
     if (fallback.error || !fallback.data?.user) {
-      throw new ApiError(400, "INVALID_OTP", error?.message || "Kode OTP tidak valid atau sudah kedaluwarsa");
+      // Pesan dibuat generik agar detail internal GoTrue tidak bocor.
+      throw new ApiError(400, "INVALID_OTP", "The verification code is invalid or has expired");
     }
     data = fallback.data;
   }
@@ -47,7 +40,7 @@ export const POST = withApi(async (request: Request) => {
     (typeof meta.full_name === "string" && meta.full_name.trim()) ||
     (typeof meta.name === "string" && meta.name.trim()) ||
     user.email?.split("@")[0] ||
-    "Pengguna";
+    "User";
   const phone = (typeof meta.phone === "string" && meta.phone.trim()) || null;
   const locale = (typeof meta.locale === "string" && meta.locale.trim()) || "id";
 
@@ -65,20 +58,24 @@ export const POST = withApi(async (request: Request) => {
     update: {
       status: "ACTIVE",
       role,
-      ...(fullName !== "Pengguna" ? { fullName } : {}),
+      ...(fullName !== "User" ? { fullName } : {}),
       ...(phone ? { phone } : {}),
     },
   });
 
-  const { registerLocalUser, setSessionCookie } = await import("@/server/user-store");
-  registerLocalUser({
-    id: user.id,
-    email: profile.email,
-    password: "",
-    fullName: profile.fullName,
-    phone: profile.phone ?? "",
-    role: profile.role === "OWNER" ? "owner" : "seeker",
-  });
+  const { findLocalUser, registerLocalUser, setSessionCookie } = await import("@/server/user-store");
+  // Hanya isi user lokal bila belum ada — jangan menimpa password yang
+  // tersimpan saat registrasi.
+  if (!findLocalUser(profile.email)) {
+    registerLocalUser({
+      id: user.id,
+      email: profile.email,
+      password: "",
+      fullName: profile.fullName,
+      phone: profile.phone ?? "",
+      role: profile.role === "OWNER" ? "owner" : "seeker",
+    });
+  }
 
   await setSessionCookie({
     userId: user.id,

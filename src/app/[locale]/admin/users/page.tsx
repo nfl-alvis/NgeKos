@@ -24,7 +24,6 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { useSession } from "@/components/SessionProvider";
 import { formatReviewDate } from "@/lib/adminReviewStore";
 import { recordOp, seekerStatus, useAdminOps } from "@/lib/adminOpsStore";
-import { seekerAccounts } from "@/lib/data/adminData";
 
 /** Kelola akun pencari kos: blokir / pulihkan. */
 export default function AdminUsersPage() {
@@ -35,23 +34,20 @@ export default function AdminUsersPage() {
   const ops = useAdminOps();
   const [search, setSearch] = useState("");
   const [usersList, setUsersList] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/admin/users")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (json?.data && Array.isArray(json.data)) {
-          const mapped = json.data.map((u: any) => ({
+          const seekers = json.data.filter((u: any) => u.role === "SEEKER" || !u.role);
+          const mapped = seekers.map((u: any) => ({
             id: u.id,
             name: u.fullName || u.email.split("@")[0],
             email: u.email,
             phone: u.phone || "-",
-            city:
-              u.role === "SEEKER"
-                ? "Pencari Kos"
-                : u.role === "OWNER"
-                  ? "Pemilik Kos"
-                  : "Admin",
+            city: "Pencari Kos",
             status: u.status === "ACTIVE" ? "aktif" : "diblokir",
             bookingCount: u._count?.bookings ?? 0,
             joinedAt:
@@ -62,7 +58,8 @@ export default function AdminUsersPage() {
           setUsersList(mapped);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
   const rows = useMemo(() => {
@@ -105,8 +102,8 @@ export default function AdminUsersPage() {
   return (
     <AdminPageShell title={t("title")}>
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <AdminStat label={t("statTotal")} value={String(seekerAccounts.length)} icon={Users} tint={{ card: "bg-nk-section", icon: "bg-nk-warm text-nk-text-muted" }} note={t("statTotalNote")} />
-        <AdminStat label={t("statActive")} value={String(seekerAccounts.length - blocked)} icon={CheckCircle2} tint={{ card: "bg-[#E9F4EC]", icon: "bg-[#CFE8D6] text-[#2F6B3C]" }} />
+        <AdminStat label={t("statTotal")} value={String(usersList.length)} icon={Users} tint={{ card: "bg-nk-section", icon: "bg-nk-warm text-nk-text-muted" }} note={t("statTotalNote")} />
+        <AdminStat label={t("statActive")} value={String(Math.max(0, usersList.length - blocked))} icon={CheckCircle2} tint={{ card: "bg-[#E9F4EC]", icon: "bg-[#CFE8D6] text-[#2F6B3C]" }} />
         <AdminStat label={t("statBlocked")} value={String(blocked)} icon={Ban} tint={{ card: "bg-[#FAEAE8]", icon: "bg-[#F3D7D3] text-[#9C3B32]" }} />
       </div>
 

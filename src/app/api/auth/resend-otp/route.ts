@@ -1,12 +1,6 @@
-import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { parseJson, successResponse, withApi, ApiError } from "@/server/http";
-
-const resendOtpSchema = z
-  .object({
-    email: z.email().trim(),
-  })
-  .strict();
+import { resendOtpSchema } from "@/server/validation";
 
 export const POST = withApi(async (request: Request) => {
   const input = await parseJson(request, resendOtpSchema);
@@ -18,7 +12,7 @@ export const POST = withApi(async (request: Request) => {
   });
 
   if (error) {
-    throw new ApiError(400, "RESEND_FAILED", error.message || "Gagal mengirim ulang kode OTP");
+    throw new ApiError(400, "RESEND_FAILED", error.message || "Failed to resend the verification code");
   }
 
   return successResponse({ resent: true });

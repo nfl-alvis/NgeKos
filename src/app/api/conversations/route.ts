@@ -8,7 +8,7 @@ import { z } from "zod";
 const createConversationSchema = z.object({
   propertySlug: z.string().optional(),
   propertyId: z.string().optional(),
-  initialMessage: z.string().trim().min(1, "Pesan tidak boleh kosong").max(4000),
+  initialMessage: z.string().trim().min(1, "Message must not be empty").max(4000),
 });
 
 export const GET = withApi(async () => {
@@ -36,7 +36,7 @@ export const GET = withApi(async () => {
     const formattedDb = dbConversations.map((c) => {
       const isTelegram = c.channel.toLowerCase() === "telegram";
       const otherName = isOwner
-        ? (c.contact?.fullName || c.externalName || "Pengguna Telegram")
+        ? (c.contact?.fullName || c.externalName || "Telegram user")
         : (c.owner?.fullName || "Pemilik Kost");
 
       const telegramConnected = isOwner
@@ -90,7 +90,7 @@ export const POST = withApi(async (request: Request) => {
   const input = await parseJson(request, createConversationSchema);
 
   if (!input.propertySlug && !input.propertyId) {
-    throw new ApiError(400, "BAD_REQUEST", "Properti harus ditentukan (propertySlug atau propertyId).");
+    throw new ApiError(400, "BAD_REQUEST", "A property must be specified (propertySlug or propertyId).");
   }
 
   // Cari properti beserta pemiliknya
@@ -106,7 +106,7 @@ export const POST = withApi(async (request: Request) => {
   });
 
   if (!property) {
-    throw new ApiError(404, "NOT_FOUND", "Properti tidak ditemukan.");
+    throw new ApiError(404, "NOT_FOUND", "Property not found.");
   }
 
   // Cari atau buat percakapan

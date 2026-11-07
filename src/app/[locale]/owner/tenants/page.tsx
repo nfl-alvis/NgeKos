@@ -7,12 +7,7 @@ import DashboardShell from "@/components/DashboardShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import {
-  getOwnerProperties,
-  invoices,
-  rentalAgreements,
-  tenants as seedTenants,
-} from "@/lib/data/entities";
+import { Loader2 } from "lucide-react";
 import type { Tenant } from "@/lib/data/types";
 import { formatIDR } from "@/lib/utils";
 
@@ -21,46 +16,73 @@ export default function OwnerTenantsPage() {
   const ti = useTranslations("owner.invoices");
   const router = useRouter();
 
-  const [propsList, setPropsList] = useState<Array<{ slug: string; name: string }>>(
-    getOwnerProperties().map((p) => ({ slug: p.slug, name: p.name }))
-  );
-  const [tenantsList, setTenantsList] = useState<Tenant[]>(seedTenants);
+  const [propsList, setPropsList] = useState<Array<{ slug: string; name: string }>>([]);
+  const [tenantsList, setTenantsList] = useState<Tenant[]>([]);
+  const [allInvoices, setAllInvoices] = useState<any[]>([]);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
   const [detail, setDetail] = useState<Tenant | null>(null);
 
   useEffect(() => {
-    fetch("/api/properties?mine=true")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-          const dbProps = json.data.map((p: any) => ({ slug: p.slug, name: p.name }));
+    setIsLoading(true);
+    Promise.allSettled([
+      fetch("/api/properties?mine=true").then((res) => (res.ok ? res.json() : null)),
+      fetch("/api/bookings").then((res) => (res.ok ? res.json() : null)),
+      fetch("/api/invoices").then((res) => (res.ok ? res.json() : null)),
+    ])
+      .then(([propRes, bookRes, invRes]) => {
+        if (propRes.status === "fulfilled" && propRes.value?.data && Array.isArray(propRes.value.data)) {
+          const dbProps = propRes.value.data.map((p: any) => ({ slug: p.slug, name: p.name }));
           setPropsList(dbProps);
+        } else {
+          setPropsList([]);
         }
-      })
-      .catch(() => {});
 
-    fetch("/api/bookings")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.data && Array.isArray(json.data)) {
-          const active = json.data.filter((b: any) => b.status === "ACTIVE");
-          if (active.length > 0) {
-            const mapped: Tenant[] = active.map((b: any) => ({
-              id: b.id,
+        const rawInvoices = invRes.status === "fulfilled" && invRes.value?.data && Array.isArray(invRes.value.data)
+          ? invRes.value.data
+          : [];
+        setAllInvoices(rawInvoices);
+
+        if (bookRes.status === "fulfilled" && bookRes.value?.data && Array.isArray(bookRes.value.data)) {
+          setAllBookings(bookRes.value.data);
+          const active = bookRes.value.data.filter((b: any) => b.status === "ACTIVE");
+          const mapped: Tenant[] = active.map((b: any) => {
+            const applicantEmail = b.applicant?.email || "";
+            const tenantInvs = rawInvoices.filter(
+              (i: any) =>
+                (b.applicantId && i.tenantId === b.applicantId) ||
+                (applicantEmail && i.tenant?.email === applicantEmail)
+            );
+            const hasOverdue = tenantInvs.some(
+              (i: any) => i.status !== "PAID" && i.dueDate && new Date(i.dueDate) < new Date()
+            );
+            const hasPending = tenantInvs.some((i: any) => i.status !== "PAID");
+
+            return {
+              id: b.applicantId || b.id,
               name: b.applicant?.fullName || b.applicantName || "Penyewa",
               phone: b.applicant?.phone || "-",
+              email: b.applicant?.email || "-",
               propertySlug: b.property?.slug || "",
               propertyName: b.property?.name || "Kost",
               roomNumber: b.roomUnit?.number || "-",
               monthlyRent: Number(b.monthlyPriceSnapshot || 0),
-              startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "2026-09-01",
-              paymentStatus: "lunas",
-            }));
-            setTenantsList(mapped);
-          }
+              startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "-",
+              joinedAt: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "-",
+              paymentStatus: hasOverdue ? "menunggak" : hasPending ? "belum-bayar" : "lunas",
+            };
+          });
+          setTenantsList(mapped);
+        } else {
+          setAllBookings([]);
+          setTenantsList([]);
         }
+        setIsLoading(false);
       })
-      .catch(() => {});
+      .catch(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   const filtered = useMemo(
@@ -79,7 +101,35 @@ export default function OwnerTenantsPage() {
     }
   };
 
-  const tenantInvoices = (tn: Tenant) => invoices.filter((inv) => inv.tenantName.toLowerCase() === tn.name.toLowerCase());
+  const getTenantInvoices = (tn: Tenant) =>
+    allInvoices
+      .filter(
+        (inv: any) =>
+          inv.tenantId === tn.id ||
+          (tn.email && inv.tenant?.email === tn.email) ||
+          (inv.tenant?.fullName && inv.tenant.fullName.toLowerCase() === tn.name.toLowerCase())
+      )
+      .map((inv: any) => ({
+        id: inv.id,
+        period: inv.notes || inv.period || "Periode Berjalan",
+        amount: Number(inv.amountSnapshot || inv.amount || 0),
+        status: inv.status === "PAID" ? ("lunas" as const) : ("belum" as const),
+      }));
+
+  const getTenantAgreements = (tn: Tenant) =>
+    allBookings
+      .filter(
+        (b: any) =>
+          b.applicantId === tn.id ||
+          b.id === tn.id ||
+          (tn.email && b.applicant?.email === tn.email)
+      )
+      .map((b: any) => ({
+        property: b.property?.name || tn.propertyName,
+        room: b.roomUnit?.number ? `Kamar ${b.roomUnit.number}` : b.roomType?.name || tn.roomNumber,
+        period: `${typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "-"} s/d ${typeof b.endDate === "string" ? b.endDate.slice(0, 10) : "-"}`,
+        rent: Number(b.monthlyPriceSnapshot || tn.monthlyRent || 0),
+      }));
 
   return (
     <DashboardShell role="owner">
@@ -112,7 +162,14 @@ export default function OwnerTenantsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="py-12 text-center text-xs text-nk-text-muted">
+                  <Loader2 className="mx-auto size-5 animate-spin text-nk-accent" />
+                  <span className="mt-2 block">Memuat data penyewa...</span>
+                </TableCell>
+              </TableRow>
+            ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="py-8 text-center text-xs text-nk-text-muted">
                   Belum ada tenant aktif.
@@ -155,7 +212,12 @@ export default function OwnerTenantsPage() {
 
       {/* mobile cards */}
       <div className="flex flex-col gap-3 lg:hidden">
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="rounded-lg border border-nk-border bg-nk-surface p-8 text-center text-xs text-nk-text-muted">
+            <Loader2 className="mx-auto size-5 animate-spin text-nk-accent" />
+            <span className="mt-2 block">Memuat data penyewa...</span>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="rounded-lg border border-nk-border bg-nk-surface p-8 text-center text-xs text-nk-text-muted">
             Belum ada tenant aktif.
           </div>
@@ -208,23 +270,21 @@ export default function OwnerTenantsPage() {
 
             <h3 className="mb-2 mt-5 text-sm font-medium text-nk-text">{t("agreements")}</h3>
             <ul className="flex flex-col gap-2">
-              {rentalAgreements
-                .filter((ra) => ra.tenantId === detail.id)
-                .map((ra, i) => (
-                  <li key={i} className="flex items-center justify-between rounded-md border border-nk-border px-3 py-2 text-sm">
-                    <span className="text-nk-text">{ra.property} · {ra.room}</span>
-                    <span className="text-xs text-nk-text-muted">{ra.period}</span>
-                    <span className="text-nk-text">{formatIDR(ra.rent)}</span>
-                  </li>
-                ))}
-              {rentalAgreements.filter((ra) => ra.tenantId === detail.id).length === 0 && (
+              {getTenantAgreements(detail).map((ra, i) => (
+                <li key={i} className="flex items-center justify-between rounded-md border border-nk-border px-3 py-2 text-sm">
+                  <span className="text-nk-text">{ra.property} · {ra.room}</span>
+                  <span className="text-xs text-nk-text-muted">{ra.period}</span>
+                  <span className="text-nk-text">{formatIDR(ra.rent)}</span>
+                </li>
+              ))}
+              {getTenantAgreements(detail).length === 0 && (
                 <li className="text-sm text-nk-text-muted">-</li>
               )}
             </ul>
 
             <h3 className="mb-2 mt-5 text-sm font-medium text-nk-text">{t("invoices")}</h3>
             <ul className="flex flex-col gap-2">
-              {tenantInvoices(detail).map((inv) => (
+              {getTenantInvoices(detail).map((inv) => (
                 <li key={inv.id} className="flex items-center justify-between rounded-md border border-nk-border px-3 py-2 text-sm">
                   <span className="text-nk-text">{inv.period}</span>
                   <span className="text-nk-text">{formatIDR(inv.amount)}</span>
@@ -235,7 +295,7 @@ export default function OwnerTenantsPage() {
                   )}
                 </li>
               ))}
-              {tenantInvoices(detail).length === 0 && (
+              {getTenantInvoices(detail).length === 0 && (
                 <li className="text-sm text-nk-text-muted">-</li>
               )}
             </ul>

@@ -31,8 +31,9 @@ import { StatusBadge, type StatusColor } from "@/components/StatusBadge";
 import { useSession } from "@/components/SessionProvider";
 import { formatReviewDate } from "@/lib/adminReviewStore";
 import { latestActionFor, recordOp, useAdminOps } from "@/lib/adminOpsStore";
-import { userReports, type ReportType } from "@/lib/data/adminData";
 import { Ellipsis } from "lucide-react";
+
+export type ReportType = "properti" | "pengguna" | "review" | "konten";
 
 const TYPE_COLOR: Record<ReportType, StatusColor> = {
   properti: "blue",
@@ -57,18 +58,19 @@ export default function AdminReportsPage() {
   const [search, setSearch] = useState("");
   const [type, setType] = useState<"all" | ReportType>("all");
   const [dbReports, setDbReports] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/reports")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const mapped = json.data.map((r: any) => ({
             id: r.id,
             type: r.targetType === "PROPERTY" ? "properti" : r.targetType === "USER" ? "pengguna" : r.targetType === "REVIEW" ? "review" : "konten",
             target: r.targetName || r.targetSlug || r.targetId,
-            reasonId: "Spam",
-            reasonEn: r.reason,
+            reasonId: r.reason || "Laporan",
+            reasonEn: r.reason || "Report",
             reporter: r.reporter?.fullName || r.reporter?.email || "Pengguna",
             at: typeof r.createdAt === "string" ? r.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
             status: r.status === "OPEN" ? "baru" : r.status === "RESOLVED" ? "selesai" : "diabaikan",
@@ -76,10 +78,11 @@ export default function AdminReportsPage() {
           setDbReports(mapped);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const allReports = dbReports.length > 0 ? dbReports : userReports;
+  const allReports = dbReports;
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -122,8 +125,8 @@ export default function AdminReportsPage() {
     <AdminPageShell title={t("title")}>
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <AdminStat label={t("statNew")} value={String(countNew)} icon={Flag} tint={{ card: "bg-[#FBF3DC]", icon: "bg-[#F3E3B8] text-[#8A6A1F]" }} note={t("statNewNote")} />
-        <AdminStat label={t("statTotal")} value={String(userReports.length)} icon={CheckCheck} tint={{ card: "bg-nk-section", icon: "bg-nk-warm text-nk-text-muted" }} />
-        <AdminStat label={t("statUsers")} value={String(new Set(userReports.map((r) => r.reporter)).size)} icon={UserX} tint={{ card: "bg-[#E8EFF8]", icon: "bg-[#D3E0F0] text-[#33517C]" }} note={t("statUsersNote")} />
+        <AdminStat label={t("statTotal")} value={String(dbReports.length)} icon={CheckCheck} tint={{ card: "bg-nk-section", icon: "bg-nk-warm text-nk-text-muted" }} />
+        <AdminStat label={t("statUsers")} value={String(new Set(dbReports.map((r) => r.reporter)).size)} icon={UserX} tint={{ card: "bg-[#E8EFF8]", icon: "bg-[#D3E0F0] text-[#33517C]" }} note={t("statUsersNote")} />
       </div>
 
       <AdminSection
@@ -213,7 +216,11 @@ export default function AdminReportsPage() {
               })}
             </TableBody>
           </Table>
-          {rows.length === 0 && <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>}
+          {isLoading ? (
+            <p className="p-5 text-sm text-nk-text-muted">Memuat data laporan...</p>
+          ) : rows.length === 0 ? (
+            <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>
+          ) : null}
         </div>
       </AdminSection>
     </AdminPageShell>

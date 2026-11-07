@@ -24,8 +24,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { roomUnits, type RoomUnit } from "@/lib/data/entities";
-import { getPropertyBySlug } from "@/lib/data/properties";
 import { FACILITY_META } from "@/lib/data/facilities";
 import type { Property, Facility, Gender } from "@/lib/data/types";
 import { formatIDR, cn } from "@/lib/utils";
@@ -49,9 +47,15 @@ import {
   Save,
   Settings,
   ShieldCheck,
+  Trash2,
   Users,
   Wrench,
 } from "lucide-react";
+
+export interface RoomUnit {
+  number: string;
+  status: "kosong" | "terisi" | "maintenance" | "dipesan";
+}
 
 interface ExtendedRoomUnit extends RoomUnit {
   id?: string;
@@ -100,17 +104,11 @@ export default function OwnerPropertyDetailPage() {
   const propsT = useTranslations("owner.properties");
   const params = useParams<{ slug: string }>();
 
-  const [property, setProperty] = useState<Property | null>(
-    getPropertyBySlug(params.slug) ?? null
-  );
-  const [loading, setLoading] = useState(!property);
+  const [property, setProperty] = useState<Property | null>(null);
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"rooms" | "photos" | "settings">("rooms");
-  const [openType, setOpenType] = useState<string | null>(
-    property?.roomTypes?.[0]?.id ?? null
-  );
-  const [rooms, setRooms] = useState<Record<string, ExtendedRoomUnit[]>>(
-    property ? { [property.slug]: roomUnits[property.slug] ?? [] } : {}
-  );
+  const [openType, setOpenType] = useState<string | null>(null);
+  const [rooms, setRooms] = useState<Record<string, ExtendedRoomUnit[]>>({});
   const [menuRoom, setMenuRoom] = useState<string | null>(null);
   const [unitFilters, setUnitFilters] = useState<Record<string, string>>({});
 
@@ -131,6 +129,7 @@ export default function OwnerPropertyDetailPage() {
     sizeM2: number;
   } | null>(null);
   const [submittingEditType, setSubmittingEditType] = useState(false);
+  const [deletingType, setDeletingType] = useState(false);
 
   // Dialog State: Tambah Unit Kamar
   const [addUnitOpen, setAddUnitOpen] = useState(false);
@@ -245,15 +244,6 @@ export default function OwnerPropertyDetailPage() {
                           : "terisi",
                 });
               });
-            } else {
-              const total = rt.total || 2;
-              for (let i = 1; i <= total; i++) {
-                dynamicUnits.push({
-                  roomTypeId: rt.id,
-                  number: `${rt.name.slice(0, 1).toUpperCase()}-${100 + i}`,
-                  status: i <= (rt.available ?? 1) ? "kosong" : "terisi",
-                });
-              }
             }
           });
           setRooms({ [mapped.slug]: dynamicUnits });
@@ -353,6 +343,38 @@ export default function OwnerPropertyDetailPage() {
     }
   };
 
+  /** Hapus Unit Kamar (Persisted ke DB, soft delete) */
+  const handleDeleteRoomUnit = async (roomItem: ExtendedRoomUnit) => {
+    const prevUnits = [...units];
+    // Optimistic UI update
+    setRooms((prev) => ({
+      ...prev,
+      [property.slug]: (prev[property.slug] ?? []).filter(
+        (r) => r.number !== roomItem.number
+      ),
+    }));
+    setMenuRoom(null);
+
+    if (roomItem.id && property.id) {
+      try {
+        const res = await fetch(
+          `/api/properties/${property.id}/rooms/${roomItem.id}`,
+          { method: "DELETE" }
+        );
+        if (!res.ok) {
+          const err = await res.json().catch(() => null);
+          throw new Error(err?.error?.message || "Gagal menghapus unit kamar di server.");
+        }
+      } catch (err: unknown) {
+        // Rollback
+        setRooms((prev) => ({ ...prev, [property.slug]: prevUnits }));
+        setActionError(
+          err instanceof Error ? err.message : "Gagal menghapus unit kamar."
+        );
+      }
+    }
+  };
+
   /** Simpan Tipe Kamar Baru */
   const handleCreateRoomType = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -428,6 +450,34 @@ export default function OwnerPropertyDetailPage() {
       );
     } finally {
       setSubmittingEditType(false);
+    }
+  };
+
+  /** Hapus Tipe Kamar (Persisted ke DB, soft delete) */
+  const handleDeleteRoomType = async () => {
+    if (!editingType?.id || !property.id) return;
+    setDeletingType(true);
+    setActionError(null);
+
+    try {
+      const res = await fetch(
+        `/api/properties/${property.id}/room-types/${editingType.id}`,
+        { method: "DELETE" }
+      );
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.error?.message || "Gagal menghapus tipe kamar.");
+      }
+
+      setEditTypeOpen(false);
+      setEditingType(null);
+      await refreshProperty();
+    } catch (err: unknown) {
+      setActionError(
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus tipe kamar."
+      );
+    } finally {
+      setDeletingType(false);
     }
   };
 
@@ -1017,6 +1067,14 @@ export default function OwnerPropertyDetailPage() {
                                     <span className="size-2 rounded-full bg-rose-500" />
                                     <span>Tandai Perbaikan (Maintenance)</span>
                                   </DropdownMenuItem>
+                                  <div className="my-1 border-t border-nk-border/60" />
+                                  <DropdownMenuItem
+                                    onClick={() => void handleDeleteRoomUnit(room)}
+                                    className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2.5 rounded-lg hover:bg-rose-50 text-rose-600 focus:text-rose-600 focus:bg-rose-50"
+                                  >
+                                    <Trash2 className="size-3.5" aria-hidden="true" />
+                                    <span>Hapus Kamar</span>
+                                  </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             );
@@ -1411,6 +1469,16 @@ export default function OwnerPropertyDetailPage() {
                 </div>
               </div>
               <DialogFooter className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteRoomType()}
+                  disabled={deletingType || submittingEditType}
+                  className="mr-auto inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                >
+                  {deletingType && <Loader2 className="size-3.5 animate-spin" />}
+                  <Trash2 className="size-3.5" aria-hidden="true" />
+                  <span>Hapus Tipe Kamar</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setEditTypeOpen(false)}

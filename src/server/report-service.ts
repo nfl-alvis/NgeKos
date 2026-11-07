@@ -27,7 +27,7 @@ export async function createReport(profile: Profile, input: CreateReportInput) {
     if (prop) {
       targetId = prop.id;
     } else {
-      throw new ApiError(404, "PROPERTY_NOT_FOUND", "Properti yang dilaporkan tidak ditemukan.");
+      throw new ApiError(404, "PROPERTY_NOT_FOUND", "The reported property could not be found.");
     }
   }
 
@@ -103,12 +103,12 @@ export async function updateReportStatus(
   resolution?: string
 ) {
   if (profile.role !== "ADMIN") {
-    throw new ApiError(403, "FORBIDDEN", "Hanya admin yang dapat memperbarui status laporan.");
+    throw new ApiError(403, "FORBIDDEN", "Only admins can update the report status.");
   }
 
   const existing = await prisma.report.findUnique({ where: { id } });
   if (!existing) {
-    throw new ApiError(404, "REPORT_NOT_FOUND", "Laporan tidak ditemukan.");
+    throw new ApiError(404, "REPORT_NOT_FOUND", "Report not found.");
   }
 
   return prisma.report.update({

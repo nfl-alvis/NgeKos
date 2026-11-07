@@ -939,6 +939,12 @@
     "rooms": {
       "title": "Manajemen Kamar",
       "statTotal": "Total Kamar",
+      "statVacant": "Kamar Kosong",
+      "statOccupied": "Kamar Terisi",
+      "statMaintenance": "Dalam Perawatan",
+      "statMaintenanceNote": "Perlu perhatian",
+      "selectProp": "Pilih Kos:",
+      "empty": "Belum ada data kamar untuk kos ini",
       "gridTitle": "Peta Kamar",
       "stKosong": "Kosong",
       "stTerisi": "Terisi",
@@ -1066,6 +1072,7 @@
       "stDiajukan": "Diajukan",
       "stDisetujui": "Disetujui",
       "stDitolak": "Ditolak",
+      "stDiproses": "Selesai / Dicairkan",
       "listTitle": "Pengajuan Refund",
       "colId": "ID",
       "colUser": "Pengguna",
@@ -1077,9 +1084,17 @@
       "colAction": "Aksi",
       "approve": "Setujui",
       "reject": "Tolak",
+      "markProcessed": "Tandai Dicairkan",
       "done": "Selesai",
       "toastApproved": "Refund {id} disetujui",
       "toastRejected": "Refund {id} ditolak",
+      "toastProcessed": "Pencairan refund {id} selesai diproses",
+      "dialogRejectTitle": "Tolak Pengajuan Refund",
+      "dialogRejectDesc": "Masukkan alasan penolakan permohonan pengembalian dana ini.",
+      "dialogRejectReason": "Alasan Penolakan",
+      "dialogRejectPlaceholder": "Contoh: Booking tidak memenuhi syarat kebijakan refund",
+      "dialogCancel": "Batal",
+      "dialogConfirmReject": "Tolak Refund",
       "empty": "Tidak ada pengajuan pada tab ini"
     },
     "reports": {
@@ -1278,6 +1293,9 @@
       "actionReviewHide": "Sembunyikan ulasan",
       "actionReviewShow": "Tampilkan ulasan",
       "actionNotifySend": "Kirim pengumuman",
+      "actionNotifyDelete": "Hapus pengumuman",
+      "actionPropertyUpdate": "Perbarui properti",
+      "actionAuthLogin": "Masuk admin",
       "actionAdminRole": "Ubah role admin"
     }
   },
@@ -2010,5 +2028,41 @@
       "hoursAgo": "{count, plural, other {# jam lalu}}",
       "daysAgo": "{count, plural, other {# hari lalu}}"
     }
+  },
+  "forgotPassword": {
+    "title": "Atur Ulang Kata Sandi",
+    "subtitle": "Masukkan email terdaftarmu. Kami akan mengirim tautan untuk membuat kata sandi baru.",
+    "email": "Email",
+    "emailPlaceholder": "nama@email.com",
+    "submit": "Kirim Tautan Atur Ulang",
+    "submitting": "Mengirim…",
+    "sentTitle": "Cek emailmu",
+    "sentBody": "Jika email terdaftar, tautan atur ulang kata sandi sudah dikirim ke {email}. Tautan hanya berlaku sekali.",
+    "spam": "Tidak menemukan emailnya? Cek folder spam atau promosi.",
+    "toReset": "Sudah buka emailnya? Atur ulang kata sandi sekarang",
+    "backToLogin": "Kembali ke halaman masuk"
+  },
+  "resetPassword": {
+    "title": "Buat Kata Sandi Baru",
+    "subtitle": "Buat kata sandi baru untuk akunmu. Jangan bagikan kata sandi ke siapa pun.",
+    "otpTitle": "Atur Ulang dengan Kode Email",
+    "otpSubtitle": "Masukkan kode 8 digit yang dikirim ke {email}, lalu buat kata sandi baru.",
+    "otpLabel": "Kode verifikasi",
+    "otpSubmit": "Verifikasi & Simpan",
+    "otpSubmitting": "Memverifikasi…",
+    "invalidCodeTitle": "Kode tidak valid atau kedaluwarsa",
+    "invalidCodeBody": "Kode reset hanya berlaku sekali dan punya batas waktu. Minta pengaturan ulang baru dari halaman lupa password.",
+    "newPassword": "Kata sandi baru",
+    "newPasswordPlaceholder": "Minimal 8 karakter",
+    "confirmPassword": "Ulangi kata sandi baru",
+    "mismatch": "Kedua kata sandi belum sama.",
+    "submit": "Simpan Kata Sandi Baru",
+    "submitting": "Menyimpan…",
+    "successTitle": "Kata sandi diperbarui",
+    "successBody": "Kata sandi baru sudah aktif. Silakan masuk dengan kata sandi barumu.",
+    "invalidLinkTitle": "Tautan tidak valid atau kedaluwarsa",
+    "invalidLinkBody": "Tautan atur ulang hanya berlaku sekali dan punya batas waktu. Minta tautan baru untuk melanjutkan.",
+    "requestNew": "Minta tautan baru",
+    "toLogin": "Ke halaman masuk"
   }
 }

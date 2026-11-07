@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Loader2 } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
-import { notifications as staticNotifications } from "@/lib/data/entities";
 
 interface NotificationItem {
   id: string;
@@ -18,8 +18,10 @@ export default function OwnerNotificationsPage() {
   const t = useTranslations("owner.notif");
   const [list, setList] = useState<NotificationItem[]>([]);
   const [read, setRead] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    setIsLoading(true);
     fetch("/api/notifications")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
@@ -37,7 +39,8 @@ export default function OwnerNotificationsPage() {
           setRead(alreadyReadIds);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
   const unread = list.filter((n) => !read.includes(n.id) && !n.read);
@@ -73,7 +76,12 @@ export default function OwnerNotificationsPage() {
         )}
       </div>
 
-      {list.length === 0 ? (
+      {isLoading ? (
+        <div className="rounded-lg border border-dashed border-nk-border px-6 py-16 text-center text-sm text-nk-text-muted">
+          <Loader2 className="mx-auto size-5 animate-spin text-nk-accent" />
+          <span className="mt-2 block">Memuat notifikasi...</span>
+        </div>
+      ) : list.length === 0 ? (
         <div className="rounded-lg border border-dashed border-nk-border px-6 py-16 text-center text-sm text-nk-text-muted">
           {t("empty")}
         </div>

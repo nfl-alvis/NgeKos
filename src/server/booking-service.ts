@@ -34,40 +34,54 @@ export async function createBooking(profile: Profile, input: BookingCreateInput)
   const startDate = new Date(`${input.startDate}T00:00:00.000Z`);
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
-  if (startDate < today) throw new ApiError(422, "INVALID_START_DATE", "Tanggal mulai tidak boleh di masa lalu");
+  if (startDate < today) throw new ApiError(422, "INVALID_START_DATE", "The start date cannot be in the past");
 
   const roomType = await prisma.roomType.findFirst({
     where: { id: input.roomTypeId, propertyId: input.propertyId, deletedAt: null, property: { status: "VERIFIED", deletedAt: null } },
     include: { property: { select: { depositAmount: true, ownerId: true, name: true } } },
   });
-  if (!roomType) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Tipe kamar tidak tersedia");
+  if (!roomType) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Room type not available");
 
   if (input.roomUnitId) {
     const unit = await prisma.roomUnit.findFirst({ where: { id: input.roomUnitId, roomTypeId: input.roomTypeId, propertyId: input.propertyId, status: "AVAILABLE", deletedAt: null } });
-    if (!unit) throw new ApiError(409, "ROOM_UNAVAILABLE", "Kamar tidak tersedia");
+    if (!unit) throw new ApiError(409, "ROOM_UNAVAILABLE", "No rooms available");
   }
 
   const duplicate = await prisma.booking.count({
     where: { applicantId: profile.id, propertyId: input.propertyId, status: { in: ["PENDING", "APPROVED_AWAITING_PAYMENT", "ACTIVE"] } },
   });
-  if (duplicate) throw new ApiError(409, "ACTIVE_BOOKING_EXISTS", "Anda masih memiliki booking aktif untuk properti ini");
+  if (duplicate) throw new ApiError(409, "ACTIVE_BOOKING_EXISTS", "You still have an active booking for this property");
 
-  const booking = await prisma.booking.create({
-    data: {
-      code: bookingCode(),
-      applicantId: profile.id,
-      propertyId: input.propertyId,
-      roomTypeId: input.roomTypeId,
-      roomUnitId: input.roomUnitId,
-      startDate,
-      durationMonths: input.durationMonths,
-      note: input.note,
-      monthlyPriceSnapshot: roomType.pricePerMonth,
-      depositSnapshot: roomType.property.depositAmount,
-      history: { create: { status: "PENDING", actorId: profile.id } },
-    },
-    include: bookingInclude,
-  });
+  let booking;
+  try {
+    booking = await prisma.booking.create({
+      data: {
+        code: bookingCode(),
+        applicantId: profile.id,
+        propertyId: input.propertyId,
+        roomTypeId: input.roomTypeId,
+        roomUnitId: input.roomUnitId,
+        startDate,
+        durationMonths: input.durationMonths,
+        note: input.note,
+        monthlyPriceSnapshot: roomType.pricePerMonth,
+        depositSnapshot: roomType.property.depositAmount,
+        history: { create: { status: "PENDING", actorId: profile.id } },
+      },
+      include: bookingInclude,
+    });
+  } catch (error) {
+    // Sesi bisa sah tanpa baris Profile (fallback akun demo di auth.ts);
+    // jangan biarkan FK violation keluar sebagai 500.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2003" &&
+      String(error.meta?.constraint ?? "").includes("applicant_id")
+    ) {
+      throw new ApiError(401, "PROFILE_MISSING", "User profile not found. Please sign in again.");
+    }
+    throw error;
+  }
 
   try {
     await prisma.notification.create({
@@ -103,9 +117,9 @@ export async function listBookings(profile: Profile, page: number, limit: number
 
 export async function getBooking(profile: Profile, id: string) {
   const booking = await prisma.booking.findFirst({ where: bookingIdentifierWhere(id), include: bookingInclude });
-  if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking tidak ditemukan");
+  if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking not found");
   const allowed = profile.role === "ADMIN" || booking.applicantId === profile.id || booking.property.ownerId === profile.id;
-  if (!allowed) throw new ApiError(403, "FORBIDDEN", "Anda tidak memiliki akses ke booking ini");
+  if (!allowed) throw new ApiError(403, "FORBIDDEN", "You do not have access to this booking");
   return bookingDto(booking);
 }
 
@@ -119,12 +133,12 @@ export async function transitionBooking(
       where: bookingIdentifierWhere(id),
       include: { property: { select: { ownerId: true, name: true } } },
     });
-    if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking tidak ditemukan");
+    if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking not found");
     const ownsProperty = booking.property.ownerId === profile.id;
     const ownsBooking = booking.applicantId === profile.id;
-    if (profile.role === "OWNER" && !ownsProperty) throw new ApiError(403, "FORBIDDEN", "Booking ini bukan untuk properti Anda");
-    if (profile.role === "SEEKER" && !ownsBooking) throw new ApiError(403, "FORBIDDEN", "Booking ini bukan milik Anda");
-    if (!canTransitionBooking(booking.status, input.status, profile.role)) throw new ApiError(409, "INVALID_BOOKING_TRANSITION", "Perubahan status booking tidak diizinkan");
+    if (profile.role === "OWNER" && !ownsProperty) throw new ApiError(403, "FORBIDDEN", "This booking does not belong to your property");
+    if (profile.role === "SEEKER" && !ownsBooking) throw new ApiError(403, "FORBIDDEN", "This booking does not belong to you");
+    if (!canTransitionBooking(booking.status, input.status, profile.role)) throw new ApiError(409, "INVALID_BOOKING_TRANSITION", "This booking status change is not allowed");
 
     let roomUnitId = booking.roomUnitId;
     if (input.status === "APPROVED_AWAITING_PAYMENT") {
@@ -134,14 +148,14 @@ export async function transitionBooking(
           where: { propertyId: booking.propertyId, roomTypeId: booking.roomTypeId, status: "AVAILABLE", deletedAt: null },
           orderBy: { number: "asc" },
         });
-        if (!availableUnit) throw new ApiError(409, "ROOM_UNAVAILABLE", "Tidak ada kamar tersedia untuk tipe ini");
+        if (!availableUnit) throw new ApiError(409, "ROOM_UNAVAILABLE", "No rooms are available for this room type");
         targetUnitId = availableUnit.id;
       }
       const reserved = await tx.roomUnit.updateMany({
         where: { id: targetUnitId, propertyId: booking.propertyId, roomTypeId: booking.roomTypeId, status: "AVAILABLE", deletedAt: null },
         data: { status: "RESERVED" },
       });
-      if (reserved.count !== 1) throw new ApiError(409, "ROOM_UNAVAILABLE", "Kamar sudah tidak tersedia");
+      if (reserved.count !== 1) throw new ApiError(409, "ROOM_UNAVAILABLE", "The room is no longer available");
       roomUnitId = targetUnitId;
     }
 
@@ -169,8 +183,8 @@ export async function transitionBooking(
           data: {
             profileId: booking.applicantId,
             type: "BOOKING",
-            title: "Pengajuan Sewa Disetujui",
-            body: `Pengajuan sewa Anda untuk "${booking.property.name}" telah disetujui! Silakan lanjutkan pembayaran sebelum batas waktu.`,
+            title: "Rental Request Approved",
+            body: `Your rental request for "${booking.property.name}" has been approved! Please complete the payment before the deadline.`,
             linkUrl: "/dashboard",
           },
         });
@@ -179,8 +193,8 @@ export async function transitionBooking(
           data: {
             profileId: booking.applicantId,
             type: "BOOKING",
-            title: "Pengajuan Sewa Ditolak",
-            body: `Pengajuan sewa Anda untuk "${booking.property.name}" tidak dapat disetujui.${input.note ? ` Alasan: ${input.note}` : ""}`,
+            title: "Rental Request Rejected",
+            body: `Your rental request for "${booking.property.name}" could not be approved.${input.note ? ` Reason: ${input.note}` : ""}`,
             linkUrl: "/dashboard",
           },
         });
@@ -189,8 +203,8 @@ export async function transitionBooking(
           data: {
             profileId: booking.property.ownerId,
             type: "BOOKING",
-            title: "Booking Dibatalkan",
-            body: `Pengajuan sewa untuk "${booking.property.name}" telah dibatalkan oleh calon penyewa.`,
+            title: "Booking Cancelled",
+            body: `The rental request for "${booking.property.name}" has been cancelled by the applicant.`,
             linkUrl: "/owner/bookings",
           },
         });
@@ -200,5 +214,5 @@ export async function transitionBooking(
     }
 
     return bookingDto(updated);
-  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 20000, maxWait: 10000 });
 }

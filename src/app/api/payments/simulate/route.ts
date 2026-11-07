@@ -2,6 +2,7 @@ import { requireUser } from "@/server/auth";
 import { parseJson, successResponse, withApi, ApiError } from "@/server/http";
 import { getBooking } from "@/server/booking-service";
 import { prisma } from "@/lib/prisma";
+import { getAppEnv } from "@/server/midtrans";
 import { z } from "zod";
 
 const simulateSchema = z.object({
@@ -9,6 +10,17 @@ const simulateSchema = z.object({
 });
 
 export const POST = withApi(async (request: Request) => {
+  const appEnv = getAppEnv();
+
+  // Kunci mati endpoint simulasi di lingkungan staging dan production demi integritas finansial
+  if (appEnv === "staging" || appEnv === "production" || process.env.NODE_ENV === "production") {
+    throw new ApiError(
+      403,
+      "SIMULATION_DISABLED",
+      "Simulasi pembayaran tidak diizinkan pada lingkungan staging dan production. Silakan gunakan pembayaran nyata Midtrans Sandbox."
+    );
+  }
+
   const { profile } = await requireUser();
   const input = await parseJson(request, simulateSchema);
   const booking = await getBooking(profile, input.bookingId);
@@ -52,11 +64,11 @@ export const POST = withApi(async (request: Request) => {
       data: {
         status: "ACTIVE",
         roomUnitId,
-        statusNote: "Pembayaran terkonfirmasi (Simulasi Sandbox)",
+        statusNote: "Pembayaran terkonfirmasi (Simulasi Dev)",
         history: {
           create: {
             status: "ACTIVE",
-            note: "Pembayaran lunas via Simulasi Sandbox",
+            note: "Pembayaran lunas via Simulasi Dev",
             actorId: profile.id,
           },
         },
@@ -67,6 +79,6 @@ export const POST = withApi(async (request: Request) => {
   return successResponse({
     success: true,
     bookingId: booking.id,
-    message: "Pembayaran berhasil disimulasikan. Status booking kini ACTIVE.",
+    message: "The payment was simulated successfully in development. The booking status is now ACTIVE.",
   });
 });

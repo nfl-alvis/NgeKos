@@ -16,15 +16,15 @@ export const POST = withApi(async (request: Request) => {
   const propertyId = form.get("propertyId");
   const altText = form.get("altText");
   const isCover = form.get("isCover") === "true";
-  if (!(file instanceof File) || typeof propertyId !== "string") throw new ApiError(422, "INVALID_UPLOAD", "File dan propertyId wajib diisi");
+  if (!(file instanceof File) || typeof propertyId !== "string") throw new ApiError(422, "INVALID_UPLOAD", "File and propertyId are required");
   if (file.size <= 0 || file.size > MAX_BYTES) throw new ApiError(413, "FILE_TOO_LARGE", "Ukuran gambar maksimal 5 MB");
 
   const property = await prisma.property.findFirst({ where: { id: propertyId, ownerId: profile.id, deletedAt: null }, select: { id: true } });
-  if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Properti tidak ditemukan");
+  if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Property not found");
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const mime = detectImageMime(bytes);
-  if (!mime) throw new ApiError(415, "UNSUPPORTED_IMAGE", "Format gambar harus JPEG, PNG, atau WebP");
+  if (!mime) throw new ApiError(415, "UNSUPPORTED_IMAGE", "Image format must be JPEG, PNG, or WebP");
   const storagePath = `${profile.id}/${propertyId}/${randomUUID()}.${imageExtension[mime]}`;
   const supabase = await createClient();
   const { error: uploadError } = await supabase.storage.from(env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET).upload(storagePath, bytes, { contentType: mime, cacheControl: "31536000", upsert: false });

@@ -13,84 +13,88 @@ function resolveImageUrl(storagePath: string) {
   return `${env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET}/${encoded}`;
 }
 
-export const GET = withApi(async () => {
+export const GET = withApi(async (request: Request) => {
   const { profile } = await requireUser(["ADMIN"]);
   if (profile.role !== "ADMIN") {
     return successResponse([]);
   }
 
+  const isHistory = new URL(request.url).searchParams.get("history") === "true";
+
   // 1. Auto-sync any existing properties in DB that are PENDING or DRAFT but missing an open PropertyVerification
-  try {
-    const unverifiedProps = await prisma.property.findMany({
-      where: {
-        OR: [{ status: "PENDING" }, { status: "DRAFT" }],
-        verifications: { none: { decision: null } },
-        deletedAt: null,
-      },
-      include: {
-        roomTypes: { where: { deletedAt: null }, select: { id: true } },
-        images: { select: { id: true } },
-      },
-    });
-
-    for (const p of unverifiedProps) {
-      // Ensure default room type if empty
-      if (p.roomTypes.length === 0) {
-        const rt = await prisma.roomType.create({
-          data: {
-            propertyId: p.id,
-            name: "Kamar Standar",
-            pricePerMonth: Number(p.minMonthlyPrice) > 0 ? p.minMonthlyPrice : 1500000,
-            sizeM2: 12,
-            capacity: 1,
-          },
-        });
-        await prisma.roomUnit.create({
-          data: {
-            propertyId: p.id,
-            roomTypeId: rt.id,
-            number: "1",
-            floor: "1",
-            status: "AVAILABLE",
-          },
-        });
-      }
-
-      // Ensure default image if empty
-      if (p.images.length === 0) {
-        await prisma.propertyImage.create({
-          data: {
-            propertyId: p.id,
-            storagePath: `defaults/${p.slug}.jpg`,
-            altText: p.name,
-            isCover: true,
-            sortOrder: 0,
-          },
-        });
-      }
-
-      // Set status to PENDING and create PropertyVerification
-      await prisma.property.update({
-        where: { id: p.id },
-        data: { status: "PENDING" },
-      });
-
-      await prisma.propertyVerification.create({
-        data: {
-          propertyId: p.id,
-          submittedAt: p.createdAt || new Date(),
+  if (!isHistory) {
+    try {
+      const unverifiedProps = await prisma.property.findMany({
+        where: {
+          OR: [{ status: "PENDING" }, { status: "DRAFT" }],
+          verifications: { none: { decision: null } },
+          deletedAt: null,
+        },
+        include: {
+          roomTypes: { where: { deletedAt: null }, select: { id: true } },
+          images: { select: { id: true } },
         },
       });
+
+      for (const p of unverifiedProps) {
+        // Ensure default room type if empty
+        if (p.roomTypes.length === 0) {
+          const rt = await prisma.roomType.create({
+            data: {
+              propertyId: p.id,
+              name: "Kamar Standar",
+              pricePerMonth: Number(p.minMonthlyPrice) > 0 ? p.minMonthlyPrice : 1500000,
+              sizeM2: 12,
+              capacity: 1,
+            },
+          });
+          await prisma.roomUnit.create({
+            data: {
+              propertyId: p.id,
+              roomTypeId: rt.id,
+              number: "1",
+              floor: "1",
+              status: "AVAILABLE",
+            },
+          });
+        }
+
+        // Ensure default image if empty
+        if (p.images.length === 0) {
+          await prisma.propertyImage.create({
+            data: {
+              propertyId: p.id,
+              storagePath: `defaults/${p.slug}.jpg`,
+              altText: p.name,
+              isCover: true,
+              sortOrder: 0,
+            },
+          });
+        }
+
+        // Set status to PENDING and create PropertyVerification
+        await prisma.property.update({
+          where: { id: p.id },
+          data: { status: "PENDING" },
+        });
+
+        await prisma.propertyVerification.create({
+          data: {
+            propertyId: p.id,
+            submittedAt: p.createdAt || new Date(),
+          },
+        });
+      }
+    } catch {
+      // Non-blocking sync
     }
-  } catch {
-    // Non-blocking sync
   }
 
-  // 2. Fetch pending verifications
+  // 2. Fetch verifications (pending or history)
   try {
     const rows = await prisma.propertyVerification.findMany({
-      where: { decision: null },
-      orderBy: { submittedAt: "desc" },
+      where: isHistory ? { decision: { not: null } } : { decision: null },
+      orderBy: isHistory ? { decidedAt: "desc" } : { submittedAt: "desc" },
       include: {
         property: {
           include: {
@@ -123,6 +127,9 @@ export const GET = withApi(async () => {
 
     return successResponse(mapped);
   } catch {
+    if (isHistory) {
+      return successResponse([]);
+    }
     // Fallback store
     const localPending = await getLocalPendingProperties();
     const fallbackRows = localPending.map((p: any) => ({

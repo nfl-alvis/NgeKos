@@ -26,6 +26,9 @@ const listQuerySchema = z.object({
 export const GET = withApi(async (request: Request, context: { params: Promise<{ id: string }> }) => {
   const auth = await requireUser(["OWNER", "SEEKER"]);
   const { id } = await context.params;
+  if (!z.string().uuid().safeParse(id).success) {
+    throw new ApiError(404, "NOT_FOUND", "Conversation not found.");
+  }
   const query = listQuerySchema.parse(Object.fromEntries(new URL(request.url).searchParams));
   const cursor = query.cursor ? parseMessageCursor(query.cursor) : null;
   if (query.cursor && !cursor) {
@@ -68,6 +71,9 @@ export const GET = withApi(async (request: Request, context: { params: Promise<{
 export const POST = withApi(async (request: Request, context: { params: Promise<{ id: string }> }) => {
   const auth = await requireUser(["OWNER", "SEEKER"]);
   const { id } = await context.params;
+  if (!z.string().uuid().safeParse(id).success) {
+    throw new ApiError(404, "NOT_FOUND", "Conversation not found.");
+  }
   const { text } = await parseJson(request, sendMessageSchema);
 
   // Cari conversation di database

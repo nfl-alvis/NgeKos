@@ -162,3 +162,94 @@ export const announcementCreateSchema = z
 
 export type PropertyCreateInput = z.infer<typeof propertyCreateSchema>;
 export type BookingCreateInput = z.infer<typeof bookingCreateSchema>;
+
+export const verifyOtpSchema = z
+  .object({
+    email: z.email().trim(),
+    token: z.string().trim().min(6).max(10),
+    role: z.enum(["seeker", "owner"]).optional(),
+  })
+  .strict();
+
+export const resendOtpSchema = z
+  .object({
+    email: z.email().trim(),
+  })
+  .strict();
+
+export const forgotPasswordSchema = z
+  .object({
+    email: z.email().trim(),
+    locale: z.enum(["id", "en"]).default("id"),
+  })
+  .strict();
+
+/**
+ * Dua mode reset password:
+ * - OTP: { email, token, password } — token berupa kode OTP 8 digit dari email
+ *   atau token hash dari tautan reset pada email.
+ * - Sesi: { password } — pemanggil membawa sesi hasil klik tautan reset.
+ */
+export const resetPasswordSchema = z.union([
+  z
+    .object({
+      email: z.email().trim(),
+      token: z.string().trim().min(6).max(128),
+      password: z.string().min(8).max(128),
+    })
+    .strict(),
+  z
+    .object({
+      password: z.string().min(8).max(128),
+    })
+    .strict(),
+]);
+
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const refundRequestCreateSchema = z
+  .object({
+    bookingId: z.string().trim().min(3).max(100),
+    paymentId: z.string().trim().uuid().optional(),
+    amount: z.coerce.number().int().min(1).max(100_000_000_000).optional(),
+    reason: trimmedText(5, 2_000),
+  })
+  .strict();
+
+export const refundDecisionSchema = z.discriminatedUnion("decision", [
+  z
+    .object({
+      decision: z.literal("APPROVED"),
+      adminNote: optionalText(1_000),
+    })
+    .strict(),
+  z
+    .object({
+      decision: z.literal("REJECTED"),
+      reason: trimmedText(3, 2_000),
+      adminNote: optionalText(1_000),
+    })
+    .strict(),
+  z
+    .object({
+      decision: z.literal("PROCESSED"),
+      adminNote: optionalText(1_000),
+    })
+    .strict(),
+]);
+
+export const refundListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    status: z.enum(["PENDING", "APPROVED", "REJECTED", "PROCESSED", "CANCELLED"]).optional(),
+    search: z.string().trim().max(100).optional(),
+    bookingId: z.string().trim().optional(),
+  })
+  .strict();
+
+export type RefundRequestCreateInput = z.infer<typeof refundRequestCreateSchema>;
+export type RefundDecisionInput = z.infer<typeof refundDecisionSchema>;
+export type RefundListQueryInput = z.infer<typeof refundListQuerySchema>;

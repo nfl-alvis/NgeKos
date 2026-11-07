@@ -939,6 +939,12 @@
     "rooms": {
       "title": "Room Management",
       "statTotal": "Total Rooms",
+      "statVacant": "Vacant Rooms",
+      "statOccupied": "Occupied Rooms",
+      "statMaintenance": "Under Maintenance",
+      "statMaintenanceNote": "Requires attention",
+      "selectProp": "Select Property:",
+      "empty": "No room units found for this property",
       "gridTitle": "Room Map",
       "stKosong": "Vacant",
       "stTerisi": "Occupied",
@@ -1066,6 +1072,7 @@
       "stDiajukan": "Submitted",
       "stDisetujui": "Approved",
       "stDitolak": "Rejected",
+      "stDiproses": "Processed / Disbursed",
       "listTitle": "Refund Requests",
       "colId": "ID",
       "colUser": "User",
@@ -1077,9 +1084,17 @@
       "colAction": "Action",
       "approve": "Approve",
       "reject": "Reject",
+      "markProcessed": "Mark Disbursed",
       "done": "Handled",
       "toastApproved": "Refund {id} approved",
       "toastRejected": "Refund {id} rejected",
+      "toastProcessed": "Refund {id} marked as disbursed",
+      "dialogRejectTitle": "Reject Refund Request",
+      "dialogRejectDesc": "Please provide a reason for rejecting this refund request.",
+      "dialogRejectReason": "Rejection Reason",
+      "dialogRejectPlaceholder": "E.g., Booking does not satisfy refund policy criteria",
+      "dialogCancel": "Cancel",
+      "dialogConfirmReject": "Reject Refund",
       "empty": "No requests in this tab"
     },
     "reports": {
@@ -1278,6 +1293,9 @@
       "actionReviewHide": "Hide review",
       "actionReviewShow": "Show review",
       "actionNotifySend": "Send announcement",
+      "actionNotifyDelete": "Delete announcement",
+      "actionPropertyUpdate": "Update property",
+      "actionAuthLogin": "Admin login",
       "actionAdminRole": "Change admin role"
     }
   },
@@ -2010,5 +2028,41 @@
       "hoursAgo": "{count, plural, one {# hour ago} other {# hours ago}}",
       "daysAgo": "{count, plural, one {# day ago} other {# days ago}}"
     }
+  },
+  "forgotPassword": {
+    "title": "Reset Your Password",
+    "subtitle": "Enter your registered email. We will send you a link to set a new password.",
+    "email": "Email",
+    "emailPlaceholder": "name@email.com",
+    "submit": "Send Reset Link",
+    "submitting": "Sending…",
+    "sentTitle": "Check your inbox",
+    "sentBody": "If the email is registered, a password reset link has been sent to {email}. The link can only be used once.",
+    "spam": "Can't find the email? Check your spam or promotions folder.",
+    "toReset": "Already have the email? Reset your password now",
+    "backToLogin": "Back to sign in"
+  },
+  "resetPassword": {
+    "title": "Create a New Password",
+    "subtitle": "Set a new password for your account. Never share it with anyone.",
+    "otpTitle": "Reset with the Email Code",
+    "otpSubtitle": "Enter the 8-digit code sent to {email}, then set a new password.",
+    "otpLabel": "Verification code",
+    "otpSubmit": "Verify & Save",
+    "otpSubmitting": "Verifying…",
+    "invalidCodeTitle": "Invalid or expired code",
+    "invalidCodeBody": "Reset codes can only be used once and expire after a while. Request a new one from the forgot-password page.",
+    "newPassword": "New password",
+    "newPasswordPlaceholder": "At least 8 characters",
+    "confirmPassword": "Repeat new password",
+    "mismatch": "The passwords don't match yet.",
+    "submit": "Save New Password",
+    "submitting": "Saving…",
+    "successTitle": "Password updated",
+    "successBody": "Your new password is active. Sign in with your new password.",
+    "invalidLinkTitle": "Invalid or expired link",
+    "invalidLinkBody": "Reset links can only be used once and expire after a while. Request a new link to continue.",
+    "requestNew": "Request a new link",
+    "toLogin": "Go to sign in"
   }
 }

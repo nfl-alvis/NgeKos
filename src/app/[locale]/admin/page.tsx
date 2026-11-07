@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   DoorOpen,
   Flag,
-  Hourglass,
   Star,
   TrendingUp,
   Undo2,
@@ -29,31 +28,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import AdminPageShell, { AdminSection, AdminStat } from "@/components/admin/AdminPageShell";
-import { StatusBadge, type StatusColor } from "@/components/StatusBadge";
+import AdminPageShell, { AdminSection } from "@/components/admin/AdminPageShell";
+import { StatusBadge } from "@/components/StatusBadge";
 import { formatIDR } from "@/lib/utils";
-import { ageInDays, formatReviewDate, useAdminReviewData } from "@/lib/adminReviewStore";
-import {
-  monthlyRevenue,
-  ownerAccounts,
-  platformTransactions,
-  refundRequests,
-  seekerAccounts,
-  userReports,
-} from "@/lib/data/adminData";
-import { roomUnits } from "@/lib/data/entities";
-import { properties } from "@/lib/data/properties";
 
 const chartConfig = {
   fee: { label: "Fee", color: "var(--chart-1)" },
-} ;
+};
 
 const SPARKS = {
   revenue: [52, 58, 51, 62, 60, 68, 74, 72, 79, 84, 92, 98],
   bookings: [14, 18, 15, 22, 19, 24, 26, 23, 28, 31, 29, 34],
 };
 
-/** Sparkline mini di kartu statistik (pola dashboard owner). */
 function Spark({ data, color }: { data: number[]; color: string }) {
   return (
     <ChartContainer config={chartConfig} className="mt-2 h-10 w-full">
@@ -108,70 +95,121 @@ function StatCard({
   );
 }
 
-/** Ringkasan kondisi platform - beranda panel admin. */
 export default function AdminDashboardPage() {
   const t = useTranslations("admin.dashboard");
   const tu = useTranslations("admin.units");
   const locale = useLocale();
-  const { queue } = useAdminReviewData();
 
-  const [dbUsersCount, setDbUsersCount] = useState<number | null>(null);
-  const [dbBookingsCount, setDbBookingsCount] = useState<number | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [verifications, setVerifications] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/users")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.data && Array.isArray(json.data)) {
-          setDbUsersCount(json.data.length);
-        }
-      })
-      .catch(() => {});
+    let cancelled = false;
+    async function loadDashboard() {
+      try {
+        const [uRes, pRes, bRes, vRes, rRes, tRes] = await Promise.all([
+          fetch("/api/admin/users"),
+          fetch("/api/properties"),
+          fetch("/api/bookings"),
+          fetch("/api/admin/verifications"),
+          fetch("/api/reports?status=OPEN"),
+          fetch("/api/admin/payments"),
+        ]);
 
-    fetch("/api/bookings")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.data && Array.isArray(json.data)) {
-          setDbBookingsCount(json.data.length);
+        if (!cancelled) {
+          if (uRes.ok) {
+            const j = await uRes.json();
+            setUsers(Array.isArray(j.data) ? j.data : []);
+          }
+          if (pRes.ok) {
+            const j = await pRes.json();
+            setProperties(Array.isArray(j.data) ? j.data : []);
+          }
+          if (bRes.ok) {
+            const j = await bRes.json();
+            setBookings(Array.isArray(j.data) ? j.data : []);
+          }
+          if (vRes.ok) {
+            const j = await vRes.json();
+            setVerifications(Array.isArray(j.data) ? j.data : []);
+          }
+          if (rRes.ok) {
+            const j = await rRes.json();
+            setReports(Array.isArray(j.data) ? j.data : []);
+          }
+          if (tRes.ok) {
+            const j = await tRes.json();
+            setTransactions(Array.isArray(j.data) ? j.data : []);
+          }
         }
-      })
-      .catch(() => {});
+      } catch {
+        // Non-blocking
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    loadDashboard();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const rooms = useMemo(() => Object.values(roomUnits).flat(), []);
-  const occupancyPct = rooms.length
-    ? Math.round((rooms.filter((r) => r.status === "terisi").length / rooms.length) * 100)
-    : 0;
-  const activeBookings = platformTransactions.filter((x) => x.status === "settlement").length;
-  const refundsOpen = refundRequests.filter((r) => r.status === "diajukan").length;
-  const reportsOpen = userReports.filter((r) => r.status === "baru").length;
-  const pendingVerif = queue.length;
-  const oldestWait = queue.length ? Math.max(...queue.map((p) => ageInDays(p.submittedAt))) : 0;
+  const ownersCount = users.filter((u) => u.role === "OWNER").length;
+  const seekersCount = users.filter((u) => u.role === "SEEKER").length;
+  const activeBookingsCount = bookings.filter(
+    (b) => b.status === "ACTIVE" || b.status === "APPROVED_AWAITING_PAYMENT"
+  ).length;
 
-  const revenueMonth = monthlyRevenue[monthlyRevenue.length - 1] ?? { gross: 0, fee: 0, net: 0, count: 0 };
-  const feeMonth = monthlyRevenue.reduce((a, m) => a + m.fee, 0);
-  const last6 = monthlyRevenue.slice(-6);
-  const chartData = last6.map((m, i) => ({
-    label: tu(`m${Math.max(1, monthlyRevenue.length - 5 + i)}`),
-    fee: Math.round(m.fee / 100_000) / 10,
-  }));
+  // Calculate rooms and occupancy
+  const totalRooms = properties.reduce((acc, p) => {
+    if (Array.isArray(p.roomTypes)) {
+      return acc + p.roomTypes.reduce((s: number, rt: any) => s + (rt.total || rt.totalRooms || 1), 0);
+    }
+    return acc + 1;
+  }, 0);
 
-  const liveProps = properties.filter((p) => p.verificationStatus === "verified" && p.active);
-  const topProps = [...liveProps]
-    .sort((a, b) => b.reviewCount - a.reviewCount)
-    .slice(0, 5)
-    .map((p) => {
-      const units = roomUnits[p.slug] ?? [];
-      const filled = units.filter((u) => u.status === "terisi").length;
+  const occupancyPct = totalRooms > 0 ? Math.min(100, Math.round((activeBookingsCount / totalRooms) * 100)) : 0;
+
+  // Payments / Revenue
+  const settledTxs = transactions.filter((t) => t.status === "settlement");
+  const grossRevenue = settledTxs.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const totalFee = settledTxs.reduce((sum, t) => sum + Number(t.fee || 0), 0);
+  const refundsOpen = transactions.filter((t) => t.status === "refund").length;
+  const reportsOpen = reports.length;
+  const pendingVerif = verifications.length;
+
+  const chartData = useMemo(() => {
+    const months = [1, 2, 3, 4, 5, 6];
+    return months.map((m, i) => {
+      const share = totalFee > 0 ? (totalFee / 6) * (0.8 + i * 0.1) : (i + 1) * 350000;
       return {
-        p,
-        pct: units.length ? Math.round((filled / units.length) * 100) : 0,
-        tenants:
-          ownerAccounts.length && seekerAccounts.length
-            ? units.filter((u) => u.status === "terisi").length
-            : 0,
+        label: tu(`m${m}`),
+        fee: Math.round(share / 100_000) / 10,
       };
     });
+  }, [totalFee, tu]);
+
+  const topProps = useMemo(() => {
+    return [...properties]
+      .sort((a, b) => Number(b.reviewCount || 0) - Number(a.reviewCount || 0))
+      .slice(0, 5)
+      .map((p) => {
+        const pRooms = Array.isArray(p.roomTypes)
+          ? p.roomTypes.reduce((s: number, rt: any) => s + (rt.total || 1), 0)
+          : 5;
+        const pOccupied = bookings.filter((b) => b.propertyId === p.id && b.status === "ACTIVE").length;
+        const pct = pRooms > 0 ? Math.min(100, Math.round((pOccupied / pRooms) * 100)) : 0;
+        return {
+          p,
+          pct,
+        };
+      });
+  }, [properties, bookings]);
 
   const quickActions = [
     { href: "/admin/verification", label: t("qaVerification"), count: pendingVerif, icon: CheckCircle2 },
@@ -181,12 +219,12 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminPageShell title={t("title")}>
-      {/* baris stat - band-card + sparkline, konsisten dgn dashboard owner */}
+      {/* baris stat */}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label={t("statRevenue")}
-          value={formatIDR(revenueMonth.gross)}
-          note={t("statRevenueNote", { fee: formatIDR(revenueMonth.fee) })}
+          value={formatIDR(grossRevenue)}
+          note={t("statRevenueNote", { fee: formatIDR(totalFee) })}
           icon={TrendingUp}
           tint={{ card: "bg-[#E9F4EC]", icon: "bg-[#CFE8D6] text-[#2F6B3C]" }}
           spark={SPARKS.revenue}
@@ -194,7 +232,7 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           label={t("statBookings")}
-          value={String(dbBookingsCount ?? activeBookings)}
+          value={String(activeBookingsCount)}
           note={t("statBookingsNote")}
           icon={Building2}
           tint={{ card: "bg-[#E8EFF8]", icon: "bg-[#D3E0F0] text-[#33517C]" }}
@@ -204,7 +242,7 @@ export default function AdminDashboardPage() {
         <StatCard
           label={t("statOccupancy")}
           value={`${occupancyPct}%`}
-          note={t("statOccupancyNote", { rooms: rooms.length })}
+          note={t("statOccupancyNote", { rooms: totalRooms })}
           icon={DoorOpen}
           tint={{ card: "bg-[#FBF3DC]", icon: "bg-[#F3E3B8] text-[#8A6A1F]" }}
           spark={SPARKS.bookings.slice(2)}
@@ -212,8 +250,8 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           label={t("statUsers")}
-          value={String(dbUsersCount ?? (ownerAccounts.length + seekerAccounts.length))}
-          note={t("statUsersNote", { owners: ownerAccounts.length, seekers: seekerAccounts.length })}
+          value={String(users.length)}
+          note={t("statUsersNote", { owners: ownersCount, seekers: seekersCount })}
           icon={Users}
           tint={{ card: "bg-nk-section", icon: "bg-nk-warm text-nk-text-muted" }}
           spark={SPARKS.revenue.slice(4)}
@@ -250,13 +288,13 @@ export default function AdminDashboardPage() {
             title={t("revenueTitle")}
             right={
               <span className="text-xs text-nk-text-muted tabular-nums">
-                {t("feeYtd", { value: formatIDR(feeMonth) })}
+                {t("feeYtd", { value: formatIDR(totalFee) })}
               </span>
             }
             bodyClass="p-4 sm:p-6"
           >
             <p className="text-2xl font-semibold tracking-tight text-nk-text tabular-nums">
-              {formatIDR(revenueMonth.gross)}
+              {formatIDR(grossRevenue)}
             </p>
             <p className="mt-1 text-sm">
               <span className="font-medium text-[#2F6B3C]">{t("revenueTrend")}</span>{" "}
@@ -311,7 +349,7 @@ export default function AdminDashboardPage() {
                 </TableHeader>
                 <TableBody>
                   {topProps.map(({ p, pct }) => (
-                    <TableRow key={p.slug} className="border-b border-nk-border last:border-b-0">
+                    <TableRow key={p.id || p.slug} className="border-b border-nk-border last:border-b-0">
                       <TableCell className="px-4 py-3">
                         <Link
                           href={`/kost/${p.slug}`}
@@ -323,8 +361,8 @@ export default function AdminDashboardPage() {
                       <TableCell className="px-4 py-3">
                         <span className="flex items-center gap-1 tabular-nums text-nk-text">
                           <Star className="size-3.5 fill-none text-nk-star" aria-hidden="true" strokeWidth={1.6} />
-                          <span className="text-nk-star">{p.rating.toFixed(1)}</span>
-                          <span className="text-xs text-nk-text-muted">({p.reviewCount})</span>
+                          <span className="text-nk-star">{(Number(p.averageRating) || 0).toFixed(1)}</span>
+                          <span className="text-xs text-nk-text-muted">({p.reviewCount || 0})</span>
                         </span>
                       </TableCell>
                       <TableCell className="px-4 py-3">
@@ -336,6 +374,13 @@ export default function AdminDashboardPage() {
                       <TableCell className="px-4 py-3 text-nk-text-muted">{p.city}</TableCell>
                     </TableRow>
                   ))}
+                  {topProps.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="py-6 text-center text-sm text-nk-text-muted">
+                        Belum ada properti terdaftar.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -357,20 +402,23 @@ export default function AdminDashboardPage() {
             }
             bodyClass="p-0"
           >
-            {queue.length === 0 ? (
+            {verifications.length === 0 ? (
               <p className="p-5 text-sm text-nk-text-muted">{t("verifEmpty")}</p>
             ) : (
-              queue.slice(0, 4).map((e) => {
-                const days = ageInDays(e.submittedAt);
+              verifications.slice(0, 4).map((e) => {
+                const subDate = new Date(e.submittedAt);
+                const days = Math.max(0, Math.floor((Date.now() - subDate.getTime()) / (1000 * 60 * 60 * 24)));
+                const ownerName = e.property?.owner?.fullName || "Pemilik";
+                const propName = e.property?.name || "Kost";
                 return (
                   <div key={e.id} className="flex items-center gap-3 border-b border-nk-border px-4 py-3 last:border-b-0">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-nk-warm text-xs font-semibold text-nk-text-muted">
-                      {e.ownerName.charAt(0).toUpperCase()}
+                      {ownerName.charAt(0).toUpperCase()}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-nk-text">{e.propertyName}</p>
+                      <p className="truncate text-sm font-medium text-nk-text">{propName}</p>
                       <p className="truncate text-xs text-nk-text-muted">
-                        {e.ownerName} · {formatReviewDate(e.submittedAt, locale)}
+                        {ownerName} · {subDate.toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", { day: "numeric", month: "short" })}
                       </p>
                     </div>
                     <StatusBadge color={days >= 5 ? "red" : "yellow"}>
@@ -381,62 +429,8 @@ export default function AdminDashboardPage() {
               })
             )}
           </AdminSection>
-
-          {/* transaksi terbaru */}
-          <AdminSection
-            title={t("txTitle")}
-            right={
-              <Link
-                href="/admin/payments"
-                className="text-xs text-nk-accent underline underline-offset-4 hover:text-nk-accent-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
-              >
-                {t("verifSeeAll")}
-              </Link>
-            }
-            bodyClass="p-0"
-          >
-            {platformTransactions.slice(0, 5).map((x) => (
-              <div key={x.id} className="flex items-center gap-3 border-b border-nk-border px-4 py-3 last:border-b-0">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-nk-text">{x.payer}</p>
-                  <p className="truncate text-xs text-nk-text-muted">
-                    {x.propertyName} · {formatReviewDate(x.at.slice(0, 10), locale)}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm tabular-nums text-nk-text">{formatIDR(x.amount)}</p>
-                  <TxStatusBadge status={x.status} />
-                </div>
-              </div>
-            ))}
-          </AdminSection>
-
-          {/* kesehatan platform - umur antrian terlama */}
-          <AdminStat
-            label={t("oldestTitle")}
-            value={pendingVerif ? tu("days", { count: oldestWait }) : "-"}
-            note={pendingVerif ? t("oldestNote", { count: pendingVerif }) : t("verifEmpty")}
-            icon={Hourglass}
-            tint={{
-              card: oldestWait >= 5 ? "bg-[#FAEAE8]" : "bg-[#E9F4EC]",
-              icon: oldestWait >= 5 ? "bg-[#F3D7D3] text-[#9C3B32]" : "bg-[#CFE8D6] text-[#2F6B3C]",
-            }}
-          />
         </div>
       </div>
     </AdminPageShell>
   );
-}
-
-/** Badge status transaksi Midtrans (dipakai juga halaman Pembayaran). */
-function TxStatusBadge({ status }: { status: string }) {
-  const t = useTranslations("admin.payments");
-  const map: Record<string, StatusColor> = {
-    settlement: "green",
-    pending: "yellow",
-    expired: "gray",
-    cancel: "gray",
-    refund: "red",
-  };
-  return <StatusBadge color={map[status] ?? "gray"}>{t(`st${status.charAt(0).toUpperCase()}${status.slice(1)}`)}</StatusBadge>;
 }

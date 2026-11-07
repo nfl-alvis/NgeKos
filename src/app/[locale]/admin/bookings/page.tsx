@@ -41,6 +41,7 @@ export default function AdminBookingsPage() {
   const [bookingsList, setBookingsList] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | BookingStatus>("all");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/bookings")
@@ -49,21 +50,24 @@ export default function AdminBookingsPage() {
         if (json?.data && Array.isArray(json.data)) {
           const mapped = json.data.map((b: any) => ({
             id: b.id,
-            applicantName: b.user?.fullName || b.applicantName || "Penyewa",
-            applicantPhone: b.user?.phone || b.applicantPhone || "-",
+            applicantName: b.applicant?.fullName || b.user?.fullName || b.applicantName || "Penyewa",
+            applicantPhone: b.applicant?.phone || b.user?.phone || b.applicantPhone || "-",
             propertyName: b.property?.name || b.propertyName || "-",
             roomType: b.roomType?.name || b.roomType || "Kamar",
             roomNumber: b.roomUnit?.number || b.roomNumber || "-",
             city: b.property?.city || b.city || "-",
             startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "",
             monthlyPrice: Number(b.monthlyPrice || b.amountSnapshot || 0),
-            status: (b.status ? b.status.toLowerCase() : "pending") as BookingStatus,
+            status: (b.status ? b.status.toLowerCase().replace(/_/g, "-") : "pending") as BookingStatus,
             createdAt: typeof b.createdAt === "string" ? b.createdAt : "",
           }));
           setBookingsList(mapped.sort((a: any, b: any) => (b.createdAt || "").localeCompare(a.createdAt || "")));
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   const all = bookingsList;
@@ -149,7 +153,11 @@ export default function AdminBookingsPage() {
               ))}
             </TableBody>
           </Table>
-          {rows.length === 0 && <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>}
+          {isLoading ? (
+            <p className="p-5 text-sm text-nk-text-muted">Memuat data pemesanan...</p>
+          ) : rows.length === 0 ? (
+            <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>
+          ) : null}
         </div>
       </AdminSection>
     </AdminPageShell>

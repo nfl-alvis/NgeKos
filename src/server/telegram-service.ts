@@ -174,7 +174,7 @@ export async function processTelegramWebhookUpdate(update: any): Promise<{
   const chatId = String(msg.chat.id);
   const text = (msg.text || "").trim();
   const fromUser = msg.from || {};
-  const externalName = [fromUser.first_name, fromUser.last_name].filter(Boolean).join(" ") || fromUser.username || "Pengguna Telegram";
+  const externalName = [fromUser.first_name, fromUser.last_name].filter(Boolean).join(" ") || fromUser.username || "Telegram user";
   const externalUsername = fromUser.username ? `@${fromUser.username}` : null;
 
   // Kasus 1: Perintah /start connect token dari Owner
@@ -215,7 +215,7 @@ export async function processTelegramWebhookUpdate(update: any): Promise<{
 
     await sendTelegramMessage(
       chatId,
-      "Tautan penghubung tidak valid atau sudah kedaluwarsa. Silakan klik tombol 'Hubungkan Telegram' lagi di dashboard website."
+      "The connect link is invalid or has expired. Please click the 'Connect Telegram' button again on the website dashboard."
     );
     return { handled: true, action: "token_expired" };
   }

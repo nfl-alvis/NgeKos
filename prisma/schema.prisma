@@ -82,6 +82,14 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSED
+  CANCELLED
+}
+
 enum PaymentMethod {
   BANK_TRANSFER
   CASH
@@ -201,6 +209,8 @@ model Profile {
   recordedPayments       Payment[]              @relation("PaymentRecorder")
   complaintUpdates       ComplaintHistory[]     @relation("ComplaintUpdater")
   subscriptions          Subscription[]         @relation("OwnerSubscriptions")
+  applicantRefunds       RefundRequest[]        @relation("ApplicantRefunds")
+  decidedRefunds         RefundRequest[]        @relation("DecidedRefunds")
 
   @@index([role, status])
   @@map("profiles")
@@ -380,6 +390,7 @@ model Booking {
   history   BookingStatusHistory[]
   agreement RentalAgreement?
   payments  Payment[]
+  refundRequests RefundRequest[]
 
   @@index([applicantId, status, createdAt])
   @@index([propertyId, status, createdAt])
@@ -482,6 +493,7 @@ model Payment {
   invoice    Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
   booking    Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   recordedBy Profile? @relation("PaymentRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  refundRequests RefundRequest[]
 
   @@index([invoiceId, status])
   @@index([bookingId, status])
@@ -808,4 +820,32 @@ model Promo {
 
   @@index([code, active])
   @@map("promos")
+}
+
+model RefundRequest {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId       String       @map("booking_id") @db.Uuid
+  paymentId       String?      @map("payment_id") @db.Uuid
+  applicantId     String       @map("applicant_id") @db.Uuid
+  amount          Decimal      @db.Decimal(14, 0)
+  reason          String
+  status          RefundStatus @default(PENDING)
+  rejectionReason String?      @map("rejection_reason")
+  adminNote       String?      @map("admin_note")
+  decidedById     String?      @map("decided_by_id") @db.Uuid
+  decidedAt       DateTime?    @map("decided_at") @db.Timestamptz(3)
+  processedAt     DateTime?    @map("processed_at") @db.Timestamptz(3)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  booking         Booking      @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  payment         Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  applicant       Profile      @relation("ApplicantRefunds", fields: [applicantId], references: [id], onDelete: Restrict)
+  decidedBy       Profile?     @relation("DecidedRefunds", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([bookingId, status])
+  @@index([paymentId, status])
+  @@index([applicantId, status])
+  @@index([status, createdAt])
+  @@map("refund_requests")
 }

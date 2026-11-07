@@ -53,7 +53,7 @@ export function errorResponse(error: unknown) {
         success: false,
         error: {
           code: "VALIDATION_ERROR",
-          message: "Data yang dikirim tidak valid",
+          message: "The submitted data is invalid",
           details: error.flatten(),
         },
       },
@@ -63,17 +63,17 @@ export function errorResponse(error: unknown) {
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
-      return errorResponse(new ApiError(409, "CONFLICT", "Data yang sama sudah tersedia"));
+      return errorResponse(new ApiError(409, "CONFLICT", "This record already exists"));
     }
     if (error.code === "P2025") {
-      return errorResponse(new ApiError(404, "NOT_FOUND", "Data tidak ditemukan"));
+      return errorResponse(new ApiError(404, "NOT_FOUND", "Record not found"));
     }
   }
 
   return NextResponse.json(
     {
       success: false,
-      error: { code: "INTERNAL_ERROR", message: "Terjadi kesalahan pada server" },
+      error: { code: "INTERNAL_ERROR", message: "An internal server error occurred" },
     },
     { status: 500, headers: { "Cache-Control": "no-store" } },
   );
@@ -84,7 +84,7 @@ export async function parseJson<T>(request: Request, schema: ZodType<T>): Promis
   try {
     body = await request.json();
   } catch {
-    throw new ApiError(400, "INVALID_JSON", "Body JSON tidak valid");
+    throw new ApiError(400, "INVALID_JSON", "Invalid JSON body");
   }
   return schema.parse(body);
 }
@@ -129,16 +129,16 @@ function assertSameOrigin(request: unknown) {
   if (!(request instanceof Request)) {
     // Handler tidak menerima Request sebagai argumen pertama, jadi method-nya
     // tidak diketahui. Gagal tertutup: jangan izinkan perubahan data buta.
-    throw new ApiError(403, "INVALID_ORIGIN", "Permintaan ditolak: handler tidak menerima objek Request");
+    throw new ApiError(403, "INVALID_ORIGIN", "Request rejected: handler does not accept a Request object");
   }
   if (SAFE_METHODS.has(request.method.toUpperCase())) return;
 
   const origin = request.headers.get("origin");
   if (!origin) {
-    throw new ApiError(403, "INVALID_ORIGIN", "Permintaan ditolak: header Origin wajib untuk perubahan data");
+    throw new ApiError(403, "INVALID_ORIGIN", "Request rejected: Origin header is required for data changes");
   }
   if (!allowedOrigins(request).has(origin)) {
-    throw new ApiError(403, "INVALID_ORIGIN", "Permintaan ditolak: asal tidak diizinkan");
+    throw new ApiError(403, "INVALID_ORIGIN", "Request rejected: origin is not allowed");
   }
 }
 

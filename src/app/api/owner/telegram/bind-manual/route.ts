@@ -7,7 +7,7 @@ const bindSchema = z.object({
   telegramUsername: z.string().trim().optional(),
   telegramChatId: z.string().trim().optional(),
 }).refine((data) => Boolean(data.telegramUsername || data.telegramChatId), {
-  message: "Harap masukkan Username Telegram atau Chat ID",
+  message: "Please provide a Telegram username or Chat ID",
 });
 
 export const POST = withApi(async (request: Request) => {

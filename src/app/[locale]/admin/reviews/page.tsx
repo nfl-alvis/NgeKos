@@ -9,7 +9,6 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { useSession } from "@/components/SessionProvider";
 import { formatReviewDate } from "@/lib/adminReviewStore";
 import { latestActionFor, recordOp, useAdminOps } from "@/lib/adminOpsStore";
-import { adminReviewItems } from "@/lib/data/adminData";
 import { cn } from "@/lib/utils";
 
 /** Moderasi ulasan mencurigakan / tidak pantas. */
@@ -21,12 +20,13 @@ export default function AdminReviewsPage() {
   const ops = useAdminOps();
   const [onlyFlagged, setOnlyFlagged] = useState(false);
   const [dbReviews, setDbReviews] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/admin/reviews")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.data && Array.isArray(json.data)) {
           const mapped = json.data.map((r: any) => ({
             id: r.id,
             authorName: r.authorName,
@@ -41,10 +41,11 @@ export default function AdminReviewsPage() {
           setDbReviews(mapped);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const allReviews = dbReviews.length > 0 ? dbReviews : adminReviewItems;
+  const allReviews = dbReviews;
 
   const rows = useMemo(() => {
     return allReviews
@@ -82,13 +83,13 @@ export default function AdminReviewsPage() {
   const avg =
     allReviews.length > 0
       ? allReviews.reduce((a, r) => a + r.rating, 0) / allReviews.length
-      : 5;
+      : 0;
 
   return (
     <AdminPageShell title={t("title")}>
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <AdminStat label={t("statFlagged")} value={String(flaggedOpen)} icon={Flag} tint={{ card: "bg-[#FAEAE8]", icon: "bg-[#F3D7D3] text-[#9C3B32]" }} note={t("statFlaggedNote")} />
-        <AdminStat label={t("statTotal")} value={String(adminReviewItems.length)} icon={Star} tint={{ card: "bg-nk-section", icon: "bg-nk-warm text-nk-text-muted" }} />
+        <AdminStat label={t("statTotal")} value={String(dbReviews.length)} icon={Star} tint={{ card: "bg-nk-section", icon: "bg-nk-warm text-nk-text-muted" }} />
         <AdminStat label={t("statAvg")} value={avg.toFixed(1)} icon={ShieldQuestion} tint={{ card: "bg-[#FBF3DC]", icon: "bg-[#F3E3B8] text-[#8A6A1F]" }} note={t("statAvgNote")} />
       </div>
 
@@ -148,7 +149,11 @@ export default function AdminReviewsPage() {
             </div>
           </article>
         ))}
-        {rows.length === 0 && <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>}
+        {isLoading ? (
+          <p className="p-5 text-sm text-nk-text-muted">Memuat ulasan...</p>
+        ) : rows.length === 0 ? (
+          <p className="p-5 text-sm text-nk-text-muted">{t("empty")}</p>
+        ) : null}
       </AdminSection>
     </AdminPageShell>
   );

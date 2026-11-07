@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Inbox, Search } from "lucide-react";
 import {
@@ -28,10 +28,57 @@ import { formatReviewDate, useAdminReviewData } from "@/lib/adminReviewStore";
 export default function AdminHistoryPage() {
   const t = useTranslations("admin.history");
   const locale = useLocale();
-  const { history } = useAdminReviewData();
+  const { history: localHistory } = useAdminReviewData();
+  const [apiHistory, setApiHistory] = useState<AdminReviewEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "approved" | "rejected">("all");
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<AdminReviewEntry | null>(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetch("/api/admin/verifications?history=true")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          const mapped: AdminReviewEntry[] = json.data.map((row: any) => ({
+            id: row.id,
+            propertyId: row.property?.id || "",
+            propertyName: row.property?.name || "Kost",
+            propertySlug: row.property?.slug || "",
+            ownerName: row.property?.owner?.fullName || "Pemilik",
+            ownerEmail: row.property?.owner?.email || "-",
+            city: row.property?.city || "",
+            district: row.property?.district || "",
+            address: row.property?.address || "",
+            roomCount: Array.isArray(row.property?.roomTypes)
+              ? row.property.roomTypes.reduce((acc: number, rt: any) => acc + (rt.total || 0), 0) || row.property.roomTypes.length
+              : 0,
+            minPrice: Number(row.property?.minMonthlyPrice || 0),
+            submittedAt: typeof row.submittedAt === "string" ? row.submittedAt : new Date(row.submittedAt).toISOString().slice(0, 10),
+            decidedAt: row.decidedAt ? (typeof row.decidedAt === "string" ? row.decidedAt : new Date(row.decidedAt).toISOString().slice(0, 10)) : undefined,
+            decision: row.decision ? (row.decision.toLowerCase() as "approved" | "rejected") : "approved",
+            decidedBy: "Admin",
+            rejectionReason: row.rejectionReason ?? undefined,
+            images: Array.isArray(row.property?.images) ? row.property.images.map((img: any) => img.url).filter(Boolean) : [],
+          }));
+          setApiHistory(mapped);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const history = useMemo(() => {
+    const combined = [...apiHistory];
+    const seen = new Set(apiHistory.map((h) => h.id));
+    for (const item of localHistory) {
+      if (!seen.has(item.id)) {
+        combined.push(item);
+      }
+    }
+    return combined;
+  }, [apiHistory, localHistory]);
 
   const filtered = useMemo(() => {
     let rows = history;

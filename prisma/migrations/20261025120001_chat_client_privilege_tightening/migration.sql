@@ -6,7 +6,19 @@
 -- tidak diberikan, dan jalur tulis API lewat role pemilik (postgres) tidak
 -- tersentuh. Forward-only dan idempoten (REVOKE tanpa grant = no-op).
 
-REVOKE MAINTAIN, TRUNCATE, REFERENCES, TRIGGER ON public.conversations FROM anon;
-REVOKE MAINTAIN, TRUNCATE, REFERENCES, TRIGGER ON public.conversations FROM authenticated;
-REVOKE MAINTAIN, TRUNCATE, REFERENCES, TRIGGER ON public.messages FROM anon;
-REVOKE MAINTAIN, TRUNCATE, REFERENCES, TRIGGER ON public.messages FROM authenticated;
+-- 1. Cabut privilege standar yang kompatibel di seluruh versi PostgreSQL:
+REVOKE TRUNCATE, REFERENCES, TRIGGER ON public.conversations FROM anon;
+REVOKE TRUNCATE, REFERENCES, TRIGGER ON public.conversations FROM authenticated;
+REVOKE TRUNCATE, REFERENCES, TRIGGER ON public.messages FROM anon;
+REVOKE TRUNCATE, REFERENCES, TRIGGER ON public.messages FROM authenticated;
+
+-- 2. Cabut privilege MAINTAIN secara dinamis jika server PostgreSQL >= 17:
+DO $$
+BEGIN
+    IF current_setting('server_version_num')::int >= 170000 THEN
+        EXECUTE 'REVOKE MAINTAIN ON public.conversations FROM anon';
+        EXECUTE 'REVOKE MAINTAIN ON public.conversations FROM authenticated';
+        EXECUTE 'REVOKE MAINTAIN ON public.messages FROM anon';
+        EXECUTE 'REVOKE MAINTAIN ON public.messages FROM authenticated';
+    END IF;
+END $$;

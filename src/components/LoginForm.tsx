@@ -156,6 +156,7 @@ export default function LoginForm({
               type={show ? "text" : "password"}
               required
               autoComplete="current-password"
+              aria-label={t("password")}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder={t("passwordPlaceholder")}
@@ -185,7 +186,7 @@ export default function LoginForm({
         </label>
 
         <div className="flex justify-end">
-          <Link href="/login" className="text-xs text-nk-text-muted transition-colors hover:text-nk-accent">
+          <Link href="/lupa-password" className="text-xs text-nk-text-muted transition-colors hover:text-nk-accent">
             {t("forgot")}
           </Link>
         </div>

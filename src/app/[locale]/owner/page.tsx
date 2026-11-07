@@ -38,14 +38,6 @@ import DashboardShell from "@/components/DashboardShell";
 import OwnerDashboardInsights from "@/components/OwnerDashboardInsights";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getKosImage } from "@/lib/kosImages";
-import {
-  OWNER_PROFILE,
-  ownerBookings,
-  ownerReviews,
-  roomUnits,
-  tenants,
-} from "@/lib/data/entities";
-import { properties } from "@/lib/data/properties";
 import { cn, formatIDR } from "@/lib/utils";
 import { useSession } from "@/components/SessionProvider";
 import {
@@ -55,39 +47,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const REVENUE = [24.1, 26.8, 25.3, 28.9, 31.2, 33.7]; // juta Rp
-const REVENUE_RANGES = {
-  weekly: [14.2, 16.8, 15.1, 18.6, 17.3, 19.8, 21.4],
-  monthly: REVENUE,
-  yearly: [142.5, 168.2, 189.9, 214.6],
-} as const;
-
-type RevenueRange = keyof typeof REVENUE_RANGES;
-
-const ACTIVITIES = {
-  en: [
-    { id: "a1", text: "Booking #BK-1234 approved", at: "2 hours ago", type: "approved" },
-    { id: "a2", text: "Payment received from Citra Lestari Dewi", at: "3 hours ago", type: "payment" },
-    { id: "a3", text: "Booking #BK-1231 submitted by Kevin Hanjaya", at: "5 hours ago", type: "booking" },
-    { id: "a4", text: "Room A-104 status set to Maintenance", at: "Yesterday, 16:40", type: "maintenance" },
-    { id: "a5", text: "Booking #BK-1155 expired", at: "Yesterday, 10:05", type: "expired" },
-  ],
-  id: [
-    { id: "a1", text: "Booking #BK-1234 disetujui", at: "2 jam lalu", type: "approved" },
-    { id: "a2", text: "Pembayaran diterima dari Citra Lestari Dewi", at: "3 jam lalu", type: "payment" },
-    { id: "a3", text: "Booking #BK-1231 diajukan Kevin Hanjaya", at: "5 jam lalu", type: "booking" },
-    { id: "a4", text: "Kamar A-104 diubah jadi Perawatan", at: "Kemarin, 16.40", type: "maintenance" },
-    { id: "a5", text: "Booking #BK-1155 kedaluwarsa", at: "Kemarin, 10.05", type: "expired" },
-  ],
-} as const;
-
-const ACTIVITY_ICONS = {
-  approved: CheckCircle2,
-  payment: CreditCard,
-  booking: CalendarClock,
-  maintenance: Wrench,
-  expired: Clock,
-};
+type RevenueRange = "weekly" | "monthly" | "yearly";
 
 const ACTIVITY_COLORS = {
   approved: "bg-emerald-100 text-emerald-700",
@@ -133,6 +93,8 @@ export default function OwnerDashboardPage() {
   const [hasProperties, setHasProperties] = useState<boolean | null>(null);
   const [dbProps, setDbProps] = useState<any[]>([]);
   const [dbBookings, setDbBookings] = useState<any[] | null>(null);
+  const [dbInvoices, setDbInvoices] = useState<any[]>([]);
+  const [dbReviews, setDbReviews] = useState<any[]>([]);
   const [dynMetrics, setDynMetrics] = useState<{
     revenue: number;
     filled: number;
@@ -148,10 +110,11 @@ export default function OwnerDashboardPage() {
     let cancelled = false;
     async function checkProperties() {
       try {
-        const [propRes, bookRes, invRes] = await Promise.all([
+        const [propRes, bookRes, invRes, revRes] = await Promise.all([
           fetch("/api/properties?mine=true"),
           fetch("/api/bookings"),
           fetch("/api/invoices"),
+          fetch("/api/reviews"),
         ]);
         if (propRes.ok) {
           const propJson = await propRes.json();
@@ -161,11 +124,16 @@ export default function OwnerDashboardPage() {
             if (user && props.length === 0) {
               setHasProperties(false);
               setDbBookings([]);
+              setDbInvoices([]);
+              setDbReviews([]);
             } else {
               setHasProperties(true);
               const books = bookRes.ok ? (await bookRes.json())?.data || [] : [];
               setDbBookings(books);
               const invs = invRes.ok ? (await invRes.json())?.data || [] : [];
+              setDbInvoices(invs);
+              const revs = revRes.ok ? (await revRes.json())?.data || [] : [];
+              setDbReviews(revs);
 
               let totalRoomsCalc = 0;
               for (const p of props) {
@@ -232,15 +200,6 @@ export default function OwnerDashboardPage() {
     }));
   const pending = dbPending;
 
-  // Property room counts
-  const allRooms = Object.values(roomUnits).flat();
-  const filled = allRooms.filter((r) => r.status === "terisi").length;
-  const totalRooms = allRooms.length;
-  const arrears = tenants.filter((tn) => tn.paymentStatus === "menunggak").length;
-  const arrearsSum = tenants
-    .filter((tn) => tn.paymentStatus === "menunggak")
-    .reduce((acc, tn) => acc + tn.monthlyRent, 0);
-
   const today = new Date().toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
     weekday: "long",
     day: "numeric",
@@ -276,9 +235,14 @@ export default function OwnerDashboardPage() {
     .sort((a, b) => b.monthly * b.pct - a.monthly * a.pct)[0];
 
   const rated = perfRows.filter((r) => r.property.rating > 0);
-  const reviewTotal = rated.reduce((s, r) => s + r.property.reviewCount, 0);
+  const reviewTotal =
+    dbReviews.length > 0
+      ? dbReviews.length
+      : rated.reduce((s, r) => s + r.property.reviewCount, 0);
   const reviewAvg =
-    reviewTotal > 0
+    dbReviews.length > 0
+      ? dbReviews.reduce((s, r) => s + Number(r.rating || 0), 0) / dbReviews.length
+      : reviewTotal > 0
       ? rated.reduce((s, r) => s + r.property.rating * r.property.reviewCount, 0) / reviewTotal
       : 0;
 
@@ -288,13 +252,17 @@ export default function OwnerDashboardPage() {
   }));
   const distSum = dist.reduce((s, d) => s + d.weight, 0) || 1;
 
-  const fmtDate = (iso: string) =>
-    new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
+  const fmtDate = (iso: string) => {
+    if (!iso) return "-";
+    const parsed = new Date(iso.includes("T") ? iso : `${iso}T00:00:00Z`);
+    if (isNaN(parsed.getTime())) return iso;
+    return parsed.toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
       day: "numeric",
       month: "short",
       year: "numeric",
       timeZone: "UTC",
     });
+  };
 
   const exportCsv = () => {
     const header = ["ID", "Calon penyewa", "Properti", "Kamar", "Status", "Harga/bulan", "Diajukan"];
@@ -319,22 +287,33 @@ export default function OwnerDashboardPage() {
     URL.revokeObjectURL(url);
   };
 
-  const revenue = REVENUE_RANGES[range];
-  const revenueTotal = revenue.reduce((a, v) => a + v, 0);
   const chartLabels =
     range === "weekly"
       ? (t.raw("days") as string[])
       : range === "yearly"
         ? (t.raw("years") as string[])
         : monthNames;
-  const chartData = chartLabels.map((label, i) => ({ label, value: revenue[i] }));
+
+  const chartData = chartLabels.map((label, i) => {
+    const matched = dbInvoices.filter((inv: any) => {
+      if (inv.status !== "PAID") return false;
+      const d = new Date(inv.paidAt || inv.dueDate || inv.createdAt);
+      if (range === "monthly") return d.getMonth() === i;
+      return false;
+    });
+    const sum = matched.reduce((acc, inv) => acc + Number(inv.amount || 0), 0);
+    const valInMillions = Math.round((sum / 1_000_000) * 10) / 10;
+    return { label, value: valInMillions };
+  });
+
+  const revenueTotal = chartData.reduce((a, v) => a + v.value, 0);
   const chartConfig = {
     value: { label: t("chartSeries"), color: "var(--nk-accent)" },
   } satisfies ChartConfig;
 
   const displayRevenue = dynMetrics ? dynMetrics.revenue : 0;
   const displayFilled = dynMetrics ? dynMetrics.filled : 0;
-  const displayTotalRooms = dynMetrics && dynMetrics.totalRooms > 0 ? dynMetrics.totalRooms : totalRooms;
+  const displayTotalRooms = dynMetrics ? dynMetrics.totalRooms : 0;
   const displayArrears = dynMetrics ? dynMetrics.arrears : 0;
   const displayArrearsSum = dynMetrics ? dynMetrics.arrearsSum : 0;
   const displayPending = dynMetrics ? dynMetrics.pendingCount : pending.length;
@@ -426,13 +405,15 @@ export default function OwnerDashboardPage() {
     );
   }
 
+  const ownerName = user?.name ? user.name.split(" ")[0] : (isEn ? "Owner" : "Pemilik Kos");
+
   return (
     <DashboardShell role="owner">
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-nk-text sm:text-3xl">
-            {t("welcome", { name: (user?.name || OWNER_PROFILE.name).split(" ")[0] })}
+            {t("welcome", { name: ownerName })}
           </h1>
           <p className="mt-1 text-sm text-nk-text-muted">{today}</p>
         </div>
@@ -919,25 +900,33 @@ export default function OwnerDashboardPage() {
 
               {/* Review Cards */}
               <div className="mt-4 space-y-3">
-                {ownerReviews.slice(0, 2).map((rv) => (
-                  <div
-                    key={rv.id}
-                    className="rounded-lg border border-nk-border bg-nk-section/30 p-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-nk-text">{rv.authorName}</p>
-                      <div className="flex items-center text-amber-500">
-                        {Array.from({ length: rv.rating }).map((_, i) => (
-                          <StarIcon key={i} className="size-3 fill-amber-500 text-amber-500" />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="mt-1.5 line-clamp-2 text-xs text-nk-text-muted leading-relaxed">
-                      {locale === "id" ? rv.bodyId : rv.bodyEn}
-                    </p>
-                    <p className="mt-1 text-[10px] text-nk-text-muted">{fmtDate(rv.at)}</p>
+                {dbReviews.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-nk-text-muted">
+                    {isEn ? "No reviews yet." : "Belum ada ulasan."}
                   </div>
-                ))}
+                ) : (
+                  dbReviews.slice(0, 2).map((rv: any) => (
+                    <div
+                      key={rv.id}
+                      className="rounded-lg border border-nk-border bg-nk-section/30 p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-nk-text">
+                          {rv.author?.fullName || (isEn ? "Tenant" : "Penyewa")}
+                        </p>
+                        <div className="flex items-center text-amber-500">
+                          {Array.from({ length: rv.rating }).map((_, i) => (
+                            <StarIcon key={i} className="size-3 fill-amber-500 text-amber-500" />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="mt-1.5 line-clamp-2 text-xs text-nk-text-muted leading-relaxed">
+                        {rv.body}
+                      </p>
+                      <p className="mt-1 text-[10px] text-nk-text-muted">{fmtDate(rv.createdAt)}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

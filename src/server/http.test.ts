@@ -95,11 +95,11 @@ describe("API response helpers", () => {
   });
 
   it("maps known API errors without leaking internals", async () => {
-    const response = errorResponse(new ApiError(403, "FORBIDDEN", "Akses ditolak"));
+    const response = errorResponse(new ApiError(403, "FORBIDDEN", "Access denied"));
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({
       success: false,
-      error: { code: "FORBIDDEN", message: "Akses ditolak" },
+      error: { code: "FORBIDDEN", message: "Access denied" },
     });
   });
 
@@ -119,7 +119,7 @@ describe("API response helpers", () => {
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({
       success: false,
-      error: { code: "INTERNAL_ERROR", message: "Terjadi kesalahan pada server" },
+      error: { code: "INTERNAL_ERROR", message: "An internal server error occurred" },
     });
   });
 });

@@ -215,6 +215,19 @@ describe("GET /api/conversations/[id]/messages", () => {
     });
     expect(res.status).toBe(404);
     expect((await jsonOf(res)).error?.code).toBe("NOT_FOUND");
+    expect(h.convFindFirst).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns 404 without querying Prisma when conversation ID is a malformed UUID", async () => {
+    await loginAs(owner);
+    const res = await messagesGET(new Request("http://localhost:3000/api/conversations/not-a-valid-uuid/messages"), {
+      params: Promise.resolve({ id: "not-a-valid-uuid" }),
+    });
+    expect(res.status).toBe(404);
+    const body = await jsonOf(res);
+    expect(body.error?.code).toBe("NOT_FOUND");
+    expect(body.error?.message).toBe("Conversation not found.");
+    expect(h.convFindFirst).not.toHaveBeenCalled();
   });
 
   it("rejects a page size above the maximum", async () => {
@@ -284,5 +297,19 @@ describe("POST /api/conversations/[id]/read (hardened)", () => {
     });
     expect(res.status).toBe(404);
     expect((await jsonOf(res)).error?.code).toBe("NOT_FOUND");
+    expect(h.convFindFirst).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns 404 without querying Prisma when conversation ID is a malformed UUID", async () => {
+    await loginAs(owner);
+    const res = await readPOST(new Request("http://localhost:3000/api/conversations/not-a-valid-uuid/read", { method: "POST", headers: { Origin: "http://localhost:3000" } }), {
+      params: Promise.resolve({ id: "not-a-valid-uuid" }),
+    });
+    expect(res.status).toBe(404);
+    const body = await jsonOf(res);
+    expect(body.error?.code).toBe("NOT_FOUND");
+    expect(body.error?.message).toBe("Conversation not found.");
+    expect(h.convFindFirst).not.toHaveBeenCalled();
+    expect(h.msgUpdateMany).not.toHaveBeenCalled();
   });
 });

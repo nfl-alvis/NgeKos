@@ -33,7 +33,6 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { useSession } from "@/components/SessionProvider";
 import { formatReviewDate } from "@/lib/adminReviewStore";
 import { ownerStatus, recordOp, useAdminOps } from "@/lib/adminOpsStore";
-import { ownerAccounts } from "@/lib/data/adminData";
 
 type Filter = "all" | "aktif" | "ditangguhkan" | "menunggu";
 
@@ -47,6 +46,7 @@ export default function AdminOwnersPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [ownersList, setOwnersList] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/admin/users")
@@ -69,7 +69,8 @@ export default function AdminOwnersPage() {
           setOwnersList(owners);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
   const rows = useMemo(() => {

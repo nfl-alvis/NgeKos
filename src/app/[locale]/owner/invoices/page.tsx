@@ -7,59 +7,66 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { AlertCircle, Receipt } from "lucide-react";
-import { invoices as seedInvoices, tenants } from "@/lib/data/entities";
+import { AlertCircle, Loader2, Receipt } from "lucide-react";
 import type { Invoice } from "@/lib/data/types";
 import { formatIDR } from "@/lib/utils";
 
 export default function OwnerInvoicesPage() {
   const t = useTranslations("owner.invoices");
   const [filter, setFilter] = useState<"all" | "lunas" | "belum">("all");
-  const [rows, setRows] = useState<Invoice[]>(seedInvoices);
+  const [rows, setRows] = useState<Invoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [newInv, setNewInv] = useState({ tenant: "", period: "", amount: "" });
-  const [tenantList, setTenantList] = useState<Array<{ id: string; name: string; agreementId?: string; monthlyPrice?: number }>>(
-    tenants.map((t) => ({ id: t.id, name: t.name, agreementId: `agr-${t.id}`, monthlyPrice: t.monthlyRent }))
-  );
+  const [tenantList, setTenantList] = useState<Array<{ id: string; name: string; agreementId?: string; monthlyPrice?: number }>>([]);
 
-  useEffect(() => {
-    fetch("/api/invoices")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-          const mapped: Invoice[] = json.data.map((item: any) => ({
-            id: item.code || item.id,
+  const loadData = () => {
+    setIsLoading(true);
+    Promise.allSettled([
+      fetch("/api/invoices").then((res) => (res.ok ? res.json() : null)),
+      fetch("/api/bookings").then((res) => (res.ok ? res.json() : null)),
+    ])
+      .then(([invRes, bookRes]) => {
+        if (invRes.status === "fulfilled" && invRes.value?.data && Array.isArray(invRes.value.data)) {
+          const mapped: Invoice[] = invRes.value.data.map((item: any) => ({
+            id: item.id,
             tenantName: item.tenant?.fullName || item.tenantName || "Penyewa",
-            period: item.period || "Periode Berjalan",
+            period: item.notes || item.period || "Periode Berjalan",
             amount: Number(item.amountSnapshot || item.amount || 0),
             status: item.status === "PAID" ? "lunas" : "belum-lunas",
             dueDate:
               typeof item.dueDate === "string"
                 ? item.dueDate.slice(0, 10)
-                : "2026-09-20",
+                : "-",
           }));
           setRows(mapped);
+        } else {
+          setRows([]);
         }
-      })
-      .catch(() => {});
 
-    fetch("/api/bookings")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.data && Array.isArray(json.data)) {
-          const activeBookings = json.data.filter((b: any) => b.status === "ACTIVE");
-          if (activeBookings.length > 0) {
-            const mapped = activeBookings.map((b: any) => ({
-              id: b.id,
-              name: b.applicant?.fullName || b.applicantName || "Penyewa",
-              agreementId: b.agreement?.id || b.id,
-              monthlyPrice: Number(b.monthlyPriceSnapshot || 0),
-            }));
-            setTenantList(mapped);
-          }
+        if (bookRes.status === "fulfilled" && bookRes.value?.data && Array.isArray(bookRes.value.data)) {
+          const activeBookings = bookRes.value.data.filter((b: any) => b.status === "ACTIVE");
+          const mapped = activeBookings.map((b: any) => ({
+            id: b.id,
+            name: b.applicant?.fullName || b.applicantName || "Penyewa",
+            agreementId: b.agreementId || b.agreement?.id || b.id,
+            monthlyPrice: Number(b.monthlyPriceSnapshot || 0),
+          }));
+          setTenantList(mapped);
+        } else {
+          setTenantList([]);
         }
+        setIsLoading(false);
       })
-      .catch(() => {});
+      .catch(() => {
+        setIsLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const filtered = useMemo(() => {
@@ -69,18 +76,23 @@ export default function OwnerInvoicesPage() {
   }, [filter, rows]);
 
   const unpaidThisMonth = rows.filter((r) => r.status !== "lunas").length;
-  const arrears = rows.filter((r) => r.status !== "lunas" && new Date(r.dueDate) < new Date()).length;
+  const arrears = rows.filter((r) => r.status !== "lunas" && r.dueDate !== "-" && new Date(r.dueDate) < new Date()).length;
 
   const markPaid = async (id: string) => {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: "lunas" as const } : r)));
+    setActionError(null);
     try {
-      await fetch(`/api/invoices/${id}`, {
+      const res = await fetch(`/api/invoices/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "PAID" }),
       });
-    } catch {
-      // fallback
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || err?.message || "Gagal memperbarui status invoice.");
+      }
+      setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: "lunas" as const } : r)));
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : "Terjadi kesalahan.");
     }
   };
 
@@ -109,6 +121,13 @@ export default function OwnerInvoicesPage() {
           {t("create")}
         </button>
       </div>
+
+      {actionError && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+          <AlertCircle className="size-4 shrink-0 text-red-600" />
+          <span>{actionError}</span>
+        </div>
+      )}
 
       {/* ringkasan - band judul tinted di atas, card putih menyatu di bawah */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:max-w-md">
@@ -296,35 +315,23 @@ export default function OwnerInvoicesPage() {
           </div>
           <button
             type="button"
-            disabled={!newInv.tenant || !newInv.period || !newInv.amount}
+            disabled={!newInv.tenant || !newInv.period || !newInv.amount || isSubmitting}
             onClick={async () => {
+              if (!newInv.tenant || !newInv.period || !newInv.amount) return;
+              setIsSubmitting(true);
+              setActionError(null);
               const selected = tenantList.find((tn) => tn.name === newInv.tenant);
-              const newInvoiceId = `INV-${String(rows.length + 1).padStart(4, "0")}`;
               const periodParts = newInv.period.split("-");
-              const year = Number(periodParts[0]);
-              const month = Number(periodParts[1]);
+              const year = Number(periodParts[0]) || new Date().getFullYear();
+              const month = Number(periodParts[1]) || (new Date().getMonth() + 1);
               const pStart = `${year}-${String(month).padStart(2, "0")}-01`;
               const lastDay = new Date(year, month, 0).getDate();
               const pEnd = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
               const dDate = `${year}-${String(month).padStart(2, "0")}-20`;
 
-              setRows((prev) => [
-                {
-                  id: newInvoiceId,
-                  tenantName: newInv.tenant,
-                  period: newInv.period,
-                  amount: Number(newInv.amount),
-                  status: "belum-lunas",
-                  dueDate: dDate,
-                },
-                ...prev,
-              ]);
-              setNewInv({ tenant: "", period: "", amount: "" });
-              setCreateOpen(false);
-
-              if (selected?.agreementId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selected.agreementId)) {
-                try {
-                  await fetch("/api/invoices", {
+              try {
+                if (selected?.agreementId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selected.agreementId)) {
+                  const res = await fetch("/api/invoices", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -336,9 +343,33 @@ export default function OwnerInvoicesPage() {
                       notes: `Tagihan periode ${newInv.period}`,
                     }),
                   });
-                } catch {
-                  // fallback
+                  if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err?.error?.message || err?.message || "Gagal membuat invoice.");
+                  }
+                  const created = await res.json();
+                  if (created?.data) {
+                    setRows((prev) => [
+                      {
+                        id: created.data.id,
+                        tenantName: newInv.tenant,
+                        period: newInv.period,
+                        amount: Number(newInv.amount),
+                        status: "belum-lunas",
+                        dueDate: dDate,
+                      },
+                      ...prev,
+                    ]);
+                  }
+                } else {
+                  loadData();
                 }
+                setNewInv({ tenant: "", period: "", amount: "" });
+                setCreateOpen(false);
+              } catch (err: unknown) {
+                setActionError(err instanceof Error ? err.message : "Gagal membuat invoice.");
+              } finally {
+                setIsSubmitting(false);
               }
             }}
             className="rounded-lg bg-nk-accent px-5 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"

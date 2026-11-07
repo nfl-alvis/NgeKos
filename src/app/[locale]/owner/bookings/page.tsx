@@ -9,7 +9,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { ownerBookings } from "@/lib/data/entities";
 import type { Booking, BookingStatus } from "@/lib/data/types";
 import { formatIDR } from "@/lib/utils";
 
@@ -161,28 +160,17 @@ export default function OwnerBookingsPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        if (booking.id.startsWith("BK-12") || res.status === 404) {
-          setBookingsList((prev) =>
-            prev.map((b) => (b.id === booking.id ? { ...b, status: "approved-awaiting-payment" } : b))
-          );
-          setBanner({ type: "success", message: `Booking untuk ${booking.applicantName} berhasil disetujui!` });
-          return;
-        }
-        throw new Error(data.message || "Gagal menyetujui booking");
+        throw new Error(data?.error?.message || data?.message || "Gagal menyetujui booking");
       }
       setBookingsList((prev) =>
         prev.map((b) => (b.id === booking.id ? { ...b, status: "approved-awaiting-payment" } : b))
       );
       setBanner({ type: "success", message: `Booking untuk ${booking.applicantName} berhasil disetujui!` });
-    } catch (err: any) {
-      if (booking.id.startsWith("BK-12")) {
-        setBookingsList((prev) =>
-          prev.map((b) => (b.id === booking.id ? { ...b, status: "approved-awaiting-payment" } : b))
-        );
-        setBanner({ type: "success", message: `Booking untuk ${booking.applicantName} berhasil disetujui!` });
-      } else {
-        setBanner({ type: "error", message: err.message || "Terjadi kesalahan saat menyetujui booking." });
-      }
+    } catch (err: unknown) {
+      setBanner({
+        type: "error",
+        message: err instanceof Error ? err.message : "Terjadi kesalahan saat menyetujui booking.",
+      });
     } finally {
       setActionLoading(null);
     }
@@ -204,16 +192,7 @@ export default function OwnerBookingsPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        if (rejectTarget.id.startsWith("BK-12") || res.status === 404) {
-          setBookingsList((prev) =>
-            prev.map((b) => (b.id === rejectTarget.id ? { ...b, status: "rejected", statusNote: rejectReason.trim() } : b))
-          );
-          setBanner({ type: "success", message: `Booking untuk ${rejectTarget.applicantName} telah ditolak.` });
-          setRejectTarget(null);
-          setRejectReason("");
-          return;
-        }
-        throw new Error(data.message || "Gagal menolak booking");
+        throw new Error(data?.error?.message || data?.message || "Gagal menolak booking");
       }
       setBookingsList((prev) =>
         prev.map((b) => (b.id === rejectTarget.id ? { ...b, status: "rejected", statusNote: rejectReason.trim() } : b))
@@ -221,17 +200,11 @@ export default function OwnerBookingsPage() {
       setBanner({ type: "success", message: `Booking untuk ${rejectTarget.applicantName} telah ditolak.` });
       setRejectTarget(null);
       setRejectReason("");
-    } catch (err: any) {
-      if (rejectTarget.id.startsWith("BK-12")) {
-        setBookingsList((prev) =>
-          prev.map((b) => (b.id === rejectTarget.id ? { ...b, status: "rejected", statusNote: rejectReason.trim() } : b))
-        );
-        setBanner({ type: "success", message: `Booking untuk ${rejectTarget.applicantName} telah ditolak.` });
-        setRejectTarget(null);
-        setRejectReason("");
-      } else {
-        setBanner({ type: "error", message: err.message || "Terjadi kesalahan saat menolak booking." });
-      }
+    } catch (err: unknown) {
+      setBanner({
+        type: "error",
+        message: err instanceof Error ? err.message : "Terjadi kesalahan saat menolak booking.",
+      });
     } finally {
       setActionLoading(null);
     }

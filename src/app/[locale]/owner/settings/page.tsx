@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import DashboardShell from "@/components/DashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
-import { OWNER_PROFILE } from "@/lib/data/entities";
 import TelegramConnectCard from "@/components/owner/TelegramConnectCard";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/components/SessionProvider";
@@ -28,13 +27,13 @@ export default function OwnerSettingsPage() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
-  const { logout } = useSession();
+  const { user, logout } = useSession();
   const isEn = locale === "en";
 
   // Profile
-  const [name, setName] = useState(OWNER_PROFILE.name);
-  const [email, setEmail] = useState(OWNER_PROFILE.email);
-  const [phone, setPhone] = useState("+62 812-1102-3345");
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState("");
   const [lang, setLang] = useState(locale);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -172,12 +171,14 @@ export default function OwnerSettingsPage() {
       setNewPassword("");
       setConfirmPassword("");
       setTimeout(() => setPasswordSuccess(false), 5000);
-    } catch {
-      // local demo fallback
-      setPasswordSuccess(true);
-      setNewPassword("");
-      setConfirmPassword("");
-      setTimeout(() => setPasswordSuccess(false), 5000);
+    } catch (err: unknown) {
+      setPasswordError(
+        err instanceof Error
+          ? err.message
+          : isEn
+            ? "Failed to update password."
+            : "Gagal memperbarui kata sandi."
+      );
     } finally {
       setSavingPassword(false);
     }

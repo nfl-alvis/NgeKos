@@ -41,7 +41,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import DashboardShell from "@/components/DashboardShell";
 import VerificationDetailDialog from "@/components/VerificationDetailDialog";
 import { useSession } from "@/components/SessionProvider";
-import { ADMIN_PROFILE } from "@/lib/data/entities";
 import type { AdminReviewEntry } from "@/lib/data/types";
 import { getKosImage } from "@/lib/kosImages";
 import {
@@ -100,8 +99,7 @@ export default function AdminVerificationPage() {
   const t = useTranslations("admin.queue");
   const locale = useLocale();
   const { user } = useSession();
-  const adminName =
-    user?.role === "admin" && user.name ? user.name : ADMIN_PROFILE.name;
+  const adminName = user?.name || "Admin";
   const { queue: initialQueue, history } = useAdminReviewData();
   const [queue, setQueue] = useState<AdminReviewEntry[]>([]);
   const [review, setReview] = useState<AdminReviewEntry | null>(null);

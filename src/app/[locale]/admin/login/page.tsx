@@ -119,6 +119,7 @@ export default function AdminLoginPage() {
                 type={show ? "text" : "password"}
                 required
                 autoComplete="current-password"
+                aria-label={lt("password")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

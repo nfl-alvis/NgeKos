@@ -3,10 +3,12 @@ import { parseJson, successResponse, withApi, ApiError } from "@/server/http";
 import { getBooking } from "@/server/booking-service";
 import { createSnapTransaction, getMidtransConfig } from "@/server/midtrans";
 import { bookings as staticBookings } from "@/lib/data/entities";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 const chargeSchema = z.object({
-  bookingId: z.string().min(1, "Booking ID wajib diisi"),
+  bookingId: z.string().min(1, "Booking ID is required"),
   returnUrl: z.string().optional(),
 });
 
@@ -44,7 +46,7 @@ export const POST = withApi(async (request: Request) => {
       status: "APPROVED_AWAITING_PAYMENT",
     };
   } else {
-    if (!auth) throw new ApiError(401, "UNAUTHENTICATED", "Silakan masuk terlebih dahulu untuk membayar booking ini.");
+    if (!auth) throw new ApiError(401, "UNAUTHENTICATED", "Please sign in first to pay for this booking.");
     const dbBooking = await getBooking(auth.profile, input.bookingId);
     bookingData = {
       id: dbBooking.id,
@@ -81,7 +83,7 @@ export const POST = withApi(async (request: Request) => {
     return successResponse({
       isConfigured: false,
       message:
-        "MIDTRANS_SERVER_KEY belum diisi di environment variables (.env.local). Silakan isi key dari dashboard Midtrans Sandbox/Production.",
+        "MIDTRANS_SERVER_KEY is not set in the environment variables (.env.local). Add the key from the Midtrans Sandbox/Production dashboard.",
       bookingId: bookingData.id,
       grossAmount: amount,
       token: null,
@@ -121,9 +123,37 @@ export const POST = withApi(async (request: Request) => {
     throw error;
   }
 
+  // Simpan record Payment dengan status PENDING sebelum mengarahkan pengguna ke Midtrans
+  if (!staticBooking) {
+    try {
+      await prisma.payment.upsert({
+        where: { midtransOrderId: orderId },
+        update: {
+          snapToken: snapResult.token,
+          status: "PENDING",
+          amount: new Prisma.Decimal(Math.round(amount)),
+        },
+        create: {
+          bookingId: bookingData.id,
+          method: "MIDTRANS",
+          status: "PENDING",
+          amount: new Prisma.Decimal(Math.round(amount)),
+          reference: orderId,
+          midtransOrderId: orderId,
+          snapToken: snapResult.token,
+          recordedById: auth?.profile.id,
+        },
+      });
+    } catch (dbErr) {
+      // Graceful fallback bila tabel payments belum memiliki kolom midtrans_order_id/booking_id
+      console.warn("[Charge] Payment upsert bypassed due to pending migration drift:", dbErr);
+    }
+  }
+
   return successResponse({
     isConfigured: true,
     bookingId: bookingData.id,
+    orderId,
     grossAmount: amount,
     token: snapResult.token,
     redirectUrl: snapResult.redirect_url,
