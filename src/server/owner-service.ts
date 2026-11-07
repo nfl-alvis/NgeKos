@@ -116,74 +116,77 @@ export async function deleteNotification(profile: Profile, id: string) {
 }
 
 export async function submitPropertyVerification(profile: Profile, propertyId: string) {
-  return prisma.$transaction(async (tx) => {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyId);
-    const property = await tx.property.findFirst({
-      where: {
-        ...(isUuid ? { OR: [{ id: propertyId }, { slug: propertyId }] } : { slug: propertyId }),
-        ownerId: profile.role === "ADMIN" ? undefined : profile.id,
-        deletedAt: null,
-      },
-      include: { _count: { select: { roomTypes: true, images: true } } },
-    });
-    if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Property not found");
-    if (!["DRAFT", "REJECTED", "PENDING"].includes(property.status)) {
-      throw new ApiError(409, "INVALID_PROPERTY_STATUS", "The property cannot be submitted in its current status");
-    }
+  return prisma.$transaction(
+    async (tx) => {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyId);
+      const property = await tx.property.findFirst({
+        where: {
+          ...(isUuid ? { OR: [{ id: propertyId }, { slug: propertyId }] } : { slug: propertyId }),
+          ownerId: profile.role === "ADMIN" ? undefined : profile.id,
+          deletedAt: null,
+        },
+        include: { _count: { select: { roomTypes: true, images: true } } },
+      });
+      if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Property not found");
+      if (!["DRAFT", "REJECTED", "PENDING"].includes(property.status)) {
+        throw new ApiError(409, "INVALID_PROPERTY_STATUS", "The property cannot be submitted in its current status");
+      }
 
-    // Auto add default room type if missing
-    if (!property._count.roomTypes) {
-      const defaultPrice = Number(property.minMonthlyPrice) > 0 ? property.minMonthlyPrice : new Prisma.Decimal(1500000);
-      const rt = await tx.roomType.create({
-        data: {
-          propertyId: property.id,
-          name: "Kamar Standar",
-          pricePerMonth: defaultPrice,
-          sizeM2: new Prisma.Decimal(12),
-          capacity: 1,
-        },
-      });
-      await tx.roomUnit.create({
-        data: {
-          propertyId: property.id,
-          roomTypeId: rt.id,
-          number: "1",
-          floor: "1",
-          status: "AVAILABLE",
-        },
-      });
+      // Auto add default room type if missing
+      if (!property._count.roomTypes) {
+        const defaultPrice = Number(property.minMonthlyPrice) > 0 ? property.minMonthlyPrice : new Prisma.Decimal(1500000);
+        const rt = await tx.roomType.create({
+          data: {
+            propertyId: property.id,
+            name: "Kamar Standar",
+            pricePerMonth: defaultPrice,
+            sizeM2: new Prisma.Decimal(12),
+            capacity: 1,
+          },
+        });
+        await tx.roomUnit.create({
+          data: {
+            propertyId: property.id,
+            roomTypeId: rt.id,
+            number: "1",
+            floor: "1",
+            status: "AVAILABLE",
+          },
+        });
+        await tx.property.update({
+          where: { id: property.id },
+          data: { minMonthlyPrice: defaultPrice },
+        });
+      }
+
+      // Auto add default image if missing
+      if (!property._count.images) {
+        await tx.propertyImage.create({
+          data: {
+            propertyId: property.id,
+            storagePath: `defaults/${property.slug}.jpg`,
+            altText: property.name,
+            isCover: true,
+            sortOrder: 0,
+          },
+        });
+      }
+
       await tx.property.update({
         where: { id: property.id },
-        data: { minMonthlyPrice: defaultPrice },
+        data: { status: "PENDING", rejectionNote: null },
       });
-    }
 
-    // Auto add default image if missing
-    if (!property._count.images) {
-      await tx.propertyImage.create({
-        data: {
-          propertyId: property.id,
-          storagePath: `defaults/${property.slug}.jpg`,
-          altText: property.name,
-          isCover: true,
-          sortOrder: 0,
-        },
+      // Check if open verification already exists
+      const existing = await tx.propertyVerification.findFirst({
+        where: { propertyId: property.id, decision: null },
       });
-    }
+      if (existing) return existing;
 
-    await tx.property.update({
-      where: { id: property.id },
-      data: { status: "PENDING", rejectionNote: null },
-    });
-
-    // Check if open verification already exists
-    const existing = await tx.propertyVerification.findFirst({
-      where: { propertyId: property.id, decision: null },
-    });
-    if (existing) return existing;
-
-    return tx.propertyVerification.create({ data: { propertyId: property.id } });
-  });
+      return tx.propertyVerification.create({ data: { propertyId: property.id } });
+    },
+    { timeout: 25000, maxWait: 10000 }
+  );
 }
 
 export async function decidePropertyVerification(
@@ -202,8 +205,9 @@ export async function decidePropertyVerification(
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(verificationId);
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      // Find verification by id, or propertyId, or property slug
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // Find verification by id, or propertyId, or property slug
       const verification = await tx.propertyVerification.findFirst({
         where: isUuid
           ? {
@@ -336,7 +340,9 @@ export async function decidePropertyVerification(
       }
 
       return updated;
-    });
+    },
+    { timeout: 25000, maxWait: 10000 }
+  );
 
     await recordAuditLog({
       actor: profile,

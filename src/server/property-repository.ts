@@ -1,6 +1,6 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { Prisma, type Profile } from "@prisma/client";
+import { Prisma, type Profile, type RoomStatus } from "@prisma/client";
 import { prisma as defaultPrisma } from "@/lib/prisma";
 import { ApiError } from "@/server/http";
 import { propertyIdentifierWhere, type propertyListQuerySchema } from "@/server/properties";
@@ -165,121 +165,112 @@ export class PrismaPropertyRepository implements PropertyRepository {
       ...data
     } = input;
 
-    return this.db.$transaction(async (tx) => {
-      const prop = await tx.property.create({
-        data: {
-          ...data,
-          ownerId: owner.id,
-          slug,
-          status: autoSubmitVerification ? "PENDING" : "DRAFT",
-          latitude: latitude === undefined ? undefined : new Prisma.Decimal(latitude),
-          longitude: longitude === undefined ? undefined : new Prisma.Decimal(longitude),
-          depositAmount: depositAmount === undefined ? undefined : new Prisma.Decimal(depositAmount),
-          facilities: { create: facilities.map((key) => ({ facility: { connect: { key } } })) },
-        },
-      });
+    return this.db.$transaction(
+      async (tx) => {
+        let minPrice = new Prisma.Decimal(1500000);
+        if (roomTypes && roomTypes.length > 0) {
+          const prices = roomTypes.map((rt) => new Prisma.Decimal(rt.pricePerMonth));
+          minPrice = prices.reduce((min, p) => (p.lessThan(min) ? p : min), prices[0]);
+        }
 
-      if (roomTypes && roomTypes.length > 0) {
-        for (const rt of roomTypes) {
+        const prop = await tx.property.create({
+          data: {
+            ...data,
+            ownerId: owner.id,
+            slug,
+            status: autoSubmitVerification ? "PENDING" : "DRAFT",
+            minMonthlyPrice: minPrice,
+            latitude: latitude === undefined ? undefined : new Prisma.Decimal(latitude),
+            longitude: longitude === undefined ? undefined : new Prisma.Decimal(longitude),
+            depositAmount: depositAmount === undefined ? undefined : new Prisma.Decimal(depositAmount),
+            facilities: { create: facilities.map((key) => ({ facility: { connect: { key } } })) },
+          },
+        });
+
+        if (roomTypes && roomTypes.length > 0) {
+          for (const rt of roomTypes) {
+            const createdRt = await tx.roomType.create({
+              data: {
+                propertyId: prop.id,
+                name: rt.name,
+                description: rt.description ?? null,
+                pricePerMonth: new Prisma.Decimal(rt.pricePerMonth),
+                sizeM2: rt.sizeM2 ? new Prisma.Decimal(rt.sizeM2) : new Prisma.Decimal(12),
+                capacity: 1,
+              },
+            });
+            const totalUnits = rt.total ?? 1;
+            const availUnits = rt.available !== undefined ? rt.available : totalUnits;
+            const units = Array.from({ length: totalUnits }, (_, idx) => ({
+              propertyId: prop.id,
+              roomTypeId: createdRt.id,
+              number: `${idx + 1}`,
+              floor: "1",
+              status: (idx + 1 <= availUnits ? "AVAILABLE" : "OCCUPIED") as RoomStatus,
+            }));
+            if (units.length > 0) {
+              await tx.roomUnit.createMany({ data: units });
+            }
+          }
+        } else {
+          const defaultPrice = new Prisma.Decimal(1500000);
           const createdRt = await tx.roomType.create({
             data: {
               propertyId: prop.id,
-              name: rt.name,
-              description: rt.description ?? null,
-              pricePerMonth: new Prisma.Decimal(rt.pricePerMonth),
-              sizeM2: rt.sizeM2 ? new Prisma.Decimal(rt.sizeM2) : new Prisma.Decimal(12),
+              name: "Kamar Standar",
+              pricePerMonth: defaultPrice,
+              sizeM2: new Prisma.Decimal(12),
               capacity: 1,
             },
           });
-          const totalUnits = rt.total ?? 1;
-          const availUnits = rt.available !== undefined ? rt.available : totalUnits;
-          for (let i = 1; i <= totalUnits; i++) {
-            await tx.roomUnit.create({
-              data: {
-                propertyId: prop.id,
-                roomTypeId: createdRt.id,
-                number: `${i}`,
-                floor: "1",
-                status: i <= availUnits ? "AVAILABLE" : "OCCUPIED",
-              },
-            });
-          }
-        }
-        const aggregate = await tx.roomType.aggregate({
-          where: { propertyId: prop.id, deletedAt: null },
-          _min: { pricePerMonth: true },
-        });
-        if (aggregate._min.pricePerMonth) {
-          await tx.property.update({
-            where: { id: prop.id },
-            data: { minMonthlyPrice: aggregate._min.pricePerMonth },
-          });
-        }
-      } else {
-        const defaultPrice = new Prisma.Decimal(1500000);
-        const createdRt = await tx.roomType.create({
-          data: {
-            propertyId: prop.id,
-            name: "Kamar Standar",
-            pricePerMonth: defaultPrice,
-            sizeM2: new Prisma.Decimal(12),
-            capacity: 1,
-          },
-        });
-        await tx.roomUnit.create({
-          data: {
-            propertyId: prop.id,
-            roomTypeId: createdRt.id,
-            number: "1",
-            floor: "1",
-            status: "AVAILABLE",
-          },
-        });
-        await tx.property.update({
-          where: { id: prop.id },
-          data: { minMonthlyPrice: defaultPrice },
-        });
-      }
-
-      if (images && images.length > 0) {
-        for (let i = 0; i < images.length; i++) {
-          const img = images[i];
-          await tx.propertyImage.create({
+          await tx.roomUnit.create({
             data: {
               propertyId: prop.id,
-              storagePath: img.storagePath || `defaults/${prop.slug}-${i}.jpg`,
-              altText: img.altText ?? prop.name,
-              isCover: img.isCover ?? (i === 0),
-              sortOrder: i,
+              roomTypeId: createdRt.id,
+              number: "1",
+              floor: "1",
+              status: "AVAILABLE",
             },
           });
         }
-      } else {
-        await tx.propertyImage.create({
-          data: {
-            propertyId: prop.id,
-            storagePath: `defaults/${prop.slug}.jpg`,
-            altText: prop.name,
-            isCover: true,
-            sortOrder: 0,
-          },
-        });
-      }
 
-      if (autoSubmitVerification) {
-        await tx.propertyVerification.create({
-          data: {
+        if (images && images.length > 0) {
+          const imgs = images.map((img, i) => ({
             propertyId: prop.id,
-            submittedAt: new Date(),
-          },
-        });
-      }
+            storagePath: img.storagePath || `defaults/${prop.slug}-${i}.jpg`,
+            altText: img.altText ?? prop.name,
+            isCover: img.isCover ?? (i === 0),
+            sortOrder: i,
+          }));
+          await tx.propertyImage.createMany({ data: imgs });
+        } else {
+          await tx.propertyImage.create({
+            data: {
+              propertyId: prop.id,
+              storagePath: `defaults/${prop.slug}.jpg`,
+              altText: prop.name,
+              isCover: true,
+              sortOrder: 0,
+            },
+          });
+        }
 
-      return tx.property.findUniqueOrThrow({
-        where: { id: prop.id },
-        include: propertyInclude,
-      });
-    });
+        if (autoSubmitVerification) {
+          await tx.propertyVerification.create({
+            data: {
+              propertyId: prop.id,
+              submittedAt: new Date(),
+            },
+          });
+        }
+
+        return tx.property.findUniqueOrThrow({
+          where: { id: prop.id },
+          include: propertyInclude,
+        });
+      },
+      { timeout: 25000, maxWait: 10000 }
+    );
   }
 
   async update(owner: Profile, id: string, input: Partial<PropertyCreateInput>): Promise<PropertyRecord> {
@@ -294,43 +285,49 @@ export class PrismaPropertyRepository implements PropertyRepository {
       ...data
     } = input;
 
-    return this.db.$transaction(async (tx) => {
-      const existing = await tx.property.findUnique({ where: { id }, select: { status: true } });
-      if (facilities) {
-        await tx.propertyFacility.deleteMany({ where: { propertyId: id } });
-        for (const key of facilities) {
-          await tx.propertyFacility.create({
-            data: { property: { connect: { id } }, facility: { connect: { key } } },
-          });
+    return this.db.$transaction(
+      async (tx) => {
+        const existing = await tx.property.findUnique({ where: { id }, select: { status: true } });
+        if (facilities) {
+          await tx.propertyFacility.deleteMany({ where: { propertyId: id } });
+          for (const key of facilities) {
+            await tx.propertyFacility.create({
+              data: { property: { connect: { id } }, facility: { connect: { key } } },
+            });
+          }
         }
-      }
-      return tx.property.update({
-        where: { id },
-        data: {
-          ...data,
-          ...(latitude === undefined ? {} : { latitude: new Prisma.Decimal(latitude) }),
-          ...(longitude === undefined ? {} : { longitude: new Prisma.Decimal(longitude) }),
-          ...(depositAmount === undefined ? {} : { depositAmount: new Prisma.Decimal(depositAmount) }),
-          ...(existing?.status === "REJECTED" ? { status: "DRAFT", rejectionNote: null } : {}),
-        },
-        include: propertyInclude,
-      });
-    });
+        return tx.property.update({
+          where: { id },
+          data: {
+            ...data,
+            ...(latitude === undefined ? {} : { latitude: new Prisma.Decimal(latitude) }),
+            ...(longitude === undefined ? {} : { longitude: new Prisma.Decimal(longitude) }),
+            ...(depositAmount === undefined ? {} : { depositAmount: new Prisma.Decimal(depositAmount) }),
+            ...(existing?.status === "REJECTED" ? { status: "DRAFT", rejectionNote: null } : {}),
+          },
+          include: propertyInclude,
+        });
+      },
+      { timeout: 25000, maxWait: 10000 }
+    );
   }
 
   async delete(id: string): Promise<void> {
-    await this.db.$transaction(async (tx) => {
-      const active = await tx.rentalAgreement.count({
-        where: { propertyId: id, status: "ACTIVE" },
-      });
-      if (active > 0) {
-        throw new ApiError(409, "ACTIVE_TENANCY", "A property with active tenants cannot be deleted");
-      }
-      await tx.property.update({
-        where: { id },
-        data: { deletedAt: new Date(), status: "INACTIVE" },
-      });
-    });
+    await this.db.$transaction(
+      async (tx) => {
+        const active = await tx.rentalAgreement.count({
+          where: { propertyId: id, status: "ACTIVE" },
+        });
+        if (active > 0) {
+          throw new ApiError(409, "ACTIVE_TENANCY", "A property with active tenants cannot be deleted");
+        }
+        await tx.property.update({
+          where: { id },
+          data: { deletedAt: new Date(), status: "INACTIVE" },
+        });
+      },
+      { timeout: 25000, maxWait: 10000 }
+    );
   }
 
   async countActiveAgreements(propertyId: string): Promise<number> {
