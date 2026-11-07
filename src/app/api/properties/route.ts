@@ -4,6 +4,8 @@ import { createProperty, listOwnerProperties, listPublicProperties } from "@/ser
 import { propertyListQuerySchema } from "@/server/properties";
 import { propertyCreateSchema } from "@/server/validation";
 
+export const maxDuration = 60;
+
 function queryFrom(request: Request) {
   const params = new URL(request.url).searchParams;
   return propertyListQuerySchema.parse({

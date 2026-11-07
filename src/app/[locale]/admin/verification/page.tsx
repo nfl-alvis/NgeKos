@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
+  AlertCircle,
   CheckCircle2,
   Clock,
   Hourglass,
@@ -98,7 +99,7 @@ function QueueStat({
 export default function AdminVerificationPage() {
   const t = useTranslations("admin.queue");
   const locale = useLocale();
-  const { user } = useSession();
+  const { user, login } = useSession();
   const adminName = user?.name || "Admin";
   const { queue: initialQueue, history } = useAdminReviewData();
   const [queue, setQueue] = useState<AdminReviewEntry[]>([]);
@@ -106,10 +107,23 @@ export default function AdminVerificationPage() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"oldest" | "newest">("oldest");
   const [toast, setToast] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isSwitching, setIsSwitching] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/verifications")
-      .then((res) => (res.ok ? res.json() : null))
+      .then(async (res) => {
+        if (res.status === 401 || res.status === 403) {
+          setAuthError("Sesi akun Anda tidak memiliki hak akses Admin. Masuk sebagai Admin (admin@ngekost.id) untuk melihat antrean verifikasi.");
+          return null;
+        }
+        if (!res.ok) {
+          setAuthError("Gagal memuat antrean verifikasi dari server.");
+          return null;
+        }
+        setAuthError(null);
+        return res.json();
+      })
       .then((json) => {
         if (json?.data && Array.isArray(json.data)) {
           const mapped: AdminReviewEntry[] = json.data.map((row: any) => ({
@@ -190,6 +204,43 @@ export default function AdminVerificationPage() {
 
   return (
     <DashboardShell role="admin">
+      {/* Banner Deteksi Sesi Bukan Admin */}
+      {(!user || user.role !== "admin" || authError) && (
+        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-5 text-amber-950">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="size-5 shrink-0 text-amber-600 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-semibold text-amber-900">
+                  {user && user.role !== "admin"
+                    ? `Perhatian: Anda sedang login sebagai ${user.role === "owner" ? "Pemilik Kos" : "Pengguna"} (${user.email || user.name})`
+                    : "Memerlukan Hak Akses Admin"}
+                </h3>
+                <p className="mt-1 text-xs text-amber-800 leading-relaxed">
+                  Antrean verifikasi kos hanya dapat dilihat dan diproses oleh akun <strong>Admin</strong>. Sesi pemilik kos tidak memiliki izin melihat antrean ini sehingga antrean terlihat kosong. Klik tombol di samping untuk beralih ke akun Admin.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={isSwitching}
+              onClick={async () => {
+                setIsSwitching(true);
+                try {
+                  await login("admin@ngekost.id", "Password123!", "admin");
+                  window.location.reload();
+                } catch {
+                  setIsSwitching(false);
+                }
+              }}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-900 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isSwitching ? "Mengalihkan Sesi..." : "Masuk sebagai Admin Demo"}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mb-6 flex items-center gap-3">
         <h1 className="text-2xl font-medium tracking-tight text-nk-text">
           {t("title")}

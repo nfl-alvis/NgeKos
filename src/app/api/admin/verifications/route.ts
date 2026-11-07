@@ -4,6 +4,8 @@ import { env } from "@/lib/env";
 import { successResponse, withApi } from "@/server/http";
 import { getLocalPendingProperties } from "@/server/property-service";
 
+export const maxDuration = 60;
+
 function resolveImageUrl(storagePath: string) {
   if (!storagePath) return "";
   if (storagePath.startsWith("http") || storagePath.startsWith("/") || storagePath.startsWith("blob:") || storagePath.startsWith("data:")) {

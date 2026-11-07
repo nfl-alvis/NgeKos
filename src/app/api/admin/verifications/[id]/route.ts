@@ -3,6 +3,8 @@ import { requireUser } from "@/server/auth";
 import { parseJson, successResponse, withApi } from "@/server/http";
 import { decidePropertyVerification } from "@/server/owner-service";
 
+export const maxDuration = 60;
+
 type Context = { params: Promise<{ id: string }> };
 const schema = z.discriminatedUnion("decision", [
   z.object({ decision: z.literal("APPROVED") }).strict(),

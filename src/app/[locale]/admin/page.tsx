@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
+  AlertCircle,
   Building2,
   CheckCircle2,
   DoorOpen,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { Link } from "@/i18n/navigation";
+import { useSession } from "@/components/SessionProvider";
 import {
   ChartContainer,
   ChartTooltip,
@@ -99,6 +101,8 @@ export default function AdminDashboardPage() {
   const t = useTranslations("admin.dashboard");
   const tu = useTranslations("admin.units");
   const locale = useLocale();
+  const { user, login } = useSession();
+  const [isSwitching, setIsSwitching] = useState(false);
 
   const [users, setUsers] = useState<any[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
@@ -219,6 +223,43 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminPageShell title={t("title")}>
+      {/* Banner Deteksi Sesi Bukan Admin */}
+      {(!user || user.role !== "admin") && (
+        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-5 text-amber-950">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="size-5 shrink-0 text-amber-600 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-semibold text-amber-900">
+                  {user && user.role !== "admin"
+                    ? `Perhatian: Anda sedang login sebagai ${user.role === "owner" ? "Pemilik Kos" : "Pengguna"} (${user.email || user.name})`
+                    : "Memerlukan Hak Akses Admin"}
+                </h3>
+                <p className="mt-1 text-xs text-amber-800 leading-relaxed">
+                  Data statistik dan antrean verifikasi di Dashboard Admin hanya dapat diakses dengan akun <strong>Admin</strong>. Jika Anda ingin memeriksa permohonan verifikasi dari pemilik kos, silakan beralih ke akun Admin.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={isSwitching}
+              onClick={async () => {
+                setIsSwitching(true);
+                try {
+                  await login("admin@ngekost.id", "Password123!", "admin");
+                  window.location.reload();
+                } catch {
+                  setIsSwitching(false);
+                }
+              }}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-900 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isSwitching ? "Mengalihkan Sesi..." : "Masuk sebagai Admin Demo"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* baris stat */}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard

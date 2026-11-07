@@ -44,13 +44,18 @@ export default function OwnerPropertiesPage() {
   const [draft, setDraft] = useState<PropertyFormDraft | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<"draft" | Property | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [actionAlert, setActionAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const handleResubmitVerification = async (idOrSlug: string) => {
+    setSubmittingId(idOrSlug);
+    setActionAlert(null);
     try {
       const res = await fetch(`/api/properties/${idOrSlug}/submit-verification`, {
         method: "POST",
       });
-      if (res.ok) {
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.success) {
         setProps((prev) =>
           prev.map((item) =>
             item.slug === idOrSlug || ("id" in item && item.id === idOrSlug)
@@ -58,9 +63,23 @@ export default function OwnerPropertiesPage() {
               : item
           )
         );
+        setActionAlert({
+          type: "success",
+          message: "Pengajuan verifikasi berhasil dikirim ke Admin! Status kini Menunggu Verifikasi.",
+        });
+      } else {
+        setActionAlert({
+          type: "error",
+          message: json?.error?.message || "Gagal mengajukan verifikasi ke Admin.",
+        });
       }
     } catch {
-      // ignore
+      setActionAlert({
+        type: "error",
+        message: "Terjadi kesalahan jaringan saat mengajukan verifikasi.",
+      });
+    } finally {
+      setSubmittingId(null);
     }
   };
 
@@ -350,6 +369,27 @@ export default function OwnerPropertiesPage() {
         </div>
       </div>
 
+      {actionAlert && (
+        <div
+          className={`mb-6 rounded-lg border p-4 text-xs ${
+            actionAlert.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <p className="font-medium">{actionAlert.message}</p>
+            <button
+              type="button"
+              onClick={() => setActionAlert(null)}
+              className="ml-3 font-semibold underline underline-offset-2 hover:opacity-80"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Search Input Bar */}
       <div className="mb-6">
         <div className="relative">
@@ -532,10 +572,11 @@ export default function OwnerPropertiesPage() {
                         </p>
                         <button
                           type="button"
+                          disabled={submittingId === (("id" in p ? p.id : "") || p.slug)}
                           onClick={() => handleResubmitVerification(("id" in p ? p.id : "") || p.slug)}
-                          className="mt-2 text-xs font-medium text-[#9C3B32] underline underline-offset-4 hover:opacity-80 cursor-pointer"
+                          className="mt-2 text-xs font-medium text-[#9C3B32] underline underline-offset-4 hover:opacity-80 cursor-pointer disabled:opacity-50"
                         >
-                          {t("resubmit")}
+                          {submittingId === (("id" in p ? p.id : "") || p.slug) ? "Mengajukan..." : t("resubmit")}
                         </button>
                       </div>
                     )}

@@ -1072,9 +1072,9 @@ export default function NewPropertyPage() {
           body: JSON.stringify(payload),
         });
 
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-          throw new Error(json?.error?.message || "Gagal mendaftarkan kos.");
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json?.success) {
+          throw new Error(json?.error?.message || json?.message || "Gagal mendaftarkan kos. Silakan periksa koneksi dan coba lagi.");
         }
 
         // Successfully created! Show success popup modal
@@ -3101,6 +3101,24 @@ export default function NewPropertyPage() {
                 </div>
               </div>
             </div>
+
+            {/* Error & Validation Feedback on Step 6 */}
+            {errorMsg && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700">
+                <p className="font-semibold">Pendaftaran Gagal:</p>
+                <p className="mt-0.5">{errorMsg}</p>
+              </div>
+            )}
+            {!isStep6Valid && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800">
+                <p className="font-semibold mb-1">Sebelum mendaftarkan kos, mohon lengkapi data rekening penerima:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {namaPemilik.trim().length < 2 && <li>Nama pemilik kos minimal 2 karakter.</li>}
+                  {!isAccountNumberValid && <li>Nomor rekening harus berupa 8–20 digit angka.</li>}
+                  {namaPemilikRekening.trim().length < 2 && <li>Nama pemilik rekening minimal 2 karakter.</li>}
+                </ul>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex items-center justify-between pt-4">

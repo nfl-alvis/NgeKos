@@ -2,6 +2,8 @@ import { requireUser } from "@/server/auth";
 import { successResponse, withApi } from "@/server/http";
 import { submitPropertyVerification } from "@/server/owner-service";
 
+export const maxDuration = 60;
+
 type Context = { params: Promise<{ id: string }> };
 
 export const POST = withApi(async (_request: Request, context: Context) => {
