@@ -91,7 +91,7 @@ export default function BookingList() {
 
   const [items, setItems] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [tab, setTab] = useState<"all" | "awaiting" | "active" | "history">("all");
+  const [tab, setTab] = useState<"all" | "pending" | "awaiting" | "active" | "history">("all");
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -115,8 +115,9 @@ export default function BookingList() {
   const counts = useMemo(() => {
     return {
       all: items.length,
+      pending: items.filter((b) => b.status === "pending").length,
       awaiting: items.filter((b) => b.status === "approved-awaiting-payment").length,
-      active: items.filter((b) => b.status === "active" || b.status === "pending").length,
+      active: items.filter((b) => b.status === "active").length,
       history: items.filter((b) => ["rejected", "expired", "cancelled"].includes(b.status)).length,
     };
   }, [items]);
@@ -124,8 +125,9 @@ export default function BookingList() {
   const filtered = useMemo(() => {
     return items.filter((b) => {
       // Tab filter
+      if (tab === "pending" && b.status !== "pending") return false;
       if (tab === "awaiting" && b.status !== "approved-awaiting-payment") return false;
-      if (tab === "active" && b.status !== "active" && b.status !== "pending") return false;
+      if (tab === "active" && b.status !== "active") return false;
       if (tab === "history" && !["rejected", "expired", "cancelled"].includes(b.status)) return false;
 
       // Search filter
@@ -159,19 +161,28 @@ export default function BookingList() {
       icon: Building2,
     },
     {
-      key: "awaiting" as const,
-      label: "Menunggu Bayar",
-      value: counts.awaiting,
-      sub: "Perlu diselesaikan",
+      key: "pending" as const,
+      label: "Menunggu Persetujuan",
+      value: counts.pending,
+      sub: "Menunggu pemilik",
       tint: "bg-[#FBF3DC]",
       iconTint: "bg-[#F3E3B8] text-[#8A6A1F]",
       icon: Clock,
     },
     {
+      key: "awaiting" as const,
+      label: "Menunggu Bayar",
+      value: counts.awaiting,
+      sub: "Perlu diselesaikan",
+      tint: "bg-[#E8EFF8]",
+      iconTint: "bg-[#D3E0F0] text-[#24508A]",
+      icon: CreditCard,
+    },
+    {
       key: "active" as const,
-      label: "Sewa Berjalan",
+      label: "Sewa Aktif (Lunas)",
       value: counts.active,
-      sub: "Aktif & diproses",
+      sub: "Terverifikasi lunas",
       tint: "bg-[#E9F4EC]",
       iconTint: "bg-[#CFE8D6] text-[#2F6B3C]",
       icon: CheckCircle2,
@@ -190,7 +201,7 @@ export default function BookingList() {
   return (
     <div className="w-full space-y-6">
       {/* Stats Cards Row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {statCards.map((s) => (
           <button
             key={s.key}
@@ -240,17 +251,34 @@ export default function BookingList() {
           </button>
           <button
             type="button"
+            onClick={() => setTab("pending")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
+              tab === "pending"
+                ? "bg-[#FBF3DC] text-[#8A6A1F] shadow-sm font-semibold"
+                : "text-nk-text-muted hover:text-nk-text"
+            )}
+          >
+            <span>Menunggu Persetujuan</span>
+            {counts.pending > 0 && (
+              <span className="rounded-full bg-[#F3E3B8] px-1.5 py-0.5 text-[10px] font-bold text-[#8A6A1F]">
+                {counts.pending}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
             onClick={() => setTab("awaiting")}
             className={cn(
               "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
               tab === "awaiting"
-                ? "bg-[#FBF3DC] text-[#8A6A1F] shadow-sm font-semibold"
+                ? "bg-[#E8EFF8] text-[#24508A] shadow-sm font-semibold"
                 : "text-nk-text-muted hover:text-nk-text"
             )}
           >
             <span>Menunggu Bayar</span>
             {counts.awaiting > 0 && (
-              <span className="rounded-full bg-[#F3E3B8] px-1.5 py-0.5 text-[10px] font-bold text-[#8A6A1F]">
+              <span className="rounded-full bg-[#D3E0F0] px-1.5 py-0.5 text-[10px] font-bold text-[#24508A]">
                 {counts.awaiting}
               </span>
             )}
@@ -265,10 +293,12 @@ export default function BookingList() {
                 : "text-nk-text-muted hover:text-nk-text"
             )}
           >
-            <span>Aktif & Menunggu</span>
-            <span className="rounded-full bg-nk-border px-1.5 py-0.5 text-[10px] font-semibold text-nk-text-muted">
-              {counts.active}
-            </span>
+            <span>Sewa Aktif (Lunas)</span>
+            {counts.active > 0 && (
+              <span className="rounded-full bg-[#CFE8D6] px-1.5 py-0.5 text-[10px] font-bold text-[#2F6B3C]">
+                {counts.active}
+              </span>
+            )}
           </button>
           <button
             type="button"
@@ -585,10 +615,10 @@ function BookingCardItem({
               <StatusBadge color="green">Lunas</StatusBadge>
             ) : booking.status === "approved-awaiting-payment" ? (
               <StatusBadge color="yellow">Menunggu Pembayaran</StatusBadge>
-            ) : booking.status === "cancelled" || booking.status === "rejected" ? (
-              <StatusBadge color="gray">Dibatalkan</StatusBadge>
+            ) : booking.status === "pending" ? (
+              <StatusBadge color="gray">Menunggu Persetujuan Kos</StatusBadge>
             ) : (
-              <StatusBadge color="yellow">Belum Dibayar</StatusBadge>
+              <StatusBadge color="gray">Dibatalkan</StatusBadge>
             )}
           </dd>
         </div>

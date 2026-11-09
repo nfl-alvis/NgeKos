@@ -155,7 +155,9 @@ export function ActiveBookingPanel({ compact = false }: { compact?: boolean }) {
               <div className="rounded-lg border border-nk-border bg-nk-bg p-3">
                 <dt className="text-xs text-nk-text-muted">{t("paymentStatus")}</dt>
                 <dd className="mt-1.5">
-                  {payment?.status === "paid" ? (
+                  {b.status === "pending" ? (
+                    <StatusBadge color="gray">{t("statusAwaitOwner")}</StatusBadge>
+                  ) : payment?.status === "paid" || b.status === "active" ? (
                     <StatusBadge color="green">{t("statusPaid")}</StatusBadge>
                   ) : payment?.status === "refunding" ? (
                     <StatusBadge color="red">{t("statusRefunding")}</StatusBadge>

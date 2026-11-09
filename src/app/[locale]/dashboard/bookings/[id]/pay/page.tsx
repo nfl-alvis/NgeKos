@@ -229,7 +229,8 @@ function PaymentContent() {
   }
 
   const paid = booking.status === "active" && !booking.isDemo;
-  const canPay = booking.status === "approved-awaiting-payment" || booking.status === "pending";
+  const isPending = booking.status === "pending";
+  const canPay = booking.status === "approved-awaiting-payment";
 
   return (
     <PageFrame>
@@ -237,12 +238,22 @@ function PaymentContent() {
         <section>
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-nk-text-muted">Pembayaran · {booking.id}</p>
           <h1 className="mt-4 max-w-lg text-4xl font-semibold leading-[1.1] tracking-tight text-balance sm:text-5xl">
-            {paid ? "Pembayaran terkonfirmasi" : "Selesaikan pembayaran"}
+            {paid
+              ? "Pembayaran terkonfirmasi"
+              : isPending
+              ? "Menunggu persetujuan pemilik"
+              : canPay
+              ? "Selesaikan pembayaran"
+              : "Rincian pengajuan sewa"}
           </h1>
           <p className="mt-5 max-w-md text-sm leading-6 text-nk-text-muted">
             {paid
               ? "Status booking Anda sudah diperbarui. Rincian sewa tetap dapat dilihat di bawah."
-              : "Periksa rincian sewa, lalu lanjutkan ke Midtrans untuk memilih cara bayar."}
+              : isPending
+              ? "Pengajuan sewa Anda masih menunggu persetujuan dari pemilik kos. Tombol pembayaran akan aktif setelah pengajuan disetujui."
+              : canPay
+              ? "Periksa rincian sewa, lalu lanjutkan ke Midtrans untuk memilih cara bayar."
+              : "Status booking saat ini tidak memerlukan pembayaran."}
           </p>
 
           <div className="mt-10 border-t border-nk-border pt-7">
@@ -303,6 +314,15 @@ function PaymentContent() {
           </div>
 
           {error && <p className="mt-6 text-sm text-destructive" role="alert">{error}</p>}
+
+          {isPending && (
+            <div className="mt-6 border-l-2 border-amber-500 bg-amber-50 p-4 text-xs leading-relaxed text-amber-900" role="status">
+              <p className="font-semibold text-amber-800">Menunggu Persetujuan Pemilik Kos</p>
+              <p className="mt-1 text-amber-700/90">
+                Pengajuan sewa Anda sedang menunggu konfirmasi dari pihak pemilik kos. Pembayaran via Midtrans hanya dapat dilakukan setelah pemilik menyetujui pengajuan Anda.
+              </p>
+            </div>
+          )}
 
           {canPay && (
             <button

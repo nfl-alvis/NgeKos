@@ -64,8 +64,22 @@ export const POST = withApi(async (request: Request) => {
     };
   }
 
-  // Periksa apakah status booking dapat dibayar
-  if (bookingData.status !== "APPROVED_AWAITING_PAYMENT" && bookingData.status !== "PENDING") {
+  // Periksa apakah status booking dapat dibayar — wajib APPROVED_AWAITING_PAYMENT (persetujuan pemilik)
+  if (bookingData.status !== "APPROVED_AWAITING_PAYMENT") {
+    if (bookingData.status === "PENDING") {
+      throw new ApiError(
+        400,
+        "PENDING_APPROVAL",
+        "Pengajuan booking ini masih menunggu persetujuan dari pemilik kos. Pembayaran baru dapat diproses setelah disetujui."
+      );
+    }
+    if (bookingData.status === "ACTIVE") {
+      throw new ApiError(
+        400,
+        "ALREADY_PAID",
+        "Booking ini sudah berstatus aktif / lunas."
+      );
+    }
     throw new ApiError(
       400,
       "INVALID_BOOKING_STATUS",
