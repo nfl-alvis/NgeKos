@@ -13,7 +13,7 @@ import { bookings } from "@/lib/data/entities";
 import type { Booking, BookingStatus } from "@/lib/data/types";
 import { getPropertyBySlug, properties } from "@/lib/data/properties";
 import { DEMO_USER_NAME, reviewableSlugs, tenantRoomInfo, type UserReview } from "@/lib/data/userData";
-import { markPaymentPaid, saveReview, toggleFavorite, useUserOps } from "@/lib/userOpsStore";
+import { saveReview, toggleFavorite, useUserOps } from "@/lib/userOpsStore";
 import { useTenantSession } from "@/hooks/useTenantSession";
 import { cn, formatIDR } from "@/lib/utils";
 import { DashSection } from "@/components/dashboard/DashSection";

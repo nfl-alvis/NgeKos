@@ -110,32 +110,10 @@ export function toggleFavorite(slug: string) {
 }
 
 /**
- * tandai pembayaran booking berhasil (simulasi hasil Midtrans).
- * Kalau transaksi booking belum ada di seed → tambahkan sebagai record baru.
+ * @deprecated Pembayaran diselesaikan melalui Midtrans Sandbox / Simulator resmi. Auto-paid dinonaktifkan.
  */
-export function markPaymentPaid(paymentId: string, propertyName: string, amount = 0) {
-  load();
-  if (state.paymentOverrides[paymentId] === "paid") return;
-  if (!seedUserPayments.some((p) => p.id === paymentId) && !state.addedPayments.some((p) => p.id === paymentId)) {
-    const bookingId = paymentId.replace(/^PAY-/, "BK-");
-    state = {
-      ...state,
-      addedPayments: [
-        { id: paymentId, bookingId, propertyName, amount, status: "paid", at: new Date().toISOString() },
-        ...state.addedPayments,
-      ],
-    };
-  } else {
-    state = { ...state, paymentOverrides: { ...state.paymentOverrides, [paymentId]: "paid" } };
-  }
-  apply(state);
-  pushActivity({
-    type: "payment",
-    titleId: "Pembayaran berhasil",
-    titleEn: "Payment successful",
-    subject: propertyName,
-    at: new Date().toISOString(),
-  });
+export function markPaymentPaid(_paymentId: string, _propertyName: string, _amount = 0) {
+  // No-op: simulasi auto-paid dinonaktifkan. Seluruh pembayaran wajib melalui Midtrans.
 }
 
 export function saveReview(review: UserReview) {

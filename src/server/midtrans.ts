@@ -29,23 +29,12 @@ export function getAppEnv(): AppEnv {
 }
 
 /**
- * Mode mock Midtrans hanya diizinkan di development dan test jika MIDTRANS_SANDBOX_MOCK=true.
- * Pada staging dan production, mock mode DILARANG KERAS (fail-closed).
+ * Mode mock / auto-paid lokal Midtrans telah dinonaktifkan secara permanen.
+ * Seluruh pengujian pembayaran wajib melalui Midtrans Sandbox resmi
+ * (https://simulator.sandbox.midtrans.com/).
  */
 export function isMidtransMockMode(): boolean {
-  const appEnv = getAppEnv();
-  if (appEnv === "staging" || appEnv === "production") {
-    return false;
-  }
-  return process.env.MIDTRANS_SANDBOX_MOCK === "true";
-}
-
-function appOrigin(): string {
-  return (
-    process.env.APP_ORIGIN?.trim() ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    "http://localhost:3000"
-  );
+  return false;
 }
 
 /**
@@ -133,7 +122,7 @@ export function getMidtransConfig(): MidtransConfig {
       `[Security Error] MIDTRANS_SANDBOX_MOCK=true dilarang di lingkungan ${appEnv}. Integrasi Midtrans nyata wajib digunakan.`
     );
   }
-  const mockMode = isMidtransMockMode();
+  const mockMode = false;
 
   const snapUrl = isProduction
     ? "https://app.midtrans.com/snap/v1/transactions"
@@ -143,8 +132,7 @@ export function getMidtransConfig(): MidtransConfig {
     ? "https://api.midtrans.com"
     : "https://api.sandbox.midtrans.com";
 
-  const isConfigured =
-    mockMode || Boolean(serverKey && serverKey.length > 5);
+  const isConfigured = Boolean(serverKey && serverKey.length > 5);
 
   return {
     serverKey,
@@ -199,13 +187,6 @@ export async function createSnapTransaction(
     throw new Error(
       "MIDTRANS_SERVER_KEY is not set in the environment variables (.env.local)."
     );
-  }
-
-  if (config.mockMode) {
-    const token = `MOCK-${params.orderId}-${Date.now()}`;
-    const redirectUrl = new URL("/sandbox/midtrans", appOrigin());
-    redirectUrl.searchParams.set("order_id", params.orderId);
-    return { token, redirect_url: redirectUrl.toString() };
   }
 
   const authHeader = `Basic ${Buffer.from(`${config.serverKey}:`).toString("base64")}`;
@@ -273,19 +254,6 @@ export async function getMidtransTransactionStatus(
   const config = getMidtransConfig();
   if (!config.isConfigured) {
     throw new Error("MIDTRANS_SERVER_KEY is not configured.");
-  }
-
-  if (config.mockMode) {
-    return {
-      status_code: "200",
-      status_message: "Success, mock transaction found",
-      transaction_id: `mock-tx-${orderId}`,
-      order_id: orderId,
-      gross_amount: "100000",
-      payment_type: "bank_transfer",
-      transaction_time: new Date().toISOString(),
-      transaction_status: "settlement",
-    };
   }
 
   const authHeader = `Basic ${Buffer.from(`${config.serverKey}:`).toString("base64")}`;

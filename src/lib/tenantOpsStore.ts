@@ -61,12 +61,11 @@ function emit() {
   for (const l of listeners) l();
 }
 
-export function markInvoicePaid(id: string) {
-  load();
-  if (state.paidInvoiceIds.includes(id)) return;
-  state = { ...state, paidInvoiceIds: [...state.paidInvoiceIds, id] };
-  persist();
-  emit();
+/**
+ * @deprecated Pembayaran invoice wajib melalui gateway Midtrans terverifikasi.
+ */
+export function markInvoicePaid(_id: string) {
+  // No-op: simulasi lokal invoice lunas dinonaktifkan
 }
 
 export function addComplaint(input: {

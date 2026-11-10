@@ -308,8 +308,17 @@ function PaymentContent() {
               <span>DEMO MODE — Midtrans Sandbox</span>
             </div>
             <p className="mt-1.5 leading-relaxed text-amber-800/90">
-              Transaksi ini diproses melalui <strong>Midtrans Sandbox</strong> untuk simulasi staging/demo.
-              Jangan gunakan nomor kartu atau saldo bank sungguhan. Gunakan nomor kartu uji coba Midtrans.
+              Transaksi ini diproses melalui <strong>Midtrans Sandbox</strong>.
+              Gunakan nomor kartu uji coba Midtrans atau bayar Virtual Account via{" "}
+              <a
+                href="https://simulator.sandbox.midtrans.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline underline-offset-2 hover:text-amber-950"
+              >
+                Midtrans Simulator
+              </a>
+              . Jangan gunakan saldo bank atau kartu sungguhan.
             </p>
           </div>
 
