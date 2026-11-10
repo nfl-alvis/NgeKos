@@ -184,28 +184,37 @@ function BookingForm({
       let propId = property.id;
       let rId = room.id;
 
+      const targetSlug = property.slug || params.slug;
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!propId || !uuidRegex.test(propId) || !uuidRegex.test(rId)) {
-        const res = await fetch(`/api/properties/${property.slug}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.data) {
-            propId = json.data.id;
-            const foundRoom =
-              json.data.roomTypes?.find(
-                (rt: { id: string; name: string }) => rt.name.toLowerCase() === room.name.toLowerCase()
-              ) || json.data.roomTypes?.[0];
-            if (foundRoom) rId = foundRoom.id;
+        try {
+          const res = await fetch(`/api/properties/${targetSlug}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json.data) {
+              propId = json.data.id;
+              const foundRoom =
+                json.data.roomTypes?.find(
+                  (rt: { id: string; name: string }) => rt.name.toLowerCase() === room.name.toLowerCase()
+                ) || json.data.roomTypes?.[0];
+              if (foundRoom) rId = foundRoom.id;
+            }
           }
+        } catch {
+          // Abaikan error fetch, backend akan meresolusi via identifier
         }
       }
+
+      // Pastikan propertyId dan roomTypeId tidak pernah undefined
+      const finalPropertyId = propId || targetSlug;
+      const finalRoomId = rId || room.id || room.name;
 
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          propertyId: propId,
-          roomTypeId: rId,
+          propertyId: finalPropertyId,
+          roomTypeId: finalRoomId,
           startDate,
           durationMonths: selectedMonths,
           note: note.trim() || undefined,
@@ -215,7 +224,14 @@ function BookingForm({
       const json = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const msg = json?.error?.message || json?.message || "Gagal mengajukan sewa. Pastikan data terisi dengan benar.";
+        const fieldDetails = json?.error?.details?.fieldErrors
+          ? Object.entries(json.error.details.fieldErrors)
+              .map(([field, errs]) => `${field}: ${(errs as string[]).join(", ")}`)
+              .join("; ")
+          : "";
+        const msg = fieldDetails
+          ? `Data tidak valid: ${fieldDetails}`
+          : json?.error?.message || json?.message || "Gagal mengajukan sewa. Pastikan data terisi dengan benar.";
         setError(msg);
         setLoading(false);
         return;

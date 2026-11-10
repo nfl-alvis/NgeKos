@@ -85,14 +85,13 @@ export const roomUnitCreateSchema = z
 
 export const bookingCreateSchema = z
   .object({
-    propertyId: z.uuid(),
-    roomTypeId: z.uuid(),
-    roomUnitId: z.uuid().optional(),
+    propertyId: z.string().trim().min(1, "Properti wajib diisi"),
+    roomTypeId: z.string().trim().min(1, "Tipe kamar wajib diisi"),
+    roomUnitId: z.string().trim().optional(),
     startDate: isoDate,
-    durationMonths: z.union([z.literal(1), z.literal(3), z.literal(6), z.literal(12)]),
+    durationMonths: z.coerce.number().int().min(1).max(36),
     note: optionalText(2_000),
-  })
-  .strict();
+  });
 
 export const bookingDecisionSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("APPROVED_AWAITING_PAYMENT"), roomUnitId: z.uuid().optional(), note: optionalText(1_000) }).strict(),

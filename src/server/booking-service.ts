@@ -1,9 +1,11 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
+import { z } from "zod";
 import { Prisma, type BookingStatus, type Profile } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { canTransitionBooking } from "@/server/booking-policy";
 import { bookingIdentifierWhere } from "@/server/booking-identifier";
+import { propertyIdentifierWhere } from "@/server/properties";
 import { ApiError } from "@/server/http";
 import type { BookingCreateInput } from "@/server/validation";
 
@@ -39,19 +41,51 @@ export async function createBooking(profile: Profile, input: BookingCreateInput)
     throw new ApiError(422, "INVALID_START_DATE", "Tanggal mulai sewa tidak boleh di masa lalu");
   }
 
-  const roomType = await prisma.roomType.findFirst({
-    where: { id: input.roomTypeId, propertyId: input.propertyId, deletedAt: null, property: { status: "VERIFIED", deletedAt: null } },
-    include: { property: { select: { depositAmount: true, ownerId: true, name: true } } },
+  const isRoomTypeUuid = z.uuid().safeParse(input.roomTypeId).success;
+  let roomType = await prisma.roomType.findFirst({
+    where: {
+      ...(isRoomTypeUuid ? { id: input.roomTypeId } : {}),
+      deletedAt: null,
+      property: {
+        ...propertyIdentifierWhere(input.propertyId),
+        status: "VERIFIED",
+        deletedAt: null,
+      },
+    },
+    include: { property: { select: { id: true, depositAmount: true, ownerId: true, name: true } } },
   });
+
+  if (!roomType) {
+    roomType = await prisma.roomType.findFirst({
+      where: {
+        deletedAt: null,
+        property: {
+          ...propertyIdentifierWhere(input.propertyId),
+          status: "VERIFIED",
+          deletedAt: null,
+        },
+      },
+      include: { property: { select: { id: true, depositAmount: true, ownerId: true, name: true } } },
+    });
+  }
+
   if (!roomType) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Tipe kamar tidak tersedia atau belum terverifikasi");
 
+  const resolvedPropertyId = roomType.property.id || input.propertyId;
+  const resolvedRoomTypeId = roomType.id;
+
   if (input.roomUnitId) {
-    const unit = await prisma.roomUnit.findFirst({ where: { id: input.roomUnitId, roomTypeId: input.roomTypeId, propertyId: input.propertyId, status: "AVAILABLE", deletedAt: null } });
-    if (!unit) throw new ApiError(409, "ROOM_UNAVAILABLE", "Unit kamar yang dipilih sedang tidak tersedia");
+    const isUnitUuid = z.uuid().safeParse(input.roomUnitId).success;
+    if (isUnitUuid) {
+      const unit = await prisma.roomUnit.findFirst({
+        where: { id: input.roomUnitId, roomTypeId: resolvedRoomTypeId, propertyId: resolvedPropertyId, status: "AVAILABLE", deletedAt: null },
+      });
+      if (!unit) throw new ApiError(409, "ROOM_UNAVAILABLE", "Unit kamar yang dipilih sedang tidak tersedia");
+    }
   }
 
   const duplicate = await prisma.booking.count({
-    where: { applicantId: profile.id, propertyId: input.propertyId, status: { in: ["PENDING", "APPROVED_AWAITING_PAYMENT", "ACTIVE"] } },
+    where: { applicantId: profile.id, propertyId: resolvedPropertyId, status: { in: ["PENDING", "APPROVED_AWAITING_PAYMENT", "ACTIVE"] } },
   });
   if (duplicate) {
     throw new ApiError(409, "ACTIVE_BOOKING_EXISTS", "Anda sudah memiliki pengajuan sewa aktif untuk kos ini yang sedang diproses. Silakan cek menu Booking Saya.");
@@ -63,9 +97,9 @@ export async function createBooking(profile: Profile, input: BookingCreateInput)
       data: {
         code: bookingCode(),
         applicantId: profile.id,
-        propertyId: input.propertyId,
-        roomTypeId: input.roomTypeId,
-        roomUnitId: input.roomUnitId,
+        propertyId: resolvedPropertyId,
+        roomTypeId: resolvedRoomTypeId,
+        roomUnitId: input.roomUnitId && z.uuid().safeParse(input.roomUnitId).success ? input.roomUnitId : undefined,
         startDate,
         durationMonths: input.durationMonths,
         note: input.note,
