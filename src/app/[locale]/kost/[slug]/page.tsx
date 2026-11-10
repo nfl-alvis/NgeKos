@@ -283,7 +283,7 @@ export default async function DetailPage({
                 {p.facilities.map((f) => (
                   <span
                     key={f}
-                    className="inline-flex items-center gap-1.5 border border-nk-border px-3 py-1.5 text-xs text-nk-text"
+                    className="inline-flex items-center gap-1.5 border border-nk-border bg-white px-3 py-1.5 text-xs text-nk-text"
                   >
                     <FacilityIcon facility={f} />
                     {FACILITY_META[f]?.labelId || f}
@@ -301,7 +301,7 @@ export default async function DetailPage({
                 {p.roomTypes.map((rt) => (
                   <div
                     key={rt.id}
-                    className="-mb-px -mr-px border border-nk-border bg-nk-bg p-6"
+                    className="-mb-px -mr-px border border-nk-border bg-white p-6"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-lg font-medium tracking-tight text-nk-text">
@@ -373,7 +373,7 @@ export default async function DetailPage({
 
           {/* Sidebar - CTA */}
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <div className="border border-nk-dark-border bg-nk-section p-6">
+            <div className="border border-nk-dark-border bg-white p-6">
               <div className="space-y-5">
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-3xl font-semibold tracking-tight text-nk-text">
@@ -408,7 +408,7 @@ export default async function DetailPage({
                     href="https://wa.me/6281234567890"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex w-full items-center justify-center gap-2 border border-nk-border bg-nk-bg px-6 py-3.5 text-sm text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
+                    className="inline-flex w-full items-center justify-center gap-2 border border-stone-300 bg-white px-6 py-3.5 text-sm font-medium text-nk-text transition-colors hover:border-nk-accent hover:text-nk-accent"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
