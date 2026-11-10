@@ -97,9 +97,9 @@ export default function BookingSidebarActions({
         <button
           type="button"
           onClick={() => setChatOpen(true)}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-nk-border bg-nk-surface px-6 py-2.5 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm"
+          className="inline-flex w-full items-center justify-center gap-2 border border-stone-300 bg-nk-surface px-6 py-3.5 text-sm font-medium text-nk-text transition-colors hover:border-nk-accent hover:bg-nk-warm"
         >
-          <MessageSquare className="size-3.5 text-nk-accent" />
+          <MessageSquare className="size-4 text-nk-accent" />
           Chat Pemilik Kost
         </button>
 
