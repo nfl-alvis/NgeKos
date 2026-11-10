@@ -92,7 +92,7 @@ export default function OwnerBookingsPage() {
 
   const fetchBookings = () => {
     setIsLoading(true);
-    fetch("/api/bookings")
+    fetch("/api/bookings?as=owner")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const raw = Array.isArray(json?.data) ? json.data : Array.isArray(json?.data?.items) ? json.data.items : null;

@@ -12,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { useSession } from "@/components/SessionProvider";
 import { getKosImage } from "@/lib/kosImages";
+import StartDateField from "@/components/StartDateField";
 
 /**
  * Halaman "Ajukan Booking" bergaya Mamikos (/room/.../booking):
@@ -126,10 +127,24 @@ function BookingForm({
   const params = useParams<{ locale: string; slug: string }>();
   const i18nRouter = useI18nRouter();
 
-  const roomId = search.get("kamar") ?? rooms[0]?.id ?? "";
-  const prefillDate = search.get("tanggal") ?? "";
+  const initialRoomId = search.get("kamar") ?? rooms[0]?.id ?? "";
+  const [selectedRoomId, setSelectedRoomId] = useState(initialRoomId);
+  const room = rooms.find((r) => r.id === selectedRoomId) ?? rooms[0];
+
+  const searchDate = search.get("tanggal") ?? "";
+  const defaultDate = /^\d{4}-\d{2}-\d{2}$/.test(searchDate)
+    ? searchDate
+    : (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        return d.toISOString().slice(0, 10);
+      })();
+  const [startDate, setStartDate] = useState(defaultDate);
+
   const monthsParam = Number(search.get("bulan"));
-  const months = [1, 3, 6, 12].includes(monthsParam) ? monthsParam : 1;
+  const [selectedMonths, setSelectedMonths] = useState<number>(
+    [1, 3, 6, 12].includes(monthsParam) ? monthsParam : 1
+  );
 
   const [name, setName] = useState(userName);
   const [phone, setPhone] = useState("");
@@ -141,9 +156,8 @@ function BookingForm({
   const [error, setError] = useState<string | null>(null);
   const [actualBookingCode, setActualBookingCode] = useState("");
 
-  const room = rooms.find((r) => r.id === roomId) ?? rooms[0];
   const dp = property.dpAmount ?? 0;
-  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(prefillDate);
+  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(startDate);
   const nice = (iso: string) =>
     iso
       ? new Date(iso + "T00:00:00").toLocaleDateString(
@@ -151,10 +165,10 @@ function BookingForm({
           { day: "numeric", month: "long", year: "numeric" }
         )
       : "-";
-  const totalPeriod = room.pricePerMonth * months;
+  const totalPeriod = room.pricePerMonth * selectedMonths;
   const firstPay = room.pricePerMonth + dp;
   const formOk = name.trim().length >= 3 && phone.replace(/\D/g, "").length >= 9 && validDate && agree;
-  const fallbackBookingCode = `BK-${(prefillDate || "00000000").replace(/-/g, "").slice(4)}${months}`;
+  const fallbackBookingCode = `BK-${(startDate || "00000000").replace(/-/g, "").slice(4)}${selectedMonths}`;
   const displayCode = actualBookingCode || fallbackBookingCode;
   const waText = encodeURIComponent(
     t("waMessage", { name, property: property.name, room: room.name, code: displayCode })
@@ -177,9 +191,10 @@ function BookingForm({
           const json = await res.json();
           if (json.data) {
             propId = json.data.id;
-            const foundRoom = json.data.roomTypes?.find(
-              (rt: { id: string; name: string }) => rt.name.toLowerCase() === room.name.toLowerCase()
-            ) || json.data.roomTypes?.[0];
+            const foundRoom =
+              json.data.roomTypes?.find(
+                (rt: { id: string; name: string }) => rt.name.toLowerCase() === room.name.toLowerCase()
+              ) || json.data.roomTypes?.[0];
             if (foundRoom) rId = foundRoom.id;
           }
         }
@@ -191,8 +206,8 @@ function BookingForm({
         body: JSON.stringify({
           propertyId: propId,
           roomTypeId: rId,
-          startDate: prefillDate,
-          durationMonths: months,
+          startDate,
+          durationMonths: selectedMonths,
           note: note.trim() || undefined,
         }),
       });
@@ -243,7 +258,66 @@ function BookingForm({
           className="flex flex-col gap-5 rounded-lg border border-nk-border bg-nk-surface p-5 sm:p-8"
           onSubmit={handleSubmit}
         >
-          <h2 className="text-sm font-medium text-nk-text">{t("fillData")}</h2>
+          {/* Section 1: Pilihan Kamar & Durasi */}
+          <div>
+            <h2 className="text-sm font-medium text-nk-text">Detail Sewa</h2>
+            <p className="mt-0.5 text-xs text-nk-text-muted">Tentukan tipe kamar, tanggal mulai masuk, dan durasi sewa.</p>
+          </div>
+
+          {rooms.length > 1 && (
+            <div className="flex flex-col gap-2">
+              <label htmlFor="room-select" className={labelCls}>Tipe Kamar</label>
+              <select
+                id="room-select"
+                value={selectedRoomId}
+                onChange={(e) => setSelectedRoomId(e.target.value)}
+                className={cn(rowCls, "min-h-11 cursor-pointer")}
+              >
+                {rooms.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} — {formatIDR(r.pricePerMonth)}/bulan ({r.available} tersedia)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <label className={labelCls}>{t("startDate")}</label>
+              <StartDateField value={startDate} onChange={setStartDate} locale={params.locale} />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className={labelCls}>{t("duration")}</label>
+              <div className="grid grid-cols-4 gap-2">
+                {[1, 3, 6, 12].map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setSelectedMonths(m)}
+                    className={cn(
+                      "flex min-h-11 items-center justify-center rounded-lg border text-xs font-medium transition-colors",
+                      selectedMonths === m
+                        ? "border-nk-accent bg-nk-accent text-nk-text-inverse"
+                        : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/50"
+                    )}
+                  >
+                    {m} Bln
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="my-1 h-px bg-nk-border" aria-hidden="true" />
+
+          {/* Section 2: Data Pemesan */}
+          <div>
+            <h2 className="text-sm font-medium text-nk-text">{t("fillData")}</h2>
+            <p className="mt-0.5 text-xs text-nk-text-muted">Data ini akan diteruskan ke pemilik kos untuk konfirmasi.</p>
+          </div>
+
           <div className="flex flex-col gap-2">
             <label htmlFor="name" className={labelCls}>{t("fullName")}</label>
             <input id="name" type="text" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} className={cn(rowCls, "min-h-11")} />
@@ -273,24 +347,28 @@ function BookingForm({
           <p className="text-xs leading-relaxed text-nk-text-muted">{t("privacyNote")}</p>
 
           {error && (
-            <Alert variant="destructive">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="size-4 mt-0.5 shrink-0" />
-                <div>
-                  <AlertTitle>Pengajuan Belum Berhasil</AlertTitle>
-                  <AlertDescription className="mt-1 text-xs">{error}</AlertDescription>
+            <Alert variant="destructive" className="border-red-300 bg-red-50 text-red-900">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="size-4 mt-0.5 shrink-0 text-red-600" />
+                <div className="flex-1">
+                  <AlertTitle className="font-semibold text-red-900">Pengajuan Belum Berhasil</AlertTitle>
+                  <AlertDescription className="mt-1 text-xs text-red-800 leading-relaxed">{error}</AlertDescription>
+                  {(error.toLowerCase().includes("aktif") ||
+                    error.toLowerCase().includes("active") ||
+                    error.toLowerCase().includes("booking") ||
+                    error.toLowerCase().includes("menu booking")) && (
+                    <div className="mt-3">
+                      <Link
+                        href="/dashboard/bookings"
+                        className="inline-flex items-center gap-1.5 rounded-md bg-nk-accent px-3 py-1.5 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90"
+                      >
+                        Lihat Booking Saya di Dashboard
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             </Alert>
-          )}
-
-          {!validDate && (
-            <p className="rounded-lg border border-[#E7C9A8] bg-[#FBF3E6] p-3 text-xs leading-relaxed text-[#7A5A33]">
-              {t("chooseOnDetail")}{" "}
-              <Link href={`/kost/${property.slug}`} className="font-medium underline underline-offset-2">
-                {t("goDetail")}
-              </Link>
-            </p>
           )}
 
           <button
@@ -336,11 +414,11 @@ function BookingForm({
               </div>
               <div className="flex items-start justify-between gap-3">
                 <span className="text-nk-text-muted">{t("checkIn")}</span>
-                <span className="text-right font-medium text-nk-text">{validDate ? nice(prefillDate) : "-"}</span>
+                <span className="text-right font-medium text-nk-text">{validDate ? nice(startDate) : "-"}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-nk-text-muted">{t("durationLabel")}</span>
-                <span className="font-medium text-nk-text">{t("monthsN", { count: months })}</span>
+                <span className="font-medium text-nk-text">{t("monthsN", { count: selectedMonths })}</span>
               </div>
 
               <div className="my-1 h-px bg-nk-border" aria-hidden="true" />
@@ -356,7 +434,7 @@ function BookingForm({
                 </div>
               )}
               <div className="flex items-center justify-between gap-3">
-                <span className="text-nk-text-muted">{t("totalPeriod", { count: months })}</span>
+                <span className="text-nk-text-muted">{t("totalPeriod", { count: selectedMonths })}</span>
                 <span className="text-nk-text">{formatIDR(totalPeriod)}</span>
               </div>
               <div className="flex items-center justify-between gap-3 border-t border-nk-border pt-3">

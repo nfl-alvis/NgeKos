@@ -115,12 +115,49 @@ function allowedOrigins(request: Request): Set<string> {
   push(process.env.APP_ORIGIN);
   push(process.env.NEXT_PUBLIC_SITE_URL);
   push(new URL(request.url).origin);
+
   const forwardedHost = request.headers.get("x-forwarded-host");
   if (forwardedHost) {
     const proto = request.headers.get("x-forwarded-proto") ?? "https";
-    push(`${proto}://${forwardedHost}`);
+    for (const hostPart of forwardedHost.split(",")) {
+      const trimmed = hostPart.trim();
+      if (trimmed) push(`${proto}://${trimmed}`);
+    }
   }
+
+  const hostHeader = request.headers.get("host");
+  if (hostHeader) {
+    const proto =
+      request.headers.get("x-forwarded-proto") ??
+      (hostHeader.startsWith("localhost") || hostHeader.startsWith("127.0.0.1") ? "http" : "https");
+    push(`${proto}://${hostHeader}`);
+  }
+
   return origins;
+}
+
+function isOriginAllowed(origin: string, request: Request): boolean {
+  try {
+    const originUrl = new URL(origin);
+    const hostname = originUrl.hostname.toLowerCase();
+
+    // Domain NgeKos (prod, dev, staging, preview)
+    if (hostname === "ngekos.biz.id" || hostname.endsWith(".ngekos.biz.id")) {
+      return true;
+    }
+    // Local development
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.endsWith(".local")) {
+      return true;
+    }
+    // Vercel preview deployments
+    if (hostname.endsWith(".vercel.app")) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+
+  return allowedOrigins(request).has(origin);
 }
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -137,7 +174,7 @@ function assertSameOrigin(request: unknown) {
   if (!origin) {
     throw new ApiError(403, "INVALID_ORIGIN", "Request rejected: Origin header is required for data changes");
   }
-  if (!allowedOrigins(request).has(origin)) {
+  if (!isOriginAllowed(origin, request)) {
     throw new ApiError(403, "INVALID_ORIGIN", "Request rejected: origin is not allowed");
   }
 }

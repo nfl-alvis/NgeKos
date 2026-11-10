@@ -96,7 +96,7 @@ export default function BookingList() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/bookings")
+    fetch("/api/bookings?as=applicant")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const rawList = Array.isArray(json?.data)
@@ -723,7 +723,7 @@ export function CompactBookingList({ limit = 3 }: { limit?: number }) {
   const [items, setItems] = useState<Booking[]>(staticBookings.slice(0, limit));
 
   useEffect(() => {
-    fetch("/api/bookings")
+    fetch("/api/bookings?as=applicant")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const rawList = Array.isArray(json?.data)

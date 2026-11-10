@@ -15,6 +15,9 @@ export function canTransitionBooking(
   role: UserRole,
 ): boolean {
   if (role === "ADMIN") return current !== next;
+  if (next === "CANCELLED") {
+    return current === "PENDING" || current === "APPROVED_AWAITING_PAYMENT";
+  }
   const transitions = role === "OWNER" ? ownerTransitions : seekerTransitions;
   return transitions[current]?.includes(next) ?? false;
 }

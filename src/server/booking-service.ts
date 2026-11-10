@@ -32,25 +32,30 @@ function bookingCode() {
 
 export async function createBooking(profile: Profile, input: BookingCreateInput) {
   const startDate = new Date(`${input.startDate}T00:00:00.000Z`);
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  if (startDate < today) throw new ApiError(422, "INVALID_START_DATE", "The start date cannot be in the past");
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  yesterday.setUTCHours(0, 0, 0, 0);
+  if (startDate < yesterday) {
+    throw new ApiError(422, "INVALID_START_DATE", "Tanggal mulai sewa tidak boleh di masa lalu");
+  }
 
   const roomType = await prisma.roomType.findFirst({
     where: { id: input.roomTypeId, propertyId: input.propertyId, deletedAt: null, property: { status: "VERIFIED", deletedAt: null } },
     include: { property: { select: { depositAmount: true, ownerId: true, name: true } } },
   });
-  if (!roomType) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Room type not available");
+  if (!roomType) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Tipe kamar tidak tersedia atau belum terverifikasi");
 
   if (input.roomUnitId) {
     const unit = await prisma.roomUnit.findFirst({ where: { id: input.roomUnitId, roomTypeId: input.roomTypeId, propertyId: input.propertyId, status: "AVAILABLE", deletedAt: null } });
-    if (!unit) throw new ApiError(409, "ROOM_UNAVAILABLE", "No rooms available");
+    if (!unit) throw new ApiError(409, "ROOM_UNAVAILABLE", "Unit kamar yang dipilih sedang tidak tersedia");
   }
 
   const duplicate = await prisma.booking.count({
     where: { applicantId: profile.id, propertyId: input.propertyId, status: { in: ["PENDING", "APPROVED_AWAITING_PAYMENT", "ACTIVE"] } },
   });
-  if (duplicate) throw new ApiError(409, "ACTIVE_BOOKING_EXISTS", "You still have an active booking for this property");
+  if (duplicate) {
+    throw new ApiError(409, "ACTIVE_BOOKING_EXISTS", "Anda sudah memiliki pengajuan sewa aktif untuk kos ini yang sedang diproses. Silakan cek menu Booking Saya.");
+  }
 
   let booking;
   try {
@@ -100,13 +105,23 @@ export async function createBooking(profile: Profile, input: BookingCreateInput)
   return bookingDto(booking);
 }
 
-export async function listBookings(profile: Profile, page: number, limit: number, status?: BookingStatus) {
+export async function listBookings(
+  profile: Profile,
+  page: number,
+  limit: number,
+  status?: BookingStatus,
+  rolePerspective?: "applicant" | "owner",
+) {
   const scope: Prisma.BookingWhereInput =
-    profile.role === "ADMIN"
-      ? {}
-      : profile.role === "OWNER"
+    rolePerspective === "applicant"
+      ? { applicantId: profile.id }
+      : rolePerspective === "owner"
         ? { property: { ownerId: profile.id } }
-        : { applicantId: profile.id };
+        : profile.role === "ADMIN"
+          ? {}
+          : profile.role === "OWNER"
+            ? { property: { ownerId: profile.id } }
+            : { applicantId: profile.id };
   const where = { ...scope, ...(status ? { status } : {}) };
   const [items, total] = await prisma.$transaction([
     prisma.booking.findMany({ where, include: bookingInclude, orderBy: { createdAt: "desc" }, skip: (page - 1) * limit, take: limit }),
@@ -117,9 +132,9 @@ export async function listBookings(profile: Profile, page: number, limit: number
 
 export async function getBooking(profile: Profile, id: string) {
   const booking = await prisma.booking.findFirst({ where: bookingIdentifierWhere(id), include: bookingInclude });
-  if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking not found");
+  if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Data pengajuan sewa tidak ditemukan");
   const allowed = profile.role === "ADMIN" || booking.applicantId === profile.id || booking.property.ownerId === profile.id;
-  if (!allowed) throw new ApiError(403, "FORBIDDEN", "You do not have access to this booking");
+  if (!allowed) throw new ApiError(403, "FORBIDDEN", "Anda tidak memiliki akses ke pengajuan ini");
   return bookingDto(booking);
 }
 
@@ -133,12 +148,26 @@ export async function transitionBooking(
       where: bookingIdentifierWhere(id),
       include: { property: { select: { ownerId: true, name: true } } },
     });
-    if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking not found");
+    if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Data pengajuan sewa tidak ditemukan");
     const ownsProperty = booking.property.ownerId === profile.id;
     const ownsBooking = booking.applicantId === profile.id;
-    if (profile.role === "OWNER" && !ownsProperty) throw new ApiError(403, "FORBIDDEN", "This booking does not belong to your property");
-    if (profile.role === "SEEKER" && !ownsBooking) throw new ApiError(403, "FORBIDDEN", "This booking does not belong to you");
-    if (!canTransitionBooking(booking.status, input.status, profile.role)) throw new ApiError(409, "INVALID_BOOKING_TRANSITION", "This booking status change is not allowed");
+
+    if (input.status === "CANCELLED") {
+      if (!ownsBooking && !ownsProperty && profile.role !== "ADMIN") {
+        throw new ApiError(403, "FORBIDDEN", "Anda tidak memiliki akses untuk membatalkan pengajuan ini");
+      }
+    } else {
+      if (profile.role === "OWNER" && !ownsProperty) {
+        throw new ApiError(403, "FORBIDDEN", "Pengajuan ini bukan untuk properti kos milik Anda");
+      }
+      if (profile.role === "SEEKER" && !ownsBooking) {
+        throw new ApiError(403, "FORBIDDEN", "Pengajuan ini bukan milik akun Anda");
+      }
+    }
+
+    if (!canTransitionBooking(booking.status, input.status, profile.role)) {
+      throw new ApiError(409, "INVALID_BOOKING_TRANSITION", "Perubahan status pengajuan sewa tidak diizinkan");
+    }
 
     let roomUnitId = booking.roomUnitId;
     if (input.status === "APPROVED_AWAITING_PAYMENT") {
