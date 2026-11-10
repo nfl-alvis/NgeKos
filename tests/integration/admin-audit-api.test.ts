@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type Profile } from "@prisma/client";
-import { db } from "../helpers/db";
+import { prisma } from "@/lib/prisma";
 import { recordAuditLog, listAuditLogs } from "@/server/audit-service";
 import { ApiError } from "@/server/http";
 
@@ -193,7 +193,7 @@ describe("Admin Audit Log API & Security Invariants", () => {
       expect(found?.metadata?.price).toBe(2500000);
     } finally {
       // Clean up test entry
-      const p = db();
+      const p = prisma;
       await p.auditLog.deleteMany({
         where: { action: testAction },
       });
@@ -237,7 +237,7 @@ describe("Admin Audit Log API & Security Invariants", () => {
       });
       expect(searchResult.items.length).toBeGreaterThanOrEqual(2);
     } finally {
-      const p = db();
+      const p = prisma;
       await p.auditLog.deleteMany({
         where: {
           OR: [{ entityId: `p-${tag}` }, { entityId: `n-${tag}` }],
