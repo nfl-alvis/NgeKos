@@ -455,7 +455,10 @@ export default function OwnerPropertiesPage() {
           {/* 1. DRAFT CARD (Styled exactly like other property cards, with red draft badge & notice) */}
           {showDraftCard && draft && (
             <article className="flex flex-col overflow-hidden rounded-lg border border-nk-border bg-nk-surface">
-              <div className="relative">
+              <div
+                className="relative cursor-pointer"
+                onClick={() => router.push("/owner/properties/new?resume=draft")}
+              >
                 {draftThumbnail ? (
                   <img
                     src={draftThumbnail}
@@ -474,7 +477,10 @@ export default function OwnerPropertiesPage() {
 
               <div className="flex flex-1 flex-col justify-between p-4">
                 <div>
-                  <h2 className="truncate text-base font-medium text-nk-text">
+                  <h2
+                    onClick={() => router.push("/owner/properties/new?resume=draft")}
+                    className="truncate text-base font-medium text-nk-text cursor-pointer hover:text-nk-accent transition-colors"
+                  >
                     {draft.namaKos?.trim() || t("draftUntitled")}
                   </h2>
                   <p className="text-sm text-nk-text-muted truncate">
@@ -520,10 +526,10 @@ export default function OwnerPropertiesPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => router.push("/owner/properties/new")}
-                    className="flex-1 rounded-lg border border-nk-border px-3 py-2.5 text-sm font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99] cursor-pointer text-center"
+                    onClick={() => router.push("/owner/properties/new?resume=draft")}
+                    className="flex-1 rounded-lg border border-nk-border bg-nk-warm px-3 py-2.5 text-sm font-medium text-nk-text transition-colors hover:bg-nk-accent hover:text-white hover:border-nk-accent active:scale-[0.99] cursor-pointer text-center"
                   >
-                    {t("manage")}
+                    {t("draftContinue")}
                   </button>
                 </div>
               </div>

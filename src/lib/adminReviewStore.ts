@@ -161,8 +161,15 @@ export function useAdminReviewData(): AdminReviewData {
 }
 
 /** Tanggal ISO (yyyy-mm-dd / timestamp) → locale-aware. */
-export function formatReviewDate(iso: string, locale: string): string {
-  const d = new Date(/^\d{4}-\d{2}-\d{2}T/.test(iso) ? iso : `${iso}T00:00:00Z`);
+export function formatReviewDate(iso?: string | null, locale: string = "id"): string {
+  if (!iso) return "-";
+  const normalized = /^\d{4}-\d{2}-\d{2}T/.test(iso)
+    ? iso
+    : /^\d{4}-\d{2}-\d{2}$/.test(iso)
+    ? `${iso}T00:00:00Z`
+    : iso;
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return "-";
   return d.toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
     day: "numeric",
     month: "short",
@@ -171,7 +178,15 @@ export function formatReviewDate(iso: string, locale: string): string {
 }
 
 /** Umur antrian dalam hari penuh (dibulatkan ke bawah, min 0). */
-export function ageInDays(isoDate: string, now: Date = new Date()): number {
-  const then = new Date(`${isoDate}T00:00:00`);
-  return Math.max(0, Math.floor((now.getTime() - then.getTime()) / 86_400_000));
+export function ageInDays(isoDate?: string | null, now: Date = new Date()): number {
+  if (!isoDate || typeof isoDate !== "string") return 0;
+  const normalized = /^\d{4}-\d{2}-\d{2}T/.test(isoDate)
+    ? isoDate
+    : /^\d{4}-\d{2}-\d{2}$/.test(isoDate)
+    ? `${isoDate}T00:00:00Z`
+    : isoDate;
+  const then = new Date(normalized);
+  if (isNaN(then.getTime())) return 0;
+  const diffMs = now.getTime() - then.getTime();
+  return Math.max(0, Math.floor(diffMs / 86_400_000));
 }

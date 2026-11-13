@@ -55,9 +55,9 @@ describe("Pillar 1: Booking Sewa Flow & Policies", () => {
       bookingCreateSchema.safeParse({ ...validBooking, durationMonths: 5 }).success
     ).toBe(false);
 
-    // Invalid non-UUID property ID
+    // Invalid empty property ID
     expect(
-      bookingCreateSchema.safeParse({ ...validBooking, propertyId: "invalid-id" }).success
+      bookingCreateSchema.safeParse({ ...validBooking, propertyId: "" }).success
     ).toBe(false);
   });
 

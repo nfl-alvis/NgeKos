@@ -50,6 +50,95 @@ function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
   };
 }
 
+export function parsePropertyRules(property: Property): {
+  cleanDescription: string;
+  rules: string[];
+  patokan?: string;
+  highlights: { label: string; tone: "green" | "blue" | "amber" | "neutral" }[];
+} {
+  const desc = property.description || "";
+  let cleanDescription = desc;
+  let rules: string[] = [];
+  let patokan: string | undefined;
+
+  const patokanMatch = desc.match(/Patokan:\s*([^\n]+)/i);
+  if (patokanMatch) {
+    patokan = patokanMatch[1].trim();
+  }
+
+  const rulesMatch = desc.match(
+    /(?:Aturan & Ketentuan Kos|Peraturan Kos|Persyaratan Sewa|Aturan Kos):\s*([\s\S]+)/i
+  );
+  if (rulesMatch) {
+    const rawRules = rulesMatch[1];
+    rules = rawRules
+      .split(/\r?\n/)
+      .map((line) => line.replace(/^[\s•\-\*]+/, "").trim())
+      .filter((line) => line.length > 0 && !line.toLowerCase().startsWith("patokan:"));
+
+    cleanDescription = desc
+      .replace(/(?:Aturan & Ketentuan Kos|Peraturan Kos|Persyaratan Sewa|Aturan Kos):\s*([\s\S]+)/i, "")
+      .replace(/Patokan:\s*[^\n]+/i, "")
+      .trim();
+  }
+
+  if (rules.length === 0) {
+    if (property.gender === "female") {
+      rules.push("Khusus Penghuni Putri");
+    } else if (property.gender === "male") {
+      rules.push("Khusus Penghuni Putra");
+    } else {
+      rules.push("Tipe Kos Campur (Putra / Putri)");
+    }
+
+    const has24h = property.facilities?.some(
+      (f) => f === "access-24h" || (typeof f === "object" && (f as any)?.key === "access-24h")
+    );
+    if (has24h) {
+      rules.push("Akses gerbang 24 Jam (bebas jam malam)");
+    } else {
+      rules.push("Akses gerbang berlaku hingga pukul 23:00 WIB");
+    }
+
+    rules.push("Wajib menyertakan KTP asli saat pengajuan sewa");
+    rules.push("Dilarang merokok di dalam kamar ber-AC");
+    rules.push("Dilarang membawa minuman keras atau zat terlarang");
+    rules.push("Tamu lawan jenis dilarang menginap di dalam kamar");
+    rules.push("Menjaga kebersihan dan ketertiban area bersama");
+  }
+
+  const highlights: { label: string; tone: "green" | "blue" | "amber" | "neutral" }[] = [];
+
+  if (property.gender === "female") {
+    highlights.push({ label: "Khusus Putri", tone: "blue" });
+  } else if (property.gender === "male") {
+    highlights.push({ label: "Khusus Putra", tone: "blue" });
+  } else {
+    highlights.push({ label: "Campur (Putra/Putri)", tone: "neutral" });
+  }
+
+  const has24h = property.facilities?.some(
+    (f) => f === "access-24h" || (typeof f === "object" && (f as any)?.key === "access-24h")
+  );
+  if (has24h || rules.some((r) => r.toLowerCase().includes("24 jam"))) {
+    highlights.push({ label: "Akses 24 Jam", tone: "green" });
+  } else {
+    highlights.push({ label: "Jam Malam Berlaku", tone: "amber" });
+  }
+
+  if (rules.some((r) => r.toLowerCase().includes("ktp"))) {
+    highlights.push({ label: "Wajib KTP", tone: "neutral" });
+  }
+  if (rules.some((r) => r.toLowerCase().includes("pasutri") || r.toLowerCase().includes("buku nikah"))) {
+    highlights.push({ label: "Boleh Pasutri (Surat Nikah)", tone: "green" });
+  }
+  if (rules.some((r) => r.toLowerCase().includes("hewan"))) {
+    highlights.push({ label: "Boleh Bawa Hewan", tone: "neutral" });
+  }
+
+  return { cleanDescription: cleanDescription || desc, rules, patokan, highlights };
+}
+
 export async function generateStaticParams() {
   const props = getVerifiedProperties();
   return props.map((p) => ({ slug: p.slug }));
@@ -158,6 +247,7 @@ export default async function DetailPage({
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const t = await getTranslations();
+  const isEn = locale === "en";
   let p: Property | null = null;
   try {
     const dbProp = await getProperty(slug);
@@ -170,6 +260,8 @@ export default async function DetailPage({
   }
 
   if (!p) notFound();
+
+  const rulesData = parsePropertyRules(p);
 
   const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.ngekos.biz.id";
   const kosImages = getKosGalleryItems(p.slug, p.name);
@@ -270,7 +362,7 @@ export default async function DetailPage({
                 {t("detail.description")}
               </h2>
               <p className="max-w-2xl text-base leading-relaxed text-nk-text-muted">
-                {p.description}
+                {rulesData.cleanDescription}
               </p>
             </div>
 
@@ -346,6 +438,90 @@ export default async function DetailPage({
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Rules & Requirements / Aturan & Persyaratan Kos */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-medium tracking-tight text-nk-text">
+                  {isEn ? "Rental Rules & Requirements" : "Aturan & Persyaratan Kos"}
+                </h2>
+                <span className="text-xs text-nk-text-muted">
+                  {rulesData.rules.length} {isEn ? "rules apply" : "ketentuan berlaku"}
+                </span>
+              </div>
+
+              <div className="border border-nk-border bg-white p-6 space-y-6">
+                {/* Visual Highlights Badges */}
+                <div className="flex flex-wrap gap-2 pb-4 border-b border-nk-border">
+                  {rulesData.highlights.map((h, idx) => (
+                    <span
+                      key={idx}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium border",
+                        h.tone === "green" && "border-[#BFDCC5] bg-[#E9F4EC] text-[#2F6B3C]",
+                        h.tone === "blue" && "border-blue-200 bg-blue-50 text-blue-800",
+                        h.tone === "amber" && "border-[#EAD9A8] bg-[#FBF3DC] text-[#8A6A1F]",
+                        h.tone === "neutral" && "border-nk-border bg-stone-50 text-nk-text"
+                      )}
+                    >
+                      <span className="size-1.5 rounded-full bg-current opacity-70" />
+                      {h.label}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Structured Rules Checklist */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {rulesData.rules.map((rule, idx) => {
+                    const isBan = /dilarang|tidak boleh|denda/i.test(rule);
+                    const isDoc = /ktp|kk|buku nikah|dokumen|kartu keluarga/i.test(rule);
+                    const isAccess = /jam malam|akses|24 jam/i.test(rule);
+
+                    return (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-3 rounded-lg border border-nk-border/70 bg-stone-50/50 p-3.5 text-xs text-nk-text"
+                      >
+                        <div
+                          className={cn(
+                            "flex size-5 shrink-0 items-center justify-center rounded-full mt-0.5",
+                            isBan
+                              ? "bg-rose-100 text-rose-700"
+                              : isDoc
+                                ? "bg-amber-100 text-amber-800"
+                                : isAccess
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-emerald-100 text-emerald-800"
+                          )}
+                        >
+                          {isBan ? (
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                            </svg>
+                          ) : (
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className="leading-relaxed">{rule}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {rulesData.patokan && (
+                  <div className="flex items-center gap-2 pt-3 border-t border-nk-border text-xs text-nk-text-muted">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-nk-accent">
+                      <circle cx="12" cy="10" r="3" />
+                      <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
+                    </svg>
+                    <span><strong>Patokan Lokasi:</strong> {rulesData.patokan}</span>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -519,6 +519,7 @@ export default function NewPropertyPage() {
   // -------------------------------------------------------------
   const [hasDraftLoaded, setHasDraftLoaded] = useState(false);
   const [showDraftNotice, setShowDraftNotice] = useState(false);
+  const [savedDraft, setSavedDraft] = useState<PropertyFormDraft | null>(null);
 
   const draftRef = useRef<PropertyFormDraft | null>(null);
   draftRef.current = {
@@ -575,7 +576,68 @@ export default function NewPropertyPage() {
     savedAt: Date.now(),
   };
 
+  const applyDraft = (draft: PropertyFormDraft) => {
+    if (draft.step) setStep(draft.step);
+    if (draft.namaKos !== undefined) setNamaKos(draft.namaKos);
+    if (draft.alamatSearch !== undefined) setAlamatSearch(draft.alamatSearch);
+    if (draft.lat !== undefined) setLat(draft.lat);
+    if (draft.lon !== undefined) setLon(draft.lon);
+    if (draft.detailLokasi !== undefined) setDetailLokasi(draft.detailLokasi);
+    if (draft.kelurahan !== undefined) setKelurahan(draft.kelurahan);
+    if (draft.kecamatan !== undefined) setKecamatan(draft.kecamatan);
+    if (draft.kabupatenKota !== undefined) setKabupatenKota(draft.kabupatenKota);
+    if (draft.provinsi !== undefined) setProvinsi(draft.provinsi);
+    if (draft.kodePos !== undefined) setKodePos(draft.kodePos);
+    if (draft.patokanAlamat !== undefined) setPatokanAlamat(draft.patokanAlamat);
+
+    if (draft.tipeKamar !== undefined) setTipeKamar(draft.tipeKamar);
+    if (draft.gender !== undefined) setGender(draft.gender);
+    if (draft.ukuranKamar !== undefined) setUkuranKamar(draft.ukuranKamar);
+    if (draft.totalKamar !== undefined) setTotalKamar(draft.totalKamar);
+    if (draft.kamarKosong !== undefined) setKamarKosong(draft.kamarKosong);
+    if (draft.hargaPerbulan !== undefined) setHargaPerbulan(draft.hargaPerbulan);
+
+    if (draft.enableHargaSpesial !== undefined) setEnableHargaSpesial(draft.enableHargaSpesial);
+    if (draft.hargaSpesial !== undefined) setHargaSpesial(draft.hargaSpesial);
+    if (draft.durasiSpesial !== undefined) setDurasiSpesial(draft.durasiSpesial);
+
+    if (draft.enableUangJaminan !== undefined) setEnableUangJaminan(draft.enableUangJaminan);
+    if (draft.persenDp !== undefined) setPersenDp(draft.persenDp);
+    if (draft.nominalJaminan !== undefined) setNominalJaminan(draft.nominalJaminan);
+
+    if (draft.enableBiayaTambahan !== undefined) setEnableBiayaTambahan(draft.enableBiayaTambahan);
+    if (draft.biayaTambahanList !== undefined) setBiayaTambahanList(draft.biayaTambahanList);
+
+    if (draft.photos !== undefined) setPhotos(draft.photos);
+    if (draft.fasilitasDasar !== undefined) setFasilitasDasar(draft.fasilitasDasar);
+    if (draft.fasilitasLanjutan !== undefined) setFasilitasLanjutan(draft.fasilitasLanjutan);
+    if (draft.fasilitasBersama !== undefined) setFasilitasBersama(draft.fasilitasBersama);
+    if (draft.peraturanKos !== undefined) setPeraturanKos(draft.peraturanKos);
+    if (draft.kriteriaPenyewa !== undefined) setKriteriaPenyewa(draft.kriteriaPenyewa);
+    if (draft.kapasitasMaksimal !== undefined) setKapasitasMaksimal(draft.kapasitasMaksimal);
+    if (draft.bolehBawaAnak !== undefined) setBolehBawaAnak(draft.bolehBawaAnak);
+    if (draft.wajibKartuKeluarga !== undefined) setWajibKartuKeluarga(draft.wajibKartuKeluarga);
+    if (draft.bolehPasutri !== undefined) setBolehPasutri(draft.bolehPasutri);
+    if (draft.wajibBukuNikah !== undefined) setWajibBukuNikah(draft.wajibBukuNikah);
+    if (draft.wajibKtp !== undefined) setWajibKtp(draft.wajibKtp);
+    if (draft.bolehBawaHewan !== undefined) setBolehBawaHewan(draft.bolehBawaHewan);
+    if (draft.aksesJamMalam !== undefined) setAksesJamMalam(draft.aksesJamMalam);
+    if (draft.jamMalamText !== undefined) setJamMalamText(draft.jamMalamText);
+    if (draft.laranganPenyewa !== undefined) setLaranganPenyewa(draft.laranganPenyewa);
+    if (draft.bolehTerimaTamu !== undefined) setBolehTerimaTamu(draft.bolehTerimaTamu);
+    if (draft.peraturanTamu !== undefined) setPeraturanTamu(draft.peraturanTamu);
+    if (draft.peraturanLainnya !== undefined) setPeraturanLainnya(draft.peraturanLainnya);
+    if (draft.deskripsiKos !== undefined) setDeskripsiKos(draft.deskripsiKos);
+
+    if (draft.namaPemilik !== undefined) setNamaPemilik(draft.namaPemilik);
+    if (draft.namaBank !== undefined) setNamaBank(draft.namaBank);
+    if (draft.nomorRekening !== undefined) setNomorRekening(draft.nomorRekening);
+    if (draft.namaPemilikRekening !== undefined) setNamaPemilikRekening(draft.namaPemilikRekening);
+  };
+
   // 1. Muat draf yang tersimpan saat pertama kali halaman dibuka
+  // Decoupled: Hanya auto-restore jika URL memiliki param ?resume=draft.
+  // Jika membuka "Tambah Kos" biasa, mulai selalu dari Langkah 1 dan tampilkan banner tawaran.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
@@ -589,64 +651,20 @@ export default function NewPropertyPage() {
         );
 
         if (hasMeaningfulData) {
-          if (draft.step) setStep(draft.step);
-          if (draft.namaKos !== undefined) setNamaKos(draft.namaKos);
-          if (draft.alamatSearch !== undefined) setAlamatSearch(draft.alamatSearch);
-          if (draft.lat !== undefined) setLat(draft.lat);
-          if (draft.lon !== undefined) setLon(draft.lon);
-          if (draft.detailLokasi !== undefined) setDetailLokasi(draft.detailLokasi);
-          if (draft.kelurahan !== undefined) setKelurahan(draft.kelurahan);
-          if (draft.kecamatan !== undefined) setKecamatan(draft.kecamatan);
-          if (draft.kabupatenKota !== undefined) setKabupatenKota(draft.kabupatenKota);
-          if (draft.provinsi !== undefined) setProvinsi(draft.provinsi);
-          if (draft.kodePos !== undefined) setKodePos(draft.kodePos);
-          if (draft.patokanAlamat !== undefined) setPatokanAlamat(draft.patokanAlamat);
+          setSavedDraft(draft);
+          const isResumeParam =
+            typeof window !== "undefined" &&
+            (new URLSearchParams(window.location.search).get("resume") === "draft" ||
+             new URLSearchParams(window.location.search).get("draft") === "true");
 
-          if (draft.tipeKamar !== undefined) setTipeKamar(draft.tipeKamar);
-          if (draft.gender !== undefined) setGender(draft.gender);
-          if (draft.ukuranKamar !== undefined) setUkuranKamar(draft.ukuranKamar);
-          if (draft.totalKamar !== undefined) setTotalKamar(draft.totalKamar);
-          if (draft.kamarKosong !== undefined) setKamarKosong(draft.kamarKosong);
-          if (draft.hargaPerbulan !== undefined) setHargaPerbulan(draft.hargaPerbulan);
-
-          if (draft.enableHargaSpesial !== undefined) setEnableHargaSpesial(draft.enableHargaSpesial);
-          if (draft.hargaSpesial !== undefined) setHargaSpesial(draft.hargaSpesial);
-          if (draft.durasiSpesial !== undefined) setDurasiSpesial(draft.durasiSpesial);
-
-          if (draft.enableUangJaminan !== undefined) setEnableUangJaminan(draft.enableUangJaminan);
-          if (draft.persenDp !== undefined) setPersenDp(draft.persenDp);
-          if (draft.nominalJaminan !== undefined) setNominalJaminan(draft.nominalJaminan);
-
-          if (draft.enableBiayaTambahan !== undefined) setEnableBiayaTambahan(draft.enableBiayaTambahan);
-          if (draft.biayaTambahanList !== undefined) setBiayaTambahanList(draft.biayaTambahanList);
-
-          if (draft.photos !== undefined) setPhotos(draft.photos);
-          if (draft.fasilitasDasar !== undefined) setFasilitasDasar(draft.fasilitasDasar);
-          if (draft.fasilitasLanjutan !== undefined) setFasilitasLanjutan(draft.fasilitasLanjutan);
-          if (draft.fasilitasBersama !== undefined) setFasilitasBersama(draft.fasilitasBersama);
-          if (draft.peraturanKos !== undefined) setPeraturanKos(draft.peraturanKos);
-          if (draft.kriteriaPenyewa !== undefined) setKriteriaPenyewa(draft.kriteriaPenyewa);
-          if (draft.kapasitasMaksimal !== undefined) setKapasitasMaksimal(draft.kapasitasMaksimal);
-          if (draft.bolehBawaAnak !== undefined) setBolehBawaAnak(draft.bolehBawaAnak);
-          if (draft.wajibKartuKeluarga !== undefined) setWajibKartuKeluarga(draft.wajibKartuKeluarga);
-          if (draft.bolehPasutri !== undefined) setBolehPasutri(draft.bolehPasutri);
-          if (draft.wajibBukuNikah !== undefined) setWajibBukuNikah(draft.wajibBukuNikah);
-          if (draft.wajibKtp !== undefined) setWajibKtp(draft.wajibKtp);
-          if (draft.bolehBawaHewan !== undefined) setBolehBawaHewan(draft.bolehBawaHewan);
-          if (draft.aksesJamMalam !== undefined) setAksesJamMalam(draft.aksesJamMalam);
-          if (draft.jamMalamText !== undefined) setJamMalamText(draft.jamMalamText);
-          if (draft.laranganPenyewa !== undefined) setLaranganPenyewa(draft.laranganPenyewa);
-          if (draft.bolehTerimaTamu !== undefined) setBolehTerimaTamu(draft.bolehTerimaTamu);
-          if (draft.peraturanTamu !== undefined) setPeraturanTamu(draft.peraturanTamu);
-          if (draft.peraturanLainnya !== undefined) setPeraturanLainnya(draft.peraturanLainnya);
-          if (draft.deskripsiKos !== undefined) setDeskripsiKos(draft.deskripsiKos);
-
-          if (draft.namaPemilik !== undefined) setNamaPemilik(draft.namaPemilik);
-          if (draft.namaBank !== undefined) setNamaBank(draft.namaBank);
-          if (draft.nomorRekening !== undefined) setNomorRekening(draft.nomorRekening);
-          if (draft.namaPemilikRekening !== undefined) setNamaPemilikRekening(draft.namaPemilikRekening);
-
-          setShowDraftNotice(true);
+          if (isResumeParam) {
+            applyDraft(draft);
+            setShowDraftNotice(false);
+          } else {
+            // Fresh creation: Always start at Step 1, provide optional banner to restore
+            setStep(1);
+            setShowDraftNotice(true);
+          }
         }
       }
     } catch (e) {
@@ -757,6 +775,7 @@ export default function NewPropertyPage() {
     try {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
     } catch {}
+    setSavedDraft(null);
     setShowDraftNotice(false);
     setStep(1);
     setNamaKos("");
@@ -1032,10 +1051,20 @@ export default function NewPropertyPage() {
 
         const fullNameKos = `Kos ${namaKos.trim().replace(/^kos\s+/i, "")}`;
 
+        const compiledDescription = [
+          deskripsiKos.trim(),
+          patokanAlamat ? `Patokan: ${patokanAlamat.trim()}` : null,
+          peraturanKos && peraturanKos.length > 0
+            ? `Aturan & Ketentuan Kos:\n${peraturanKos.map((r) => `• ${r}`).join("\n")}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+
         const payload = {
           name: fullNameKos,
           tagline: `Hunian nyaman di ${kabupatenKota}`,
-          description: `${deskripsiKos.trim()}\n\nPatokan: ${patokanAlamat || "Sesuai alamat"}`,
+          description: compiledDescription,
           city: kabupatenKota,
           district: kecamatan || kelurahan || "Pusat",
           address: `${detailLokasi}, ${kelurahan ? `Kel. ${kelurahan}, ` : ""}${kecamatan ? `Kec. ${kecamatan}, ` : ""}${kabupatenKota}, ${provinsi} ${kodePos}`,
@@ -1142,16 +1171,16 @@ export default function NewPropertyPage() {
         </div>
 
         {/* Banner Pemulihan Draf */}
-        {showDraftNotice && (
+        {showDraftNotice && savedDraft && (
           <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-nk-accent/20 bg-nk-warm p-4 text-xs text-nk-text shadow-sm">
             <div className="flex items-center gap-2.5">
               <div className="flex size-7 items-center justify-center rounded-lg bg-nk-accent/10 text-nk-accent shrink-0">
                 <Sparkles className="size-4" />
               </div>
               <div>
-                <p className="font-semibold text-nk-accent">Draf Progres Dipulihkan</p>
+                <p className="font-semibold text-nk-accent">Ditemukan Draf Tersimpan</p>
                 <p className="text-nk-text-muted">
-                  Progres formulir pendaftaran kos Anda sebelumnya telah otomatis dimuat kembali.
+                  Ada progres kos &ldquo;{savedDraft.namaKos?.trim() || "Kos Baru"}&rdquo; di Langkah {savedDraft.step || 1}. Apakah Anda ingin melanjutkan draf ini atau memulai pendaftaran baru dari awal?
                 </p>
               </div>
             </div>
@@ -1165,10 +1194,13 @@ export default function NewPropertyPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowDraftNotice(false)}
+                onClick={() => {
+                  applyDraft(savedDraft);
+                  setShowDraftNotice(false);
+                }}
                 className="rounded-lg bg-nk-accent px-3 py-1.5 font-medium text-white hover:opacity-90 transition-opacity cursor-pointer"
               >
-                Lanjutkan Draf
+                Lanjutkan Draf (Langkah {savedDraft.step || 1})
               </button>
             </div>
           </div>

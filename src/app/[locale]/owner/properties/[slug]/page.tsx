@@ -36,6 +36,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Clock,
+  CreditCard,
   DoorOpen,
   Edit2,
   ExternalLink,
@@ -142,6 +143,7 @@ export default function OwnerPropertyDetailPage() {
   const [settingsName, setSettingsName] = useState("");
   const [settingsTagline, setSettingsTagline] = useState("");
   const [settingsDesc, setSettingsDesc] = useState("");
+  const [settingsPatokan, setSettingsPatokan] = useState("");
   const [settingsAddress, setSettingsAddress] = useState("");
   const [settingsCity, setSettingsCity] = useState("");
   const [settingsDistrict, setSettingsDistrict] = useState("");
@@ -150,6 +152,23 @@ export default function OwnerPropertyDetailPage() {
   const [settingsDeposit, setSettingsDeposit] = useState("");
   const [settingsCampusDistance, setSettingsCampusDistance] = useState("");
   const [settingsFacilities, setSettingsFacilities] = useState<string[]>([]);
+
+  // Policy & Rules fields from registration
+  const [settingsKriteriaPenyewa, setSettingsKriteriaPenyewa] = useState("Bisa untuk Semua");
+  const [settingsAksesJamMalam, setSettingsAksesJamMalam] = useState("Akses 24 jam");
+  const [settingsJamMalamText, setSettingsJamMalamText] = useState("23:00");
+  const [settingsBolehTerimaTamu, setSettingsBolehTerimaTamu] = useState(true);
+  const [settingsBolehBawaHewan, setSettingsBolehBawaHewan] = useState(false);
+  const [settingsBolehPasutri, setSettingsBolehPasutri] = useState(false);
+  const [settingsWajibBukuNikah, setSettingsWajibBukuNikah] = useState(true);
+  const [settingsWajibKtp, setSettingsWajibKtp] = useState(true);
+  const [settingsDilarangMerokok, setSettingsDilarangMerokok] = useState(true);
+
+  // Bank payout details
+  const [settingsBank, setSettingsBank] = useState("BCA");
+  const [settingsAccountNumber, setSettingsAccountNumber] = useState("");
+  const [settingsAccountHolder, setSettingsAccountHolder] = useState("");
+
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -212,7 +231,63 @@ export default function OwnerPropertyDetailPage() {
           // Inisialisasi Settings form
           setSettingsName(mapped.name);
           setSettingsTagline(mapped.tagline ?? "");
-          setSettingsDesc(mapped.description ?? "");
+          
+          // Parse description, patokan, and rules
+          const rawDesc = mapped.description ?? "";
+          const patokanMatch = rawDesc.match(/Patokan:\s*([^\n]+)/i);
+          const parsedPatokan = patokanMatch ? patokanMatch[1].trim() : "";
+
+          const rulesMatch = rawDesc.match(
+            /(?:Aturan & Ketentuan Kos|Peraturan Kos|Persyaratan Sewa|Aturan Kos):\s*([\s\S]+)/i
+          );
+          let parsedRulesText = "";
+          let cleanDesc = rawDesc;
+          if (rulesMatch) {
+            parsedRulesText = rulesMatch[1];
+            cleanDesc = rawDesc
+              .replace(/(?:Aturan & Ketentuan Kos|Peraturan Kos|Persyaratan Sewa|Aturan Kos):\s*([\s\S]+)/i, "")
+              .replace(/Patokan:\s*[^\n]+/i, "")
+              .trim();
+          } else {
+            cleanDesc = rawDesc.replace(/Patokan:\s*[^\n]+/i, "").trim();
+          }
+
+          setSettingsDesc(cleanDesc);
+          setSettingsPatokan(parsedPatokan);
+
+          // Parse policies
+          if (parsedRulesText) {
+            if (parsedRulesText.includes("Mahasiswa")) setSettingsKriteriaPenyewa("Mahasiswa");
+            else if (parsedRulesText.includes("Karyawan")) setSettingsKriteriaPenyewa("Karyawan");
+            else if (parsedRulesText.includes("Pasutri")) setSettingsKriteriaPenyewa("Pasutri");
+
+            if (parsedRulesText.includes("Ada jam malam")) {
+              setSettingsAksesJamMalam("Ada jam malam");
+              const jamMatch = parsedRulesText.match(/\((\d{1,2}:\d{2})\)/);
+              if (jamMatch) setSettingsJamMalamText(jamMatch[1]);
+            } else {
+              setSettingsAksesJamMalam("Akses 24 jam");
+            }
+
+            setSettingsBolehTerimaTamu(!parsedRulesText.includes("Tidak diperkenankan menerima tamu"));
+            setSettingsBolehBawaHewan(parsedRulesText.includes("Boleh bawa hewan"));
+            setSettingsBolehPasutri(parsedRulesText.includes("Boleh untuk pasutri"));
+            setSettingsWajibBukuNikah(parsedRulesText.includes("buku nikah"));
+            setSettingsWajibKtp(parsedRulesText.includes("KTP"));
+            setSettingsDilarangMerokok(parsedRulesText.includes("Dilarang merokok"));
+          }
+
+          // Preload saved bank details
+          try {
+            const savedBankRaw = localStorage.getItem("ngekos_saved_bank_account_v1");
+            if (savedBankRaw) {
+              const parsedBank = JSON.parse(savedBankRaw);
+              if (parsedBank.bank) setSettingsBank(parsedBank.bank);
+              if (parsedBank.accountNumber) setSettingsAccountNumber(parsedBank.accountNumber);
+              if (parsedBank.accountHolder) setSettingsAccountHolder(parsedBank.accountHolder);
+            }
+          } catch {}
+
           setSettingsAddress(mapped.address ?? "");
           setSettingsCity(mapped.city ?? "");
           setSettingsDistrict(mapped.district ?? "");
@@ -525,13 +600,66 @@ export default function OwnerPropertyDetailPage() {
     setSettingsSuccess(false);
 
     try {
+      // Compile policy rules into structured description
+      const compiledRules: string[] = [];
+      if (settingsKriteriaPenyewa && settingsKriteriaPenyewa !== "Bisa untuk Semua") {
+        compiledRules.push(settingsKriteriaPenyewa);
+      }
+      if (settingsWajibKtp) {
+        compiledRules.push("Wajib sertakan KTP saat pengajuan sewa");
+      }
+      if (settingsBolehPasutri) {
+        compiledRules.push("Boleh untuk pasutri");
+        if (settingsWajibBukuNikah) compiledRules.push("Wajib sertakan buku nikah saat pengajuan sewa");
+      }
+      if (settingsBolehBawaHewan) {
+        compiledRules.push("Boleh bawa hewan");
+      }
+      if (settingsAksesJamMalam === "Akses 24 jam") {
+        compiledRules.push("Akses 24 Jam");
+      } else if (settingsJamMalamText) {
+        compiledRules.push(`Ada jam malam (${settingsJamMalamText})`);
+      }
+      if (settingsDilarangMerokok) {
+        compiledRules.push("Dilarang merokok di dalam kamar");
+      }
+      if (settingsBolehTerimaTamu) {
+        compiledRules.push("Dilarang membawa tamu lawan jenis ke dalam kamar");
+      } else {
+        compiledRules.push("Tidak diperkenankan menerima tamu");
+      }
+
+      const compiledDescription = [
+        settingsDesc.trim(),
+        settingsPatokan ? `Patokan: ${settingsPatokan.trim()}` : null,
+        compiledRules.length > 0
+          ? `Aturan & Ketentuan Kos:\n${compiledRules.map((r) => `• ${r}`).join("\n")}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      // Save bank account locally if provided
+      if (settingsAccountNumber.trim()) {
+        try {
+          localStorage.setItem(
+            "ngekos_saved_bank_account_v1",
+            JSON.stringify({
+              bank: settingsBank,
+              accountNumber: settingsAccountNumber.trim(),
+              accountHolder: settingsAccountHolder.trim(),
+            })
+          );
+        } catch {}
+      }
+
       const res = await fetch(`/api/properties/${property.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: settingsName.trim(),
           tagline: settingsTagline.trim() || undefined,
-          description: settingsDesc.trim(),
+          description: compiledDescription,
           address: settingsAddress.trim(),
           city: settingsCity.trim(),
           district: settingsDistrict.trim(),
@@ -665,7 +793,7 @@ export default function OwnerPropertyDetailPage() {
           {/* Action Buttons in Header */}
           <div className="flex flex-wrap items-center gap-2 sm:self-start lg:self-center">
             <Link
-              href={`/properties/${property.slug}`}
+              href={`/kost/${property.slug}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-lg border border-nk-border bg-nk-surface px-3.5 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99]"
@@ -1118,74 +1246,103 @@ export default function OwnerPropertyDetailPage() {
 
       {/* TAB: Pengaturan Properti */}
       {tab === "settings" && (
-        <div className="max-w-3xl rounded-2xl border border-nk-border bg-nk-surface p-6 sm:p-8 shadow-sm">
-          <div className="border-b border-nk-border pb-4 mb-6">
-            <h2 className="text-lg font-bold text-nk-text">Pengaturan Properti</h2>
-            <p className="text-xs text-nk-text-muted mt-0.5">
-              Ubah informasi dasar, alamat, fasilitas, dan ketentuan sewa properti kos Anda.
+        <div className="max-w-4xl space-y-6">
+          <div className="flex flex-col gap-1 border-b border-nk-border pb-4">
+            <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+              Pengaturan & Rincian Lengkap Properti
+            </h2>
+            <p className="text-xs text-nk-text-muted">
+              Perbarui identitas kos, titik lokasi, aturan & kebijakan sewa, fasilitas, serta informasi rekening pencairan hasil sewa.
             </p>
           </div>
 
           {settingsSuccess && (
-            <Alert className="mb-6 border-[#BFDCC5] bg-[#E9F4EC] text-[#2F6B3C]">
+            <Alert className="border-[#BFDCC5] bg-[#E9F4EC] text-[#2F6B3C]">
               <Check className="size-4 text-[#2F6B3C]" />
               <AlertTitle>Berhasil Disimpan</AlertTitle>
               <AlertDescription className="text-xs">
-                Perubahan data properti Anda telah berhasil disimpan ke sistem.
+                Perubahan data dan kebijakan properti Anda telah berhasil diperbarui dan tersinkronisasi.
               </AlertDescription>
             </Alert>
           )}
 
           <form onSubmit={handleSaveSettings} className="space-y-6">
-            {/* Nama & Tagline */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* 1. INFORMASI & IDENTITAS KOS */}
+            <div className="rounded-xl border border-nk-border bg-white p-6 space-y-5">
+              <div className="flex items-center gap-2 border-b border-nk-border/70 pb-3">
+                <Building2 className="size-4 text-nk-accent" />
+                <h3 className="text-sm font-semibold text-nk-text">1. Informasi & Identitas Kos</h3>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="prop-name" className="text-xs font-medium text-nk-text">
+                    Nama Kos <span className="text-rose-500">*</span>
+                  </Label>
+                  <Input
+                    id="prop-name"
+                    value={settingsName}
+                    onChange={(e) => setSettingsName(e.target.value)}
+                    required
+                    className="mt-1.5"
+                  />
+                  <p className="mt-1 text-[11px] text-nk-text-muted">
+                    Contoh: Kos Griya Melati Asri
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="prop-tagline" className="text-xs font-medium text-nk-text">
+                    Tagline / Slogan Singkat
+                  </Label>
+                  <Input
+                    id="prop-tagline"
+                    value={settingsTagline}
+                    onChange={(e) => setSettingsTagline(e.target.value)}
+                    placeholder="Contoh: Nyaman, Dekat Kampus, Akses 24 Jam"
+                    className="mt-1.5"
+                  />
+                </div>
+              </div>
+
               <div>
-                <Label htmlFor="prop-name" className="text-xs font-medium text-nk-text">
-                  Nama Kos *
+                <Label htmlFor="prop-desc" className="text-xs font-medium text-nk-text">
+                  Deskripsi Kos <span className="text-rose-500">*</span>
                 </Label>
-                <Input
-                  id="prop-name"
-                  value={settingsName}
-                  onChange={(e) => setSettingsName(e.target.value)}
+                <textarea
+                  id="prop-desc"
+                  rows={4}
+                  value={settingsDesc}
+                  onChange={(e) => setSettingsDesc(e.target.value)}
                   required
-                  className="mt-1.5"
+                  placeholder="Ceritakan keunggulan kos, suasana, sirkulasi udara, atau fasilitas utama..."
+                  className="mt-1.5 w-full rounded-md border border-nk-border bg-transparent px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
                 />
               </div>
+
               <div>
-                <Label htmlFor="prop-tagline" className="text-xs font-medium text-nk-text">
-                  Tagline / Slogan Singkat
+                <Label htmlFor="prop-patokan" className="text-xs font-medium text-nk-text">
+                  Patokan Alamat / Landmark Sekitar
                 </Label>
                 <Input
-                  id="prop-tagline"
-                  value={settingsTagline}
-                  onChange={(e) => setSettingsTagline(e.target.value)}
-                  placeholder="Contoh: Nyaman, Dekat Kampus, Akses 24 Jam"
+                  id="prop-patokan"
+                  value={settingsPatokan}
+                  onChange={(e) => setSettingsPatokan(e.target.value)}
+                  placeholder="Contoh: 100 meter di belakang gerbang utama kampus UB, pagar abu-abu"
                   className="mt-1.5"
                 />
               </div>
             </div>
 
-            {/* Deskripsi */}
-            <div>
-              <Label htmlFor="prop-desc" className="text-xs font-medium text-nk-text">
-                Deskripsi Kos *
-              </Label>
-              <textarea
-                id="prop-desc"
-                rows={4}
-                value={settingsDesc}
-                onChange={(e) => setSettingsDesc(e.target.value)}
-                required
-                className="mt-1.5 w-full rounded-md border border-nk-border bg-transparent px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
-              />
-            </div>
+            {/* 2. LOKASI & TITIK AKSES */}
+            <div className="rounded-xl border border-nk-border bg-white p-6 space-y-5">
+              <div className="flex items-center gap-2 border-b border-nk-border/70 pb-3">
+                <MapPin className="size-4 text-nk-accent" />
+                <h3 className="text-sm font-semibold text-nk-text">2. Lokasi & Akses Kampus</h3>
+              </div>
 
-            {/* Alamat, Kota, Kecamatan */}
-            <div className="space-y-4 pt-4 border-t border-nk-border">
-              <h3 className="text-sm font-semibold text-nk-text">Lokasi & Alamat</h3>
               <div>
                 <Label htmlFor="prop-addr" className="text-xs font-medium text-nk-text">
-                  Alamat Lengkap *
+                  Alamat Lengkap Kos <span className="text-rose-500">*</span>
                 </Label>
                 <Input
                   id="prop-addr"
@@ -1199,7 +1356,7 @@ export default function OwnerPropertyDetailPage() {
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
                   <Label htmlFor="prop-city" className="text-xs font-medium text-nk-text">
-                    Kota *
+                    Kota / Kabupaten <span className="text-rose-500">*</span>
                   </Label>
                   <Input
                     id="prop-city"
@@ -1211,7 +1368,7 @@ export default function OwnerPropertyDetailPage() {
                 </div>
                 <div>
                   <Label htmlFor="prop-district" className="text-xs font-medium text-nk-text">
-                    Kecamatan *
+                    Kecamatan <span className="text-rose-500">*</span>
                   </Label>
                   <Input
                     id="prop-district"
@@ -1234,45 +1391,11 @@ export default function OwnerPropertyDetailPage() {
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Ketentuan & Biaya */}
-            <div className="space-y-4 pt-4 border-t border-nk-border">
-              <h3 className="text-sm font-semibold text-nk-text">Ketentuan & Kebijakan Sewa</h3>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <Label htmlFor="prop-gender" className="text-xs font-medium text-nk-text">
-                    Tipe Kos (Gender) *
-                  </Label>
-                  <select
-                    id="prop-gender"
-                    value={settingsGender}
-                    onChange={(e) => setSettingsGender(e.target.value as Gender)}
-                    className="mt-1.5 w-full rounded-md border border-nk-border bg-nk-surface px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
-                  >
-                    <option value="mixed">Campuran</option>
-                    <option value="male">Khusus Putra</option>
-                    <option value="female">Khusus Putri</option>
-                  </select>
-                </div>
-
-                <div>
-                  <Label htmlFor="prop-deposit" className="text-xs font-medium text-nk-text">
-                    Uang Muka / DP (Rp)
-                  </Label>
-                  <Input
-                    id="prop-deposit"
-                    type="number"
-                    value={settingsDeposit}
-                    onChange={(e) => setSettingsDeposit(e.target.value)}
-                    placeholder="Kosongkan jika tanpa DP"
-                    className="mt-1.5"
-                  />
-                </div>
-
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="prop-distance" className="text-xs font-medium text-nk-text">
-                    Jarak ke Kampus (Meter)
+                    Jarak ke Kampus / Pusat Kegiatan Terdekat (Meter)
                   </Label>
                   <Input
                     id="prop-distance"
@@ -1283,13 +1406,172 @@ export default function OwnerPropertyDetailPage() {
                     className="mt-1.5"
                   />
                 </div>
+                <div>
+                  <Label htmlFor="prop-deposit" className="text-xs font-medium text-nk-text">
+                    Nominal Uang Jaminan / DP Booking (Rp)
+                  </Label>
+                  <Input
+                    id="prop-deposit"
+                    type="number"
+                    value={settingsDeposit}
+                    onChange={(e) => setSettingsDeposit(e.target.value)}
+                    placeholder="Contoh: 300000 (Kosongkan jika tanpa DP)"
+                    className="mt-1.5"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Fasilitas */}
-            <div className="space-y-3 pt-4 border-t border-nk-border">
-              <h3 className="text-sm font-semibold text-nk-text">Fasilitas Kos</h3>
-              <p className="text-xs text-nk-text-muted">Pilih semua fasilitas yang tersedia di kos ini:</p>
+            {/* 3. KETENTUAN & KEBIJAKAN SEWA */}
+            <div className="rounded-xl border border-nk-border bg-white p-6 space-y-5">
+              <div className="flex items-center gap-2 border-b border-nk-border/70 pb-3">
+                <ShieldCheck className="size-4 text-nk-accent" />
+                <h3 className="text-sm font-semibold text-nk-text">3. Kebijakan & Persyaratan Sewa</h3>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="prop-gender" className="text-xs font-medium text-nk-text">
+                    Tipe Penghuni (Gender) <span className="text-rose-500">*</span>
+                  </Label>
+                  <select
+                    id="prop-gender"
+                    value={settingsGender}
+                    onChange={(e) => setSettingsGender(e.target.value as Gender)}
+                    className="mt-1.5 w-full rounded-md border border-nk-border bg-nk-surface px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
+                  >
+                    <option value="mixed">Campuran (Putra & Putri)</option>
+                    <option value="male">Khusus Putra</option>
+                    <option value="female">Khusus Putri</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="prop-kriteria" className="text-xs font-medium text-nk-text">
+                    Kriteria Profesi Penyewa
+                  </Label>
+                  <select
+                    id="prop-kriteria"
+                    value={settingsKriteriaPenyewa}
+                    onChange={(e) => setSettingsKriteriaPenyewa(e.target.value)}
+                    className="mt-1.5 w-full rounded-md border border-nk-border bg-nk-surface px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
+                  >
+                    <option value="Bisa untuk Semua">Bisa untuk Semua</option>
+                    <option value="Khusus Mahasiswa">Khusus Mahasiswa</option>
+                    <option value="Khusus Karyawan">Khusus Karyawan</option>
+                    <option value="Mahasiswa & Karyawan">Mahasiswa & Karyawan</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Akses Jam Malam */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="prop-jam-malam" className="text-xs font-medium text-nk-text">
+                    Akses Gerbang & Jam Malam
+                  </Label>
+                  <select
+                    id="prop-jam-malam"
+                    value={settingsAksesJamMalam}
+                    onChange={(e) => setSettingsAksesJamMalam(e.target.value)}
+                    className="mt-1.5 w-full rounded-md border border-nk-border bg-nk-surface px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
+                  >
+                    <option value="Akses 24 jam">Akses 24 Jam Bebas</option>
+                    <option value="Ada jam malam">Ada Batas Jam Malam</option>
+                  </select>
+                </div>
+
+                {settingsAksesJamMalam === "Ada jam malam" && (
+                  <div>
+                    <Label htmlFor="prop-jam-text" className="text-xs font-medium text-nk-text">
+                      Batas Jam Malam
+                    </Label>
+                    <Input
+                      id="prop-jam-text"
+                      value={settingsJamMalamText}
+                      onChange={(e) => setSettingsJamMalamText(e.target.value)}
+                      placeholder="Contoh: 23:00"
+                      className="mt-1.5"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Checkboxes / Toggles Kebijakan */}
+              <div className="grid gap-3 sm:grid-cols-2 pt-2 border-t border-nk-border/60">
+                <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
+                  <input
+                    type="checkbox"
+                    checked={settingsWajibKtp}
+                    onChange={(e) => setSettingsWajibKtp(e.target.checked)}
+                    className="size-4 rounded text-nk-accent accent-nk-accent"
+                  />
+                  <span>Wajib Sertakan KTP saat Pengajuan Sewa</span>
+                </label>
+
+                <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
+                  <input
+                    type="checkbox"
+                    checked={settingsBolehTerimaTamu}
+                    onChange={(e) => setSettingsBolehTerimaTamu(e.target.checked)}
+                    className="size-4 rounded text-nk-accent accent-nk-accent"
+                  />
+                  <span>Boleh Terima Tamu di Area Bersama</span>
+                </label>
+
+                <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
+                  <input
+                    type="checkbox"
+                    checked={settingsBolehPasutri}
+                    onChange={(e) => setSettingsBolehPasutri(e.target.checked)}
+                    className="size-4 rounded text-nk-accent accent-nk-accent"
+                  />
+                  <span>Boleh untuk Pasutri (Pasangan Suami Istri)</span>
+                </label>
+
+                {settingsBolehPasutri && (
+                  <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
+                    <input
+                      type="checkbox"
+                      checked={settingsWajibBukuNikah}
+                      onChange={(e) => setSettingsWajibBukuNikah(e.target.checked)}
+                      className="size-4 rounded text-nk-accent accent-nk-accent"
+                    />
+                    <span>Wajib Sertakan Buku Nikah untuk Pasutri</span>
+                  </label>
+                )}
+
+                <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
+                  <input
+                    type="checkbox"
+                    checked={settingsBolehBawaHewan}
+                    onChange={(e) => setSettingsBolehBawaHewan(e.target.checked)}
+                    className="size-4 rounded text-nk-accent accent-nk-accent"
+                  />
+                  <span>Boleh Membawa Hewan Peliharaan</span>
+                </label>
+
+                <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
+                  <input
+                    type="checkbox"
+                    checked={settingsDilarangMerokok}
+                    onChange={(e) => setSettingsDilarangMerokok(e.target.checked)}
+                    className="size-4 rounded text-nk-accent accent-nk-accent"
+                  />
+                  <span>Dilarang Merokok di Dalam Kamar</span>
+                </label>
+              </div>
+            </div>
+
+            {/* 4. FASILITAS PROPERTI */}
+            <div className="rounded-xl border border-nk-border bg-white p-6 space-y-4">
+              <div className="flex items-center gap-2 border-b border-nk-border/70 pb-3">
+                <DoorOpen className="size-4 text-nk-accent" />
+                <div>
+                  <h3 className="text-sm font-semibold text-nk-text">4. Fasilitas Kos</h3>
+                  <p className="text-xs text-nk-text-muted">Klik untuk mengaktifkan atau menonaktifkan fasilitas:</p>
+                </div>
+              </div>
 
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                 {(Object.keys(FACILITY_META) as Facility[]).map((f) => {
@@ -1304,10 +1586,10 @@ export default function OwnerPropertyDetailPage() {
                         );
                       }}
                       className={cn(
-                        "flex items-center gap-2 rounded-lg border p-2.5 text-left text-xs transition-all",
+                        "flex items-center gap-2 rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer",
                         active
                           ? "border-nk-accent bg-nk-accent text-nk-text-inverse font-medium"
-                          : "border-nk-border bg-nk-section/60 text-nk-text hover:bg-nk-warm"
+                          : "border-nk-border bg-stone-50 text-nk-text hover:bg-nk-warm"
                       )}
                     >
                       <span className="truncate">{FACILITY_META[f].labelId}</span>
@@ -1317,22 +1599,82 @@ export default function OwnerPropertyDetailPage() {
               </div>
             </div>
 
-            {/* Tombol Simpan */}
-            <div className="pt-6 border-t border-nk-border flex justify-end">
+            {/* 5. REKENING BANK PENCAIRAN (PAYOUT) */}
+            <div className="rounded-xl border border-nk-border bg-white p-6 space-y-4">
+              <div className="flex items-center gap-2 border-b border-nk-border/70 pb-3">
+                <CreditCard className="size-4 text-nk-accent" />
+                <div>
+                  <h3 className="text-sm font-semibold text-nk-text">5. Rekening Bank Pencairan Hasil Sewa</h3>
+                  <p className="text-xs text-nk-text-muted">Rekening tujuan transfer hasil sewa penyewa dari NgeKos:</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <Label htmlFor="prop-bank" className="text-xs font-medium text-nk-text">
+                    Nama Bank
+                  </Label>
+                  <select
+                    id="prop-bank"
+                    value={settingsBank}
+                    onChange={(e) => setSettingsBank(e.target.value)}
+                    className="mt-1.5 w-full rounded-md border border-nk-border bg-nk-surface px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
+                  >
+                    <option value="BCA">BCA (Bank Central Asia)</option>
+                    <option value="Mandiri">Bank Mandiri</option>
+                    <option value="BNI">BNI (Bank Negara Indonesia)</option>
+                    <option value="BRI">BRI (Bank Rakyat Indonesia)</option>
+                    <option value="CIMB Niaga">CIMB Niaga</option>
+                    <option value="Bank Syariah Indonesia (BSI)">Bank Syariah Indonesia (BSI)</option>
+                    <option value="Bank Jago">Bank Jago</option>
+                    <option value="Jenius (BTPN)">Jenius (BTPN)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="prop-rek" className="text-xs font-medium text-nk-text">
+                    Nomor Rekening
+                  </Label>
+                  <Input
+                    id="prop-rek"
+                    value={settingsAccountNumber}
+                    onChange={(e) => setSettingsAccountNumber(e.target.value.replace(/\D/g, ""))}
+                    placeholder="Contoh: 8830192831"
+                    className="mt-1.5"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="prop-holder" className="text-xs font-medium text-nk-text">
+                    Nama Pemilik Rekening
+                  </Label>
+                  <Input
+                    id="prop-holder"
+                    value={settingsAccountHolder}
+                    onChange={(e) => setSettingsAccountHolder(e.target.value)}
+                    placeholder="Sesuai buku tabungan"
+                    className="mt-1.5"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Tombol Simpan Pengaturan */}
+            <div className="pt-2 flex justify-end">
               <button
                 type="submit"
                 disabled={savingSettings}
-                className="inline-flex items-center gap-2 rounded-lg bg-nk-accent px-6 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 disabled:opacity-50 active:scale-[0.99]"
+                className="inline-flex items-center gap-2 rounded-lg bg-nk-accent px-8 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 disabled:opacity-50 active:scale-[0.99] cursor-pointer"
               >
                 {savingSettings ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
-                    <span>Menyimpan...</span>
+                    <span>Menyimpan Pengaturan...</span>
                   </>
                 ) : (
                   <>
                     <Save className="size-4" />
-                    <span>Simpan Pengaturan Properti</span>
+                    <span>Simpan Seluruh Pengaturan Properti</span>
                   </>
                 )}
               </button>

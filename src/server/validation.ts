@@ -89,7 +89,7 @@ export const bookingCreateSchema = z
     roomTypeId: z.string().trim().min(1, "Tipe kamar wajib diisi"),
     roomUnitId: z.string().trim().optional(),
     startDate: isoDate,
-    durationMonths: z.coerce.number().int().min(1).max(36),
+    durationMonths: z.coerce.number().pipe(z.union([z.literal(1), z.literal(3), z.literal(6), z.literal(12)])),
     note: optionalText(2_000),
   });
 

@@ -140,7 +140,7 @@ export default function AdminVerificationPage() {
               ? row.property.roomTypes.reduce((acc: number, rt: any) => acc + (rt.total || 0), 0) || row.property.roomTypes.length
               : 0,
             minPrice: Number(row.property?.minMonthlyPrice || 0),
-            submittedAt: typeof row.submittedAt === "string" ? row.submittedAt : new Date(row.submittedAt).toISOString().slice(0, 10),
+            submittedAt: typeof row.submittedAt === "string" ? row.submittedAt : (row.submittedAt ? new Date(row.submittedAt).toISOString() : new Date().toISOString()),
             images: Array.isArray(row.property?.images) ? row.property.images.map((img: any) => img.url).filter(Boolean) : [],
           }));
 
@@ -157,7 +157,10 @@ export default function AdminVerificationPage() {
     return d.slice(0, 10) === new Date().toISOString().slice(0, 10);
   }).length;
   const oldestWait = queue.length
-    ? Math.max(...queue.map((p) => ageInDays(p.submittedAt)))
+    ? Math.max(0, ...queue.map((p) => {
+        const d = ageInDays(p.submittedAt);
+        return isNaN(d) ? 0 : d;
+      }))
     : 0;
 
   const filtered = useMemo(() => {

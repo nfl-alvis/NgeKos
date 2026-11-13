@@ -7,10 +7,12 @@ import Image from "next/image";
 import {
   AlertCircle,
   BedDouble,
+  Building2,
   CalendarClock,
   CheckCircle2,
   Clock,
   CreditCard,
+  DoorOpen,
   Download,
   Ellipsis,
   Plus,
@@ -80,6 +82,60 @@ function StarIcon({ className }: { className?: string }) {
     >
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
     </svg>
+  );
+}
+
+function Spark({ data, color }: { data: number[]; color: string }) {
+  return (
+    <ChartContainer config={{ v: { label: "Spark", color } }} className="mt-2 h-10 w-full">
+      <AreaChart data={data.map((v, i) => ({ i, v }))} margin={{ top: 2, left: 0, right: 0, bottom: 0 }}>
+        <Area
+          type="monotone"
+          dataKey="v"
+          stroke={color}
+          strokeWidth={1.5}
+          fill={color}
+          fillOpacity={0.12}
+          isAnimationActive={false}
+        />
+      </AreaChart>
+    </ChartContainer>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  note,
+  icon: Icon,
+  tint,
+  spark,
+  sparkColor,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tint: { card: string; icon: string };
+  spark: number[];
+  sparkColor: string;
+}) {
+  return (
+    <div className={`flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 ${tint.card}`}>
+      <p className="px-4 pb-1 pt-3 text-sm font-semibold text-nk-text">{label}</p>
+      <div className="flex-1 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-2xl font-semibold tracking-tight text-nk-text tabular-nums">{value}</p>
+            {note && <p className="mt-0.5 truncate text-xs text-nk-text-muted">{note}</p>}
+          </div>
+          <div className={`flex size-9 shrink-0 items-center justify-center rounded-full ${tint.icon}`}>
+            <Icon className="size-4" aria-hidden="true" />
+          </div>
+        </div>
+        <Spark data={spark} color={sparkColor} />
+      </div>
+    </div>
   );
 }
 
@@ -436,75 +492,44 @@ export default function OwnerDashboardPage() {
         </div>
       </div>
 
-      {/* 4 Clean Stat Cards with integrated smooth sparklines */}
+      {/* 4 Banded Stat Cards matching Admin Dashboard */}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((s) => (
-          <div
-            key={s.id}
-            className="flex flex-col justify-between overflow-hidden rounded-xl border border-nk-border bg-nk-surface p-5 shadow-sm transition-shadow hover:shadow"
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-nk-text-muted uppercase tracking-wider">
-                  {s.label}
-                </span>
-                <div
-                  className={cn(
-                    "flex size-9 items-center justify-center rounded-lg",
-                    s.iconColor
-                  )}
-                >
-                  <s.icon className="size-4" aria-hidden="true" />
-                </div>
-              </div>
-
-              <div className="mt-3">
-                <p className="text-2xl font-bold tracking-tight text-nk-text tabular-nums">
-                  {s.value}
-                </p>
-                {s.note && (
-                  <div className="mt-1 flex items-center gap-1.5">
-                    {s.badge ? (
-                      <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 border border-amber-200">
-                        {s.note}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-nk-text-muted">{s.note}</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Subtle mini wave */}
-            <div className="-mx-5 -mb-5 mt-4 h-10 overflow-hidden opacity-75">
-              <ChartContainer
-                config={{ v: { label: s.label, color: s.sparkColor } }}
-                className="h-full w-full"
-              >
-                <AreaChart
-                  data={s.spark.map((v, i) => ({ i, v }))}
-                  margin={{ top: 2, left: 0, right: 0, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id={`grad-${s.id}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={s.sparkColor} stopOpacity={0.28} />
-                      <stop offset="100%" stopColor={s.sparkColor} stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <Area
-                    type="monotone"
-                    dataKey="v"
-                    stroke={s.sparkColor}
-                    strokeWidth={1.8}
-                    fill={`url(#grad-${s.id})`}
-                    isAnimationActive={false}
-                  />
-                </AreaChart>
-              </ChartContainer>
-            </div>
-          </div>
-        ))}
+        <StatCard
+          label={t("statRevenue")}
+          value={formatIDR(displayRevenue)}
+          note={`Platform fee ${formatIDR(0)}`}
+          icon={TrendingUp}
+          tint={{ card: "bg-[#E9F4EC]", icon: "bg-[#CFE8D6] text-[#2F6B3C]" }}
+          spark={SPARKS.revenue}
+          sparkColor="#2F6B3C"
+        />
+        <StatCard
+          label={t("statOccupancy")}
+          value={`${displayOccupancy}%`}
+          note={t("statOccupancyNote", { filled: displayFilled, total: displayTotalRooms })}
+          icon={DoorOpen}
+          tint={{ card: "bg-[#FBF3DC]", icon: "bg-[#F3E3B8] text-[#8A6A1F]" }}
+          spark={SPARKS.occupancy}
+          sparkColor="#8A6A1F"
+        />
+        <StatCard
+          label={t("statNewBookings")}
+          value={String(displayPending)}
+          note={displayPending > 0 ? t("statNeedsResponse") : (isEn ? "No pending request" : "Tidak ada antrean")}
+          icon={Building2}
+          tint={{ card: "bg-[#E8EFF8]", icon: "bg-[#D3E0F0] text-[#33517C]" }}
+          spark={SPARKS.bookings}
+          sparkColor="#33517C"
+        />
+        <StatCard
+          label={t("statArrears")}
+          value={formatIDR(displayArrearsSum)}
+          note={t("statArrearsNote", { count: displayArrears })}
+          icon={AlertCircle}
+          tint={{ card: "bg-[#FAEAE8]", icon: "bg-[#F5D5D1] text-[#9C3B32]" }}
+          spark={SPARKS.arrears}
+          sparkColor="#9C3B32"
+        />
       </div>
 
       {/* Main 2-Column Grid */}
