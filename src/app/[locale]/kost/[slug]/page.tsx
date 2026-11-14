@@ -25,13 +25,9 @@ import {
   FileText,
   MapPin,
   CheckCircle2,
-  BedDouble,
-  Building2,
   Info,
   Navigation,
   ShieldCheck,
-  CreditCard,
-  Sparkles,
   Utensils,
   ShoppingCart,
   Landmark,
@@ -575,7 +571,7 @@ export default async function DetailPage({
 
             {/* 1. Deskripsi Kos (Catatan dari Pemilik Kos) */}
             <section className="py-8 space-y-3">
-              <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+              <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
                 {t("detail.description")}
               </h2>
               <p className="text-sm leading-relaxed text-nk-text/80 whitespace-pre-line max-w-3xl">
@@ -585,21 +581,13 @@ export default async function DetailPage({
 
             {/* 2. Spesifikasi Tipe Kamar & Pilihan Kamar */}
             <section className="py-8 space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <BedDouble className="size-5 text-nk-text-muted" />
-                    <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-                      {t("detail.roomTypes")}
-                    </h2>
-                  </div>
-                  <p className="text-xs text-nk-text-muted mt-1">
-                    {isEn ? "Select your room type, dimension, and monthly rate" : "Pilih tipe kamar, luas ruangan, dan harga sewa bulanan"}
-                  </p>
-                </div>
-                <span className="text-xs font-medium px-2.5 py-1 bg-stone-100 text-stone-700 border border-nk-border">
-                  {p.roomTypes.length} {t("card.roomTypes")}
-                </span>
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                  {t("detail.roomTypes")}
+                </h2>
+                <p className="text-xs text-nk-text-muted mt-1">
+                  {isEn ? "Select your room type, dimension, and monthly rate" : "Pilih tipe kamar, luas ruangan, dan harga sewa bulanan"}
+                </p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -671,21 +659,13 @@ export default async function DetailPage({
 
             {/* 3. Fasilitas Kamar (Pribadi) */}
             <section className="py-8 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="size-5 text-nk-text-muted" />
-                    <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-                      {t("detail.roomFacilities")}
-                    </h2>
-                  </div>
-                  <p className="text-xs text-nk-text-muted mt-1">
-                    {t("detail.roomFacilitiesSub")}
-                  </p>
-                </div>
-                <span className="text-xs font-medium px-2.5 py-1 bg-stone-100 text-stone-700 border border-nk-border">
-                  {roomFacilities.length} {isEn ? "items" : "fasilitas"}
-                </span>
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                  {t("detail.roomFacilities")}
+                </h2>
+                <p className="text-xs text-nk-text-muted mt-1">
+                  {t("detail.roomFacilitiesSub")}
+                </p>
               </div>
 
               {roomFacilities.length > 0 ? (
@@ -710,21 +690,13 @@ export default async function DetailPage({
 
             {/* 4. Fasilitas Bersama (Umum) */}
             <section className="py-8 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Building2 className="size-5 text-nk-text-muted" />
-                    <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-                      {t("detail.sharedFacilities")}
-                    </h2>
-                  </div>
-                  <p className="text-xs text-nk-text-muted mt-1">
-                    {t("detail.sharedFacilitiesSub")}
-                  </p>
-                </div>
-                <span className="text-xs font-medium px-2.5 py-1 bg-stone-100 text-stone-700 border border-nk-border">
-                  {sharedFacilities.length} {isEn ? "items" : "fasilitas"}
-                </span>
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                  {t("detail.sharedFacilities")}
+                </h2>
+                <p className="text-xs text-nk-text-muted mt-1">
+                  {t("detail.sharedFacilitiesSub")}
+                </p>
               </div>
 
               {sharedFacilities.length > 0 ? (
@@ -749,21 +721,13 @@ export default async function DetailPage({
 
             {/* 5. Peraturan & Ketentuan Menginap */}
             <section className="py-8 space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="size-5 text-nk-text-muted" />
-                    <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-                      {t("detail.rulesTitle")}
-                    </h2>
-                  </div>
-                  <p className="text-xs text-nk-text-muted mt-1">
-                    {t("detail.rulesSubtitle")}
-                  </p>
-                </div>
-                <span className="text-xs font-medium px-2.5 py-1 bg-stone-100 text-stone-700 border border-nk-border">
-                  {rulesData.categories.reduce((acc, c) => acc + c.items.length, 0)} {isEn ? "policies" : "ketentuan"}
-                </span>
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                  {t("detail.rulesTitle")}
+                </h2>
+                <p className="text-xs text-nk-text-muted mt-1">
+                  {t("detail.rulesSubtitle")}
+                </p>
               </div>
 
               {/* Quick scanning highlight badges */}
@@ -850,12 +814,9 @@ export default async function DetailPage({
             {/* 6. Lokasi & Lingkungan Sekitar (Maps + Automated Nearby POIs) */}
             <section className="py-8 space-y-5">
               <div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="size-5 text-nk-text-muted" />
-                  <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-                    {t("detail.neighborhoodTitle")}
-                  </h2>
-                </div>
+                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                  {t("detail.neighborhoodTitle")}
+                </h2>
                 <p className="text-xs text-nk-text-muted mt-1">
                   {isEn ? "Property address, interactive map, and surrounding essential spots" : "Alamat lengkap kos, peta lokasi interaktif, dan tempat penting di sekitar"}
                 </p>
@@ -933,12 +894,9 @@ export default async function DetailPage({
             {/* 7. Ketentuan Deposit & Pembayaran */}
             <section className="py-8 space-y-4">
               <div>
-                <div className="flex items-center gap-2">
-                  <CreditCard className="size-5 text-nk-text-muted" />
-                  <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-                    {t("detail.depositTerms")}
-                  </h2>
-                </div>
+                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                  {t("detail.depositTerms")}
+                </h2>
                 <p className="text-xs text-nk-text-muted mt-1">
                   {isEn ? "Security deposit details and initial payment terms" : "Keterangan uang muka / deposit dan syarat pelunasan sewa"}
                 </p>
