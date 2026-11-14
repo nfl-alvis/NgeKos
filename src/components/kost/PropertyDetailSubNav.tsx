@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { formatIDR, cn } from "@/lib/utils";
 
 export interface PropertyDetailSubNavProps {
@@ -19,6 +19,41 @@ export const DETAIL_NAV_ITEMS = [
   { id: "pemilik", labelId: "Pemilik Kos", labelEn: "Owner" },
 ];
 
+export interface SectionPosition {
+  id: string;
+  top: number;
+}
+
+export function determineActiveSection({
+  scrollPos,
+  viewportHeight,
+  documentHeight,
+  sectionPositions,
+  headerOffset = 135,
+}: {
+  scrollPos: number;
+  viewportHeight: number;
+  documentHeight: number;
+  sectionPositions: SectionPosition[];
+  headerOffset?: number;
+}): string {
+  if (sectionPositions.length === 0) return "";
+
+  // If scrolled near the bottom of the page, activate the last valid section
+  if (documentHeight > 0 && viewportHeight + scrollPos >= documentHeight - 50) {
+    return sectionPositions[sectionPositions.length - 1].id;
+  }
+
+  let currentActive = sectionPositions[0].id;
+  for (const { id, top } of sectionPositions) {
+    if (scrollPos >= top - headerOffset) {
+      currentActive = id;
+    }
+  }
+
+  return currentActive;
+}
+
 export default function PropertyDetailSubNav({
   propertyName,
   minPrice,
@@ -28,47 +63,116 @@ export default function PropertyDetailSubNav({
   const [isVisible, setIsVisible] = useState(false);
   const [activeId, setActiveId] = useState<string>("foto-properti");
 
+  // Track if programmatic smooth scrolling is in progress to prevent scrollspy jitter
+  const isNavigatingRef = useRef<string | null>(null);
+  const scrollDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     const handleScroll = () => {
       const scrollPos = window.scrollY;
       // Show sticky navbar when user scrolls past the top gallery (e.g. > 380px)
       setIsVisible(scrollPos > 380);
 
-      // Scrollspy calculation with header offset
-      const headerOffset = 135;
-      const sectionIds = DETAIL_NAV_ITEMS.map((item) => item.id);
+      // If programmatic scrolling is active, do NOT override activeId to avoid flicker
+      if (isNavigatingRef.current) {
+        if (scrollDebounceTimerRef.current) {
+          clearTimeout(scrollDebounceTimerRef.current);
+        }
+        scrollDebounceTimerRef.current = setTimeout(() => {
+          isNavigatingRef.current = null;
+        }, 150);
+        return;
+      }
 
-      let currentActive = sectionIds[0];
-      for (const id of sectionIds) {
-        const el = document.getElementById(id);
+      const sectionPositions: SectionPosition[] = [];
+      for (const item of DETAIL_NAV_ITEMS) {
+        const el = document.getElementById(item.id);
         if (el) {
           const top = el.getBoundingClientRect().top + window.scrollY;
-          if (scrollPos >= top - headerOffset) {
-            currentActive = id;
-          }
+          sectionPositions.push({ id: item.id, top });
         }
       }
-      setActiveId(currentActive);
+
+      const nextActive = determineActiveSection({
+        scrollPos,
+        viewportHeight: window.innerHeight,
+        documentHeight: document.documentElement.scrollHeight,
+        sectionPositions,
+        headerOffset: 135,
+      });
+
+      if (nextActive) {
+        setActiveId(nextActive);
+      }
+    };
+
+    // User gesture cancels programmatic lock immediately so user feels in control
+    const handleUserInterrupt = () => {
+      if (isNavigatingRef.current) {
+        isNavigatingRef.current = null;
+        if (scrollDebounceTimerRef.current) clearTimeout(scrollDebounceTimerRef.current);
+        if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+        handleScroll();
+      }
+    };
+
+    // scrollend event supported in modern browsers
+    const handleScrollEnd = () => {
+      if (isNavigatingRef.current) {
+        isNavigatingRef.current = null;
+        if (scrollDebounceTimerRef.current) clearTimeout(scrollDebounceTimerRef.current);
+        if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+      }
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("scrollend", handleScrollEnd, { passive: true });
+    window.addEventListener("wheel", handleUserInterrupt, { passive: true });
+    window.addEventListener("touchmove", handleUserInterrupt, { passive: true });
+
     handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("scrollend", handleScrollEnd);
+      window.removeEventListener("wheel", handleUserInterrupt);
+      window.removeEventListener("touchmove", handleUserInterrupt);
+      if (scrollDebounceTimerRef.current) clearTimeout(scrollDebounceTimerRef.current);
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+    };
   }, []);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
-    if (el) {
-      const headerOffset = 125;
-      const elPosition = el.getBoundingClientRect().top + window.scrollY;
-      const offsetPosition = elPosition - headerOffset;
+    if (!el) return;
 
-      window.scrollTo({
-        top: Math.max(0, offsetPosition),
-        behavior: "smooth",
-      });
-      setActiveId(id);
+    // Lock activeId immediately to clicked tab so underline stays locked
+    setActiveId(id);
+    isNavigatingRef.current = id;
+
+    if (scrollDebounceTimerRef.current) clearTimeout(scrollDebounceTimerRef.current);
+    if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+
+    const headerOffset = 125;
+    const elPosition = el.getBoundingClientRect().top + window.scrollY;
+    const offsetPosition = Math.max(0, elPosition - headerOffset);
+
+    // If already at or very close to destination, unlock immediately
+    if (Math.abs(window.scrollY - offsetPosition) < 2) {
+      isNavigatingRef.current = null;
+      return;
     }
+
+    // Fallback release after 800ms
+    fallbackTimerRef.current = setTimeout(() => {
+      isNavigatingRef.current = null;
+    }, 800);
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: "smooth",
+    });
   };
 
   return (
