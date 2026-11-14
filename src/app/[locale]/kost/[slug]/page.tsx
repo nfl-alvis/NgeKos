@@ -581,14 +581,9 @@ export default async function DetailPage({
 
             {/* 2. Spesifikasi Tipe Kamar & Pilihan Kamar */}
             <section className="py-8 space-y-5">
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
-                  {t("detail.roomTypes")}
-                </h2>
-                <p className="text-xs text-nk-text-muted mt-1">
-                  {isEn ? "Select your room type, dimension, and monthly rate" : "Pilih tipe kamar, luas ruangan, dan harga sewa bulanan"}
-                </p>
-              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                {t("detail.roomTypes")}
+              </h2>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {p.roomTypes.map((rt) => (
@@ -659,14 +654,9 @@ export default async function DetailPage({
 
             {/* 3. Fasilitas Kamar (Pribadi) */}
             <section className="py-8 space-y-4">
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
-                  {t("detail.roomFacilities")}
-                </h2>
-                <p className="text-xs text-nk-text-muted mt-1">
-                  {t("detail.roomFacilitiesSub")}
-                </p>
-              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                {t("detail.roomFacilities")}
+              </h2>
 
               {roomFacilities.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 pt-1">
@@ -690,14 +680,9 @@ export default async function DetailPage({
 
             {/* 4. Fasilitas Bersama (Umum) */}
             <section className="py-8 space-y-4">
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
-                  {t("detail.sharedFacilities")}
-                </h2>
-                <p className="text-xs text-nk-text-muted mt-1">
-                  {t("detail.sharedFacilitiesSub")}
-                </p>
-              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                {t("detail.sharedFacilities")}
+              </h2>
 
               {sharedFacilities.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 pt-1">
@@ -721,14 +706,9 @@ export default async function DetailPage({
 
             {/* 5. Peraturan & Ketentuan Menginap */}
             <section className="py-8 space-y-5">
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
-                  {t("detail.rulesTitle")}
-                </h2>
-                <p className="text-xs text-nk-text-muted mt-1">
-                  {t("detail.rulesSubtitle")}
-                </p>
-              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                {t("detail.rulesTitle")}
+              </h2>
 
               {/* Quick scanning highlight badges */}
               <div className="flex flex-wrap gap-2">
@@ -813,14 +793,9 @@ export default async function DetailPage({
 
             {/* 6. Lokasi & Lingkungan Sekitar (Maps + Automated Nearby POIs) */}
             <section className="py-8 space-y-5">
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
-                  {t("detail.neighborhoodTitle")}
-                </h2>
-                <p className="text-xs text-nk-text-muted mt-1">
-                  {isEn ? "Property address, interactive map, and surrounding essential spots" : "Alamat lengkap kos, peta lokasi interaktif, dan tempat penting di sekitar"}
-                </p>
-              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                {t("detail.neighborhoodTitle")}
+              </h2>
 
               <div className="space-y-4 text-xs text-nk-text">
                 <div className="flex items-start gap-3 border border-nk-border/80 bg-stone-50/50 p-4">
@@ -867,9 +842,6 @@ export default async function DetailPage({
                   <h3 className="text-base font-semibold tracking-tight text-nk-text">
                     {t("detail.nearbyTitle")}
                   </h3>
-                  <p className="text-xs text-nk-text-muted mt-0.5">
-                    {t("detail.nearbySubtitle")}
-                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
@@ -893,14 +865,9 @@ export default async function DetailPage({
 
             {/* 7. Ketentuan Deposit & Pembayaran */}
             <section className="py-8 space-y-4">
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
-                  {t("detail.depositTerms")}
-                </h2>
-                <p className="text-xs text-nk-text-muted mt-1">
-                  {isEn ? "Security deposit details and initial payment terms" : "Keterangan uang muka / deposit dan syarat pelunasan sewa"}
-                </p>
-              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                {t("detail.depositTerms")}
+              </h2>
               <div className="flex items-start gap-3 border border-nk-border/80 bg-stone-50/50 p-4 text-xs text-nk-text leading-relaxed">
                 <ShieldCheck className="size-4 shrink-0 text-nk-accent mt-0.5" />
                 <div>

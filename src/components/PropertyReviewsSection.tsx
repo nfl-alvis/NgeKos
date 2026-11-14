@@ -109,13 +109,10 @@ export default function PropertyReviewsSection({
   return (
     <div className="space-y-6 font-sans">
       {/* Header with Title */}
-      <div className="border-b border-nk-border pb-4">
-        <h2 className="text-xl font-medium tracking-tight text-nk-text">
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
           Ulasan & Penilaian Penghuni
         </h2>
-        <p className="text-xs text-nk-text-muted mt-0.5">
-          Pengalaman nyata dari penyewa yang pernah tinggal di {propertyName}.
-        </p>
       </div>
 
       {/* Rating Summary Card using Shadcn Card & Progress - strictly 0 border radius */}
