@@ -93,6 +93,7 @@
     "emptyTitle": "No matching properties",
     "emptyBody": "Try adjusting your filters or search in another city.",
     "reset": "Reset filters",
+    "onlyAvailable": "Only available rooms",
     "apply": "Apply"
   },
   "card": {

@@ -93,6 +93,7 @@
     "emptyTitle": "Tidak ada kost yang cocok",
     "emptyBody": "Coba ubah filter atau cari di kota lain.",
     "reset": "Reset filter",
+    "onlyAvailable": "Hanya kamar tersedia",
     "apply": "Terapkan"
   },
   "card": {

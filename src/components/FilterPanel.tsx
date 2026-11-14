@@ -13,6 +13,7 @@ export interface FilterState {
   fasilitas: string[];
   gender: string;
   sort: string;
+  onlyAvailable?: boolean;
 }
 
 interface Props {
@@ -34,6 +35,7 @@ export default function FilterPanel({ state }: Props) {
     if (merged.fasilitas.length > 0) query.fas = merged.fasilitas;
     if (merged.gender) query.gender = merged.gender;
     if (merged.sort) query.sort = merged.sort;
+    if (merged.onlyAvailable) query.avail = "1";
     router.replace({ pathname, query });
   }
 
@@ -114,6 +116,21 @@ export default function FilterPanel({ state }: Props) {
         <div className="flex justify-between text-[10px] text-nk-text-muted">
           <span>{state.maxPrice ? `Rp ${(state.maxPrice / 1000000).toFixed(state.maxPrice % 1000000 === 0 ? 0 : 1)} jt` : t("genderAll")}</span>
         </div>
+      </div>
+
+      {/* Ketersediaan Kamar */}
+      <div className="pt-1">
+        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={!!state.onlyAvailable}
+            onChange={(e) => update({ onlyAvailable: e.target.checked })}
+            className="size-4 rounded-none border border-nk-border accent-nk-accent"
+          />
+          <span className="text-xs font-medium text-nk-text">
+            {t("onlyAvailable")}
+          </span>
+        </label>
       </div>
 
       {/* Gender */}

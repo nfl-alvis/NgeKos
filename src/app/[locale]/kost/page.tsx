@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import FilterPanel, { type FilterState } from "@/components/FilterPanel";
 import PropertyCard from "@/components/PropertyCard";
 import { listPublicProperties, propertyDto } from "@/server/property-service";
-import { getVerifiedProperties } from "@/lib/data/properties";
+import { getVerifiedProperties, filterAndSortProperties } from "@/lib/data/properties";
 import type { Property, Facility, Gender } from "@/lib/data/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.ngekos.biz.id";
@@ -100,48 +100,20 @@ function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
   };
 }
 
-function filterAndSort(list: Property[], filters: FilterState, q?: string): Property[] {
-  const query = q?.trim().toLowerCase();
-  const result = list.filter((p) => {
-    if (query) {
-      const match =
-        p.name.toLowerCase().includes(query) ||
-        p.city.toLowerCase().includes(query) ||
-        p.district.toLowerCase().includes(query) ||
-        p.address.toLowerCase().includes(query) ||
-        (p.tagline && p.tagline.toLowerCase().includes(query));
-      if (!match) return false;
-    }
-    if (filters.kota && p.city !== filters.kota) return false;
-    if (filters.maxPrice > 0 && p.minPrice > filters.maxPrice) return false;
-    if (filters.gender && p.gender !== filters.gender) return false;
-    if (filters.fasilitas.length > 0) {
-      const pf = new Set(p.facilities);
-      if (!filters.fasilitas.every((f) => pf.has(f as Facility))) return false;
-    }
-    return true;
-  });
-
-  switch (filters.sort) {
-    case "price-asc":
-      result.sort((a, b) => a.minPrice - b.minPrice);
-      break;
-    case "price-desc":
-      result.sort((a, b) => b.minPrice - a.minPrice);
-      break;
-    default:
-      result.sort((a, b) => b.rating - a.rating);
-  }
-
-  return result;
-}
-
 export default async function ListPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ kota?: string; max?: string; fas?: string | string[]; gender?: string; sort?: string; q?: string }>;
+  searchParams: Promise<{
+    kota?: string;
+    max?: string;
+    fas?: string | string[];
+    gender?: string;
+    sort?: string;
+    q?: string;
+    avail?: string;
+  }>;
 }) {
   const { locale } = await params;
   const sp = await searchParams;
@@ -154,6 +126,7 @@ export default async function ListPage({
     fasilitas: Array.isArray(sp.fas) ? sp.fas : sp.fas ? [sp.fas] : [],
     gender: sp.gender || "",
     sort: sp.sort || "rating",
+    onlyAvailable: sp.avail === "1" || sp.avail === "true",
   };
 
   let filtered: Property[] = [];
@@ -181,16 +154,16 @@ export default async function ListPage({
     });
 
     if (dbResult.items.length > 0) {
-      filtered = dbResult.items.map(toUiProperty);
+      filtered = filterAndSortProperties(dbResult.items.map(toUiProperty), filterState, sp.q);
     } else if (!sp.q && !sp.kota && !sp.max && !sp.fas && !sp.gender) {
-      filtered = getVerifiedProperties();
+      filtered = filterAndSortProperties(getVerifiedProperties(), filterState);
     } else {
       filtered = [];
     }
   } catch (e) {
     console.error("Failed to load properties from database, falling back to static seed:", e);
     const all = getVerifiedProperties();
-    filtered = filterAndSort(all, filterState, sp.q);
+    filtered = filterAndSortProperties(all, filterState, sp.q);
   }
 
   return (

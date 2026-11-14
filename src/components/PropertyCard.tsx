@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import type { Property } from "@/lib/data/types";
 import { formatIDR, formatDistance } from "@/lib/utils";
+import { getMinAvailablePrice, getTotalAvailableRooms } from "@/lib/data/properties";
 import FavoriteButton from "@/components/FavoriteButton";
 
 import { getKosImage } from "@/lib/kosImages";
@@ -15,7 +16,8 @@ const GENDER_LABEL: Record<Property["gender"], "genderMixed" | "genderMale" | "g
 
 export default async function PropertyCard({ property }: { property: Property }) {
   const t = await getTranslations("card");
-  const totalAvailable = property.roomTypes.reduce((s, r) => s + r.available, 0);
+  const totalAvailable = getTotalAvailableRooms(property);
+  const minAvailPrice = getMinAvailablePrice(property);
 
   return (
     <Link
@@ -43,16 +45,16 @@ export default async function PropertyCard({ property }: { property: Property })
         <span className="inline-flex shrink-0 items-center rounded-md border border-nk-dark-border bg-nk-section px-2 py-0.5 text-xs font-medium text-nk-text">
           {t(GENDER_LABEL[property.gender])}
         </span>
-        <span className="flex min-w-0 items-center gap-1 text-xs text-nk-text-muted">
-          {totalAvailable > 0 ? (
-            <>
-              <span className="font-medium text-nk-text">{totalAvailable}</span>
-              <span className="truncate">{t("available")}</span>
-            </>
-          ) : (
-            <span>{t("full")}</span>
-          )}
-        </span>
+        {totalAvailable > 0 ? (
+          <span className="flex min-w-0 items-center gap-1 text-xs text-nk-text-muted">
+            <span className="font-medium text-nk-text">{totalAvailable}</span>
+            <span className="truncate">{t("available")}</span>
+          </span>
+        ) : (
+          <span className="inline-flex items-center border border-stone-200 bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">
+            {t("full")}
+          </span>
+        )}
       </div>
 
       <h3 className="mt-2.5 min-w-0 truncate text-base font-medium tracking-tight text-nk-text">
@@ -83,12 +85,19 @@ export default async function PropertyCard({ property }: { property: Property })
         </span>
       </div>
 
-      <div className="mt-4 flex items-baseline gap-1.5 border-t border-nk-border pt-4">
-        <span className="text-xs text-nk-text-muted">{t("from")}</span>
-        <span className="text-xl font-medium tracking-tight text-nk-text">
-          {formatIDR(property.minPrice)}
-        </span>
-        <span className="text-xs text-nk-text-muted">{t("perMonth")}</span>
+      <div className="mt-4 flex items-baseline justify-between border-t border-nk-border pt-4">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-xs text-nk-text-muted">{t("from")}</span>
+          <span className="text-xl font-medium tracking-tight text-nk-text">
+            {formatIDR(minAvailPrice)}
+          </span>
+          <span className="text-xs text-nk-text-muted">{t("perMonth")}</span>
+        </div>
+        {totalAvailable === 0 && (
+          <span className="text-[11px] font-medium text-stone-500 bg-stone-100 border border-stone-200 px-2 py-0.5">
+            {t("full")}
+          </span>
+        )}
       </div>
     </Link>
   );

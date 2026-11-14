@@ -416,3 +416,85 @@ export const SUPPORTED_CITIES = [
 export const CITIES = [
   ...new Set([...SUPPORTED_CITIES, ...getVerifiedProperties().map((p) => p.city)]),
 ].sort();
+
+export interface PropertyFilterState {
+  kota?: string;
+  maxPrice?: number;
+  fasilitas?: string[];
+  gender?: string;
+  sort?: string;
+  onlyAvailable?: boolean;
+}
+
+export function getMinAvailablePrice(
+  p: Property | { minPrice: number; roomTypes?: Array<{ pricePerMonth: number; available: number }> }
+): number {
+  if (!p.roomTypes || p.roomTypes.length === 0) return p.minPrice;
+  const available = p.roomTypes.filter((r) => r.available > 0);
+  if (available.length > 0) {
+    return Math.min(...available.map((r) => r.pricePerMonth));
+  }
+  return p.minPrice;
+}
+
+export function getTotalAvailableRooms(
+  p: Property | { roomTypes?: Array<{ available: number }> }
+): number {
+  if (!p.roomTypes || p.roomTypes.length === 0) return 0;
+  return p.roomTypes.reduce((sum, r) => sum + (r.available || 0), 0);
+}
+
+export function filterAndSortProperties(
+  list: Property[],
+  filters: PropertyFilterState,
+  q?: string
+): Property[] {
+  const query = q?.trim().toLowerCase();
+  const result = list.filter((p) => {
+    if (query) {
+      const match =
+        p.name.toLowerCase().includes(query) ||
+        p.city.toLowerCase().includes(query) ||
+        p.district.toLowerCase().includes(query) ||
+        p.address.toLowerCase().includes(query) ||
+        (p.tagline && p.tagline.toLowerCase().includes(query));
+      if (!match) return false;
+    }
+    if (filters.kota && p.city !== filters.kota) return false;
+
+    const minAvail = getMinAvailablePrice(p);
+    if (filters.maxPrice && filters.maxPrice > 0 && minAvail > filters.maxPrice) {
+      return false;
+    }
+
+    if (filters.onlyAvailable && getTotalAvailableRooms(p) === 0) {
+      return false;
+    }
+
+    if (filters.gender && p.gender !== filters.gender) return false;
+    if (filters.fasilitas && filters.fasilitas.length > 0) {
+      const pf = new Set(p.facilities);
+      if (!filters.fasilitas.every((f) => pf.has(f as any))) return false;
+    }
+    return true;
+  });
+
+  result.sort((a, b) => {
+    // Prioritize available properties over 100% full ones
+    const aAvail = getTotalAvailableRooms(a);
+    const bAvail = getTotalAvailableRooms(b);
+    if ((aAvail > 0) !== (bAvail > 0)) {
+      return aAvail > 0 ? -1 : 1;
+    }
+
+    if (filters.sort === "price-asc") {
+      return getMinAvailablePrice(a) - getMinAvailablePrice(b);
+    }
+    if (filters.sort === "price-desc") {
+      return getMinAvailablePrice(b) - getMinAvailablePrice(a);
+    }
+    return b.rating - a.rating;
+  });
+
+  return result;
+}

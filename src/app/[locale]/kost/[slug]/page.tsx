@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { getPropertyBySlug, getVerifiedProperties } from "@/lib/data/properties";
+import { getPropertyBySlug, getVerifiedProperties, getMinAvailablePrice, getTotalAvailableRooms } from "@/lib/data/properties";
 import { FACILITY_META, ROOM_FACILITY_KEYS } from "@/lib/data/facilities";
 import { getNearbyPlaces, type NearbyPlace } from "@/lib/data/nearbyPlaces";
 import { formatIDR, formatDistance, cn } from "@/lib/utils";
@@ -897,14 +897,27 @@ export default async function DetailPage({
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <div className="border border-nk-dark-border bg-white p-6">
               <div className="space-y-5">
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl font-semibold tracking-tight text-nk-text">
-                    {formatIDR(p.minPrice)}
-                  </span>
-                  <span className="text-sm text-nk-text-muted">{t("detail.perMonth")}</span>
+                <div className="flex items-baseline justify-between gap-1.5">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-semibold tracking-tight text-nk-text">
+                      {formatIDR(getMinAvailablePrice(p))}
+                    </span>
+                    <span className="text-sm text-nk-text-muted">{t("detail.perMonth")}</span>
+                  </div>
+                  {getTotalAvailableRooms(p) === 0 && (
+                    <span className="text-xs font-medium text-stone-500 bg-stone-100 border border-stone-200 px-2 py-0.5">
+                      {t("detail.full")}
+                    </span>
+                  )}
                 </div>
                 <p className="text-sm text-nk-text-muted">
-                  {t("detail.from")} {p.roomTypes.reduce((s, r) => s + r.available, 0)} {t("detail.available")}
+                  {getTotalAvailableRooms(p) > 0 ? (
+                    <>
+                      {t("detail.from")} {getTotalAvailableRooms(p)} {t("detail.available")}
+                    </>
+                  ) : (
+                    <span>{t("detail.full")}</span>
+                  )}
                 </p>
 
                 <div className="space-y-2.5 border-t border-nk-border pt-5">
