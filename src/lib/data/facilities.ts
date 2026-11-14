@@ -18,3 +18,22 @@ export const FACILITY_META: Record<
   cctv: { labelId: "CCTV", labelEn: "CCTV" },
   "access-24h": { labelId: "Akses 24 jam", labelEn: "24h access" },
 };
+
+export const ROOM_FACILITY_KEYS: Facility[] = [
+  "bathroom-in",
+  "ac",
+  "bed",
+  "wardrobe",
+  "desk",
+  "hot-water",
+];
+
+export const SHARED_FACILITY_KEYS: Facility[] = [
+  "wifi",
+  "parking",
+  "kitchen",
+  "laundry",
+  "fridge",
+  "cctv",
+  "access-24h",
+];

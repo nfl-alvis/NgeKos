@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getPropertyBySlug, getVerifiedProperties } from "@/lib/data/properties";
-import { FACILITY_META } from "@/lib/data/facilities";
+import { FACILITY_META, ROOM_FACILITY_KEYS } from "@/lib/data/facilities";
 import { formatIDR, formatDistance, cn } from "@/lib/utils";
 import BookingCta from "@/components/BookingCta";
 import FacilityIcon from "@/components/FacilityIcon";
@@ -16,6 +16,22 @@ import PropertyGallery from "@/components/PropertyGallery";
 import { getProperty, propertyDto } from "@/server/property-service";
 import { getKosImage, getKosGalleryItems } from "@/lib/kosImages";
 import type { Property, Gender, Facility } from "@/lib/data/types";
+import {
+  Users,
+  Clock,
+  DoorOpen,
+  Ban,
+  FileText,
+  MapPin,
+  CheckCircle2,
+  BedDouble,
+  Building2,
+  Info,
+  Navigation,
+  ShieldCheck,
+  CreditCard,
+  Sparkles,
+} from "lucide-react";
 
 function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
   return {
@@ -37,6 +53,7 @@ function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
     minPrice: dto.minPrice,
     distanceToCampusM: dto.distanceToCampusM ?? 0,
     depositAmount: dto.depositAmount,
+    dpAmount: dto.depositAmount ?? undefined,
     depositInfo: dto.depositAmount ? `DP Rp ${dto.depositAmount.toLocaleString("id-ID")}` : "Tanpa deposit",
     verificationStatus: dto.status === "VERIFIED" ? "verified" : dto.status === "REJECTED" ? "rejected" : "pending",
     roomTypes: dto.roomTypes.map((rt) => ({
@@ -50,15 +67,30 @@ function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
   };
 }
 
+export type RuleItem = {
+  text: string;
+  type: "allowed" | "prohibited" | "neutral";
+};
+
+export type RuleCategoryKey = "occupancy" | "access" | "guest" | "conduct" | "documents";
+
+export interface RuleCategory {
+  key: RuleCategoryKey;
+  titleId: string;
+  titleEn: string;
+  items: RuleItem[];
+}
+
 export function parsePropertyRules(property: Property): {
   cleanDescription: string;
   rules: string[];
   patokan?: string;
   highlights: { label: string; tone: "green" | "blue" | "amber" | "neutral" }[];
+  categories: RuleCategory[];
 } {
   const desc = property.description || "";
   let cleanDescription = desc;
-  let rules: string[] = [];
+  let parsedRules: string[] = [];
   let patokan: string | undefined;
 
   const patokanMatch = desc.match(/Patokan:\s*([^\n]+)/i);
@@ -71,7 +103,7 @@ export function parsePropertyRules(property: Property): {
   );
   if (rulesMatch) {
     const rawRules = rulesMatch[1];
-    rules = rawRules
+    parsedRules = rawRules
       .split(/\r?\n/)
       .map((line) => line.replace(/^[\s•\-\*]+/, "").trim())
       .filter((line) => line.length > 0 && !line.toLowerCase().startsWith("patokan:"));
@@ -80,35 +112,144 @@ export function parsePropertyRules(property: Property): {
       .replace(/(?:Aturan & Ketentuan Kos|Peraturan Kos|Persyaratan Sewa|Aturan Kos):\s*([\s\S]+)/i, "")
       .replace(/Patokan:\s*[^\n]+/i, "")
       .trim();
+  } else {
+    cleanDescription = desc.replace(/Patokan:\s*[^\n]+/i, "").trim();
   }
 
-  if (rules.length === 0) {
+  const has24h = property.facilities?.some(
+    (f) => f === "access-24h" || (typeof f === "object" && (f as any)?.key === "access-24h")
+  );
+
+  const catMap: Record<RuleCategoryKey, RuleItem[]> = {
+    occupancy: [],
+    access: [],
+    guest: [],
+    conduct: [],
+    documents: [],
+  };
+
+  const classify = (text: string): { category: RuleCategoryKey; item: RuleItem } => {
+    const lower = text.toLowerCase();
+    const isProhibited =
+      lower.includes("dilarang") ||
+      lower.includes("tidak boleh") ||
+      lower.includes("tidak diperkenankan") ||
+      lower.includes("no smoking") ||
+      lower.includes("jangan");
+
+    const isAllowed =
+      lower.includes("bebas") ||
+      lower.includes("boleh") ||
+      lower.includes("diperbolehkan") ||
+      lower.includes("tersedia") ||
+      lower.includes("24 jam") ||
+      lower.includes("khusus");
+
+    const type: RuleItem["type"] = isProhibited ? "prohibited" : isAllowed ? "allowed" : "neutral";
+
+    if (
+      lower.includes("tamu") ||
+      lower.includes("kunjungan") ||
+      lower.includes("lawan jenis") ||
+      lower.includes("menginap")
+    ) {
+      return { category: "guest", item: { text, type } };
+    }
+
+    if (
+      lower.includes("jam malam") ||
+      lower.includes("24 jam") ||
+      lower.includes("gerbang") ||
+      lower.includes("kunci")
+    ) {
+      return { category: "access", item: { text, type } };
+    }
+
+    if (
+      lower.includes("ktp") ||
+      lower.includes("buku nikah") ||
+      lower.includes("kartu keluarga") ||
+      lower.includes("kk") ||
+      lower.includes("identitas") ||
+      lower.includes("dokumen") ||
+      lower.includes("deposit") ||
+      lower.includes("dp") ||
+      lower.includes("pelunasan")
+    ) {
+      return { category: "documents", item: { text, type } };
+    }
+
+    if (
+      lower.includes("putri") ||
+      lower.includes("putra") ||
+      lower.includes("campur") ||
+      lower.includes("pasutri") ||
+      lower.includes("kapasitas") ||
+      lower.includes("orang per kamar") ||
+      lower.includes("penghuni") ||
+      lower.includes("kriteria") ||
+      lower.includes("anak")
+    ) {
+      return { category: "occupancy", item: { text, type } };
+    }
+
+    return { category: "conduct", item: { text, type } };
+  };
+
+  for (const rule of parsedRules) {
+    const { category, item } = classify(rule);
+    catMap[category].push(item);
+  }
+
+  // Populate standard baseline items if empty to mirror Mamikos standard completeness
+  if (catMap.occupancy.length === 0) {
     if (property.gender === "female") {
-      rules.push("Khusus Penghuni Putri");
+      catMap.occupancy.push({ text: "Khusus Penghuni Putri (Wanita)", type: "allowed" });
+      catMap.occupancy.push({ text: "Maksimal 1 penghuni per kamar (biaya tambahan bila 2 orang)", type: "neutral" });
+      catMap.occupancy.push({ text: "Tidak diperkenankan untuk pasutri", type: "prohibited" });
     } else if (property.gender === "male") {
-      rules.push("Khusus Penghuni Putra");
+      catMap.occupancy.push({ text: "Khusus Penghuni Putra (Pria)", type: "allowed" });
+      catMap.occupancy.push({ text: "Maksimal 1 penghuni per kamar", type: "neutral" });
+      catMap.occupancy.push({ text: "Tidak diperkenankan untuk pasutri", type: "prohibited" });
     } else {
-      rules.push("Tipe Kos Campur (Putra / Putri)");
+      catMap.occupancy.push({ text: "Tipe Kos Campur (Putra & Putri di kamar/lantai terpisah)", type: "allowed" });
+      catMap.occupancy.push({ text: "Pasutri diperbolehkan dengan membawa fotokopi Surat Nikah", type: "allowed" });
+      catMap.occupancy.push({ text: "Maksimal 2 orang per kamar", type: "neutral" });
     }
+  }
 
-    const has24h = property.facilities?.some(
-      (f) => f === "access-24h" || (typeof f === "object" && (f as any)?.key === "access-24h")
-    );
+  if (catMap.access.length === 0) {
     if (has24h) {
-      rules.push("Akses gerbang 24 Jam (bebas jam malam)");
+      catMap.access.push({ text: "Akses gerbang 24 Jam (bebas jam malam)", type: "allowed" });
+      catMap.access.push({ text: "Setiap penghuni diberikan kunci akses mandiri", type: "allowed" });
     } else {
-      rules.push("Akses gerbang berlaku hingga pukul 23:00 WIB");
+      catMap.access.push({ text: "Akses gerbang ditutup pukul 23:00 WIB", type: "neutral" });
+      catMap.access.push({ text: "Kepulangan larut malam wajib konfirmasi ke pengelola kos", type: "neutral" });
     }
+    catMap.access.push({ text: "Wajib menutup dan mengunci kembali gerbang demi keamanan bersama", type: "neutral" });
+  }
 
-    rules.push("Wajib menyertakan KTP asli saat pengajuan sewa");
-    rules.push("Dilarang merokok di dalam kamar ber-AC");
-    rules.push("Dilarang membawa minuman keras atau zat terlarang");
-    rules.push("Tamu lawan jenis dilarang menginap di dalam kamar");
-    rules.push("Menjaga kebersihan dan ketertiban area bersama");
+  if (catMap.guest.length === 0) {
+    catMap.guest.push({ text: "Tamu lawan jenis dilarang masuk ke dalam kamar penghuni", type: "prohibited" });
+    catMap.guest.push({ text: "Tamu boleh berkunjung di area ruang tamu bersama hingga pukul 21:00 WIB", type: "allowed" });
+    catMap.guest.push({ text: "Tamu yang menginap wajib melapor pengelola kos sebelumnya", type: "neutral" });
+  }
+
+  if (catMap.conduct.length === 0) {
+    catMap.conduct.push({ text: "Dilarang merokok di dalam kamar ber-AC atau lorong tertutup", type: "prohibited" });
+    catMap.conduct.push({ text: "Dilarang membawa hewan peliharaan", type: "prohibited" });
+    catMap.conduct.push({ text: "Dilarang membawa miras, narkoba, atau zat terlarang", type: "prohibited" });
+    catMap.conduct.push({ text: "Menjaga ketenangan dan kenyamanan bersama setelah pukul 22:00 WIB", type: "allowed" });
+    catMap.conduct.push({ text: "Menjaga kebersihan area bersama setelah selesai digunakan", type: "allowed" });
+  }
+
+  if (catMap.documents.length === 0) {
+    catMap.documents.push({ text: "Wajib menyertakan foto KTP asli yang masih berlaku saat check-in", type: "allowed" });
+    catMap.documents.push({ text: "Booking kamar wajib disertai deposit (DP) sesuai ketentuan", type: "neutral" });
+    catMap.documents.push({ text: "Pelunasan sisa uang sewa dilakukan sebelum serah terima kunci", type: "neutral" });
   }
 
   const highlights: { label: string; tone: "green" | "blue" | "amber" | "neutral" }[] = [];
-
   if (property.gender === "female") {
     highlights.push({ label: "Khusus Putri", tone: "blue" });
   } else if (property.gender === "male") {
@@ -117,26 +258,74 @@ export function parsePropertyRules(property: Property): {
     highlights.push({ label: "Campur (Putra/Putri)", tone: "neutral" });
   }
 
-  const has24h = property.facilities?.some(
-    (f) => f === "access-24h" || (typeof f === "object" && (f as any)?.key === "access-24h")
-  );
-  if (has24h || rules.some((r) => r.toLowerCase().includes("24 jam"))) {
+  if (has24h || catMap.access.some((i) => i.text.toLowerCase().includes("24 jam"))) {
     highlights.push({ label: "Akses 24 Jam", tone: "green" });
   } else {
     highlights.push({ label: "Jam Malam Berlaku", tone: "amber" });
   }
 
-  if (rules.some((r) => r.toLowerCase().includes("ktp"))) {
-    highlights.push({ label: "Wajib KTP", tone: "neutral" });
+  highlights.push({ label: "Wajib KTP", tone: "neutral" });
+
+  const allRulesText = [
+    ...catMap.occupancy,
+    ...catMap.access,
+    ...catMap.guest,
+    ...catMap.conduct,
+    ...catMap.documents,
+  ].map((i) => i.text.toLowerCase());
+
+  if (allRulesText.some((t) => t.includes("pasutri") && !t.includes("tidak"))) {
+    highlights.push({ label: "Boleh Pasutri (Buku Nikah)", tone: "green" });
+  } else {
+    highlights.push({ label: "Tanpa Pasutri", tone: "neutral" });
   }
-  if (rules.some((r) => r.toLowerCase().includes("pasutri") || r.toLowerCase().includes("buku nikah"))) {
-    highlights.push({ label: "Boleh Pasutri (Surat Nikah)", tone: "green" });
-  }
-  if (rules.some((r) => r.toLowerCase().includes("hewan"))) {
+
+  if (allRulesText.some((t) => t.includes("boleh bawa hewan") || (t.includes("hewan") && !t.includes("dilarang")))) {
     highlights.push({ label: "Boleh Bawa Hewan", tone: "neutral" });
   }
 
-  return { cleanDescription: cleanDescription || desc, rules, patokan, highlights };
+  const categories: RuleCategory[] = [
+    {
+      key: "occupancy",
+      titleId: "Tipe & Kapasitas Penghuni",
+      titleEn: "Occupancy & Tenant Type",
+      items: catMap.occupancy,
+    },
+    {
+      key: "access",
+      titleId: "Akses & Jam Malam",
+      titleEn: "Access & Curfew",
+      items: catMap.access,
+    },
+    {
+      key: "guest",
+      titleId: "Kebijakan Tamu",
+      titleEn: "Guest Policy",
+      items: catMap.guest,
+    },
+    {
+      key: "conduct",
+      titleId: "Ketertiban & Larangan",
+      titleEn: "Conduct & Prohibitions",
+      items: catMap.conduct,
+    },
+    {
+      key: "documents",
+      titleId: "Syarat & Dokumen Sewa",
+      titleEn: "Documents & Requirements",
+      items: catMap.documents,
+    },
+  ];
+
+  const flatRules = categories.flatMap((c) => c.items.map((i) => i.text));
+
+  return {
+    cleanDescription: cleanDescription || desc,
+    rules: flatRules,
+    patokan,
+    highlights,
+    categories,
+  };
 }
 
 export async function generateStaticParams() {
@@ -262,6 +451,8 @@ export default async function DetailPage({
   if (!p) notFound();
 
   const rulesData = parsePropertyRules(p);
+  const roomFacilities = p.facilities.filter((f) => ROOM_FACILITY_KEYS.includes(f));
+  const sharedFacilities = p.facilities.filter((f) => !ROOM_FACILITY_KEYS.includes(f));
 
   const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.ngekos.biz.id";
   const kosImages = getKosGalleryItems(p.slug, p.name);
@@ -305,7 +496,7 @@ export default async function DetailPage({
 
         {/* Body */}
         <div className="mt-12 grid grid-cols-1 gap-12 lg:grid-cols-[1fr_380px]">
-          <div className="space-y-12">
+          <div className="space-y-8">
             {/* Header */}
             <div className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -356,187 +547,367 @@ export default async function DetailPage({
               </div>
             </div>
 
-            {/* Description */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-medium tracking-tight text-nk-text">
-                {t("detail.description")}
-              </h2>
-              <p className="max-w-2xl text-base leading-relaxed text-nk-text-muted">
-                {rulesData.cleanDescription}
-              </p>
-            </div>
-
-            {/* Facilities */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-medium tracking-tight text-nk-text">
-                {t("detail.facilities")}
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {p.facilities.map((f) => (
-                  <span
-                    key={f}
-                    className="inline-flex items-center gap-1.5 border border-nk-border bg-white px-3 py-1.5 text-xs text-nk-text"
-                  >
-                    <FacilityIcon facility={f} />
-                    {FACILITY_META[f]?.labelId || f}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Room Types */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-medium tracking-tight text-nk-text">
-                {t("detail.roomTypes")}
-              </h2>
-              <div className="grid sm:grid-cols-2">
-                {p.roomTypes.map((rt) => (
-                  <div
-                    key={rt.id}
-                    className="-mb-px -mr-px border border-nk-border bg-white p-6"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-medium tracking-tight text-nk-text">
-                        {rt.name}
-                      </span>
-                      <span className="text-base font-light text-nk-text">
-                        {formatIDR(rt.pricePerMonth)}
-                        <span className="text-xs text-nk-text-muted">
-                          {t("detail.perMonth")}
-                        </span>
-                      </span>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between border-t border-nk-border pt-3 text-xs text-nk-text-muted">
-                      <span>{rt.sizeM2} m&sup2;</span>
-                      <span className={cn(
-                        rt.available > 0 ? "text-nk-accent" : "text-nk-text-muted"
-                      )}>
-                        {rt.available > 0
-                          ? `${rt.available} ${t("detail.availableNow")}`
-                          : t("detail.full")}
-                      </span>
-                    </div>
-                    {rt.available > 0 ? (
-                      <BookingCta
-                        propertyName={p.name}
-                        dpAmount={p.dpAmount}
-                        initialRoomId={rt.id}
-                        rooms={p.roomTypes.filter((r) => r.available > 0)}
-                        className="mt-4 inline-flex w-full items-center justify-center border border-nk-accent px-4 py-2.5 text-xs font-medium text-nk-accent transition-colors duration-200 hover:bg-nk-accent hover:text-nk-text-inverse"
-                      >
-                        {t("detail.pickRoom")}
-                      </BookingCta>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled
-                        aria-disabled="true"
-                        className="mt-4 inline-flex w-full items-center justify-center border border-nk-border bg-nk-section px-4 py-2.5 text-xs font-medium text-nk-text-muted cursor-not-allowed opacity-60"
-                      >
-                        {t("detail.pickRoom")}
-                      </button>
-                    )}
+            {/* 1. Spesifikasi Tipe Kamar & Pilihan Kamar */}
+            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-nk-border pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <BedDouble className="size-5 text-nk-text-muted" />
+                    <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+                      {t("detail.roomTypes")}
+                    </h2>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Rules & Requirements / Aturan & Persyaratan Kos */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-medium tracking-tight text-nk-text">
-                  {isEn ? "Rental Rules & Requirements" : "Aturan & Persyaratan Kos"}
-                </h2>
-                <span className="text-xs text-nk-text-muted">
-                  {rulesData.rules.length} {isEn ? "rules apply" : "ketentuan berlaku"}
+                  <p className="text-xs text-nk-text-muted mt-1">
+                    {isEn ? "Select your room type, dimension, and monthly rate" : "Pilih tipe kamar, luas ruangan, dan harga sewa bulanan"}
+                  </p>
+                </div>
+                <span className="text-xs font-medium px-2.5 py-1 bg-stone-100 text-stone-700 border border-nk-border">
+                  {p.roomTypes.length} {t("card.roomTypes")}
                 </span>
               </div>
 
-              <div className="border border-nk-border bg-white p-6 space-y-6">
-                {/* Visual Highlights Badges */}
-                <div className="flex flex-wrap gap-2 pb-4 border-b border-nk-border">
-                  {rulesData.highlights.map((h, idx) => (
-                    <span
-                      key={idx}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium border",
-                        h.tone === "green" && "border-[#BFDCC5] bg-[#E9F4EC] text-[#2F6B3C]",
-                        h.tone === "blue" && "border-blue-200 bg-blue-50 text-blue-800",
-                        h.tone === "amber" && "border-[#EAD9A8] bg-[#FBF3DC] text-[#8A6A1F]",
-                        h.tone === "neutral" && "border-nk-border bg-stone-50 text-nk-text"
-                      )}
-                    >
-                      <span className="size-1.5 rounded-full bg-current opacity-70" />
-                      {h.label}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Structured Rules Checklist */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {rulesData.rules.map((rule, idx) => {
-                    const isBan = /dilarang|tidak boleh|denda/i.test(rule);
-                    const isDoc = /ktp|kk|buku nikah|dokumen|kartu keluarga/i.test(rule);
-                    const isAccess = /jam malam|akses|24 jam/i.test(rule);
-
-                    return (
-                      <div
-                        key={idx}
-                        className="flex items-start gap-3 rounded-lg border border-nk-border/70 bg-stone-50/50 p-3.5 text-xs text-nk-text"
-                      >
-                        <div
+              <div className="grid gap-4 sm:grid-cols-2">
+                {p.roomTypes.map((rt) => (
+                  <div
+                    key={rt.id}
+                    className="flex flex-col justify-between border border-nk-border bg-white p-5 transition-shadow hover:shadow-sm"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="text-base font-semibold text-nk-text">
+                            {rt.name}
+                          </h3>
+                          <p className="text-xs text-nk-text-muted mt-0.5">
+                            {rt.sizeM2} m&sup2; ({Math.round(Math.sqrt(rt.sizeM2))} x {Math.round(rt.sizeM2 / Math.max(1, Math.round(Math.sqrt(rt.sizeM2))))} m)
+                          </p>
+                        </div>
+                        <span
                           className={cn(
-                            "flex size-5 shrink-0 items-center justify-center rounded-full mt-0.5",
-                            isBan
-                              ? "bg-rose-100 text-rose-700"
-                              : isDoc
-                                ? "bg-amber-100 text-amber-800"
-                                : isAccess
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-emerald-100 text-emerald-800"
+                            "inline-flex items-center px-2 py-0.5 text-[11px] font-medium border",
+                            rt.available > 0
+                              ? "border-[#BFDCC5] bg-[#E9F4EC] text-[#2F6B3C]"
+                              : "border-stone-200 bg-stone-100 text-stone-500"
                           )}
                         >
-                          {isBan ? (
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="12" cy="12" r="10" />
-                              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-                            </svg>
-                          ) : (
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
+                          {rt.available > 0
+                            ? `${rt.available} ${t("detail.availableNow")}`
+                            : t("detail.full")}
+                        </span>
+                      </div>
+
+                      <div className="flex items-baseline gap-1 pt-2 border-t border-nk-border/60">
+                        <span className="text-xl font-semibold text-nk-text">
+                          {formatIDR(rt.pricePerMonth)}
+                        </span>
+                        <span className="text-xs text-nk-text-muted">
+                          {t("detail.perMonth")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 mt-4 border-t border-nk-border/60">
+                      {rt.available > 0 ? (
+                        <BookingCta
+                          propertyName={p.name}
+                          dpAmount={p.dpAmount}
+                          initialRoomId={rt.id}
+                          rooms={p.roomTypes.filter((r) => r.available > 0)}
+                          className="inline-flex w-full items-center justify-center border border-nk-accent bg-nk-accent px-4 py-2.5 text-xs font-medium text-white transition-colors duration-200 hover:bg-nk-accent/90"
+                        >
+                          {t("detail.pickRoom")}
+                        </BookingCta>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          aria-disabled="true"
+                          className="inline-flex w-full items-center justify-center border border-nk-border bg-stone-100 px-4 py-2.5 text-xs font-medium text-nk-text-muted cursor-not-allowed opacity-70"
+                        >
+                          {t("detail.pickRoom")}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* 2. Fasilitas Kamar (Pribadi) */}
+            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-nk-border pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="size-5 text-nk-text-muted" />
+                    <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+                      {t("detail.roomFacilities")}
+                    </h2>
+                  </div>
+                  <p className="text-xs text-nk-text-muted mt-1">
+                    {t("detail.roomFacilitiesSub")}
+                  </p>
+                </div>
+                <span className="text-xs font-medium px-2.5 py-1 bg-stone-100 text-stone-700 border border-nk-border">
+                  {roomFacilities.length} {isEn ? "items" : "fasilitas"}
+                </span>
+              </div>
+
+              {roomFacilities.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {roomFacilities.map((f) => {
+                    const meta = FACILITY_META[f];
+                    const label = isEn ? (meta?.labelEn || f) : (meta?.labelId || f);
+                    return (
+                      <div
+                        key={f}
+                        className="flex items-center justify-between gap-2 border border-nk-border/80 bg-white p-3.5 text-xs text-nk-text"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <FacilityIcon facility={f} />
+                          <span className="font-medium truncate">{label}</span>
                         </div>
-                        <span className="leading-relaxed">{rule}</span>
+                        <CheckCircle2 className="size-4 shrink-0 text-[#2F6B3C]" />
                       </div>
                     );
                   })}
                 </div>
+              ) : (
+                <p className="text-xs text-nk-text-muted italic bg-stone-50 border border-nk-border p-4">
+                  {t("detail.noRoomFacilities")}
+                </p>
+              )}
+            </section>
+
+            {/* 3. Fasilitas Bersama (Umum) */}
+            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-nk-border pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Building2 className="size-5 text-nk-text-muted" />
+                    <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+                      {t("detail.sharedFacilities")}
+                    </h2>
+                  </div>
+                  <p className="text-xs text-nk-text-muted mt-1">
+                    {t("detail.sharedFacilitiesSub")}
+                  </p>
+                </div>
+                <span className="text-xs font-medium px-2.5 py-1 bg-stone-100 text-stone-700 border border-nk-border">
+                  {sharedFacilities.length} {isEn ? "items" : "fasilitas"}
+                </span>
+              </div>
+
+              {sharedFacilities.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {sharedFacilities.map((f) => {
+                    const meta = FACILITY_META[f];
+                    const label = isEn ? (meta?.labelEn || f) : (meta?.labelId || f);
+                    return (
+                      <div
+                        key={f}
+                        className="flex items-center justify-between gap-2 border border-nk-border/80 bg-white p-3.5 text-xs text-nk-text"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <FacilityIcon facility={f} />
+                          <span className="font-medium truncate">{label}</span>
+                        </div>
+                        <CheckCircle2 className="size-4 shrink-0 text-[#2F6B3C]" />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-nk-text-muted italic bg-stone-50 border border-nk-border p-4">
+                  {t("detail.noSharedFacilities")}
+                </p>
+              )}
+            </section>
+
+            {/* 4. Peraturan & Ketentuan Menginap (Mamikos Pattern) */}
+            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-nk-border pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="size-5 text-nk-text-muted" />
+                    <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+                      {t("detail.rulesTitle")}
+                    </h2>
+                  </div>
+                  <p className="text-xs text-nk-text-muted mt-1">
+                    {t("detail.rulesSubtitle")}
+                  </p>
+                </div>
+                <span className="text-xs font-medium px-2.5 py-1 bg-stone-100 text-stone-700 border border-nk-border">
+                  {rulesData.categories.reduce((acc, c) => acc + c.items.length, 0)} {isEn ? "policies" : "ketentuan"}
+                </span>
+              </div>
+
+              {/* Quick scanning highlight badges */}
+              <div className="flex flex-wrap gap-2 pb-2">
+                {rulesData.highlights.map((h, idx) => (
+                  <span
+                    key={idx}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium border",
+                      h.tone === "green" && "border-[#BFDCC5] bg-[#E9F4EC] text-[#2F6B3C]",
+                      h.tone === "blue" && "border-blue-200 bg-blue-50 text-blue-800",
+                      h.tone === "amber" && "border-[#EAD9A8] bg-[#FBF3DC] text-[#8A6A1F]",
+                      h.tone === "neutral" && "border-nk-border bg-stone-50 text-nk-text"
+                    )}
+                  >
+                    <span className="size-1.5 rounded-full bg-current opacity-70" />
+                    {h.label}
+                  </span>
+                ))}
+              </div>
+
+              {/* Modular 5-Category Sub-Cards */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {rulesData.categories.map((category) => {
+                  const icon =
+                    category.key === "occupancy" ? (
+                      <Users className="size-4 text-stone-600" />
+                    ) : category.key === "access" ? (
+                      <Clock className="size-4 text-stone-600" />
+                    ) : category.key === "guest" ? (
+                      <DoorOpen className="size-4 text-stone-600" />
+                    ) : category.key === "conduct" ? (
+                      <Ban className="size-4 text-stone-600" />
+                    ) : (
+                      <FileText className="size-4 text-stone-600" />
+                    );
+
+                  const title = isEn ? category.titleEn : category.titleId;
+
+                  return (
+                    <div
+                      key={category.key}
+                      className={cn(
+                        "border border-nk-border bg-stone-50/40 p-4 space-y-3",
+                        category.key === "conduct" && "sm:col-span-2"
+                      )}
+                    >
+                      <div className="flex items-center gap-2 border-b border-nk-border/70 pb-2.5">
+                        <div className="flex size-7 items-center justify-center bg-white border border-nk-border/80 text-nk-text">
+                          {icon}
+                        </div>
+                        <h3 className="text-sm font-semibold text-nk-text">{title}</h3>
+                      </div>
+
+                      <ul className="space-y-2">
+                        {category.items.map((item, iIdx) => (
+                          <li
+                            key={iIdx}
+                            className="flex items-start gap-2.5 text-xs text-nk-text leading-relaxed"
+                          >
+                            {item.type === "prohibited" ? (
+                              <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-700">
+                                <Ban className="size-2.5" />
+                              </span>
+                            ) : item.type === "allowed" ? (
+                              <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
+                                <CheckCircle2 className="size-2.5" />
+                              </span>
+                            ) : (
+                              <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-stone-200 text-stone-700">
+                                <Info className="size-2.5" />
+                              </span>
+                            )}
+                            <span>{item.text}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* 5. Catatan dari Pemilik Kos */}
+            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-4">
+              <div className="border-b border-nk-border pb-4">
+                <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+                  {t("detail.ownerNotes")}
+                </h2>
+                <p className="text-xs text-nk-text-muted mt-1">
+                  {isEn ? "Overview and personal message directly from the property owner" : "Informasi gambaran umum kos dan pesan langsung dari pemilik kos"}
+                </p>
+              </div>
+              <p className="text-sm leading-relaxed text-nk-text-muted whitespace-pre-line max-w-3xl">
+                {rulesData.cleanDescription}
+              </p>
+            </section>
+
+            {/* 6. Lokasi & Lingkungan Sekitar */}
+            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-5">
+              <div className="border-b border-nk-border pb-4">
+                <div className="flex items-center gap-2">
+                  <MapPin className="size-5 text-nk-text-muted" />
+                  <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+                    {t("detail.neighborhoodTitle")}
+                  </h2>
+                </div>
+                <p className="text-xs text-nk-text-muted mt-1">
+                  {isEn ? "Property address, surrounding landmarks, and transit access" : "Alamat lengkap kos, patokan lokasi, serta kemudahan akses sekitar"}
+                </p>
+              </div>
+
+              <div className="space-y-4 text-xs text-nk-text">
+                <div className="flex items-start gap-3 border border-nk-border/80 bg-stone-50/50 p-4">
+                  <MapPin className="size-4 shrink-0 text-nk-accent mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-medium text-sm text-nk-text">{p.address}</p>
+                    <p className="text-nk-text-muted">{p.district}, {p.city}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 px-1 text-nk-text-muted">
+                  <Navigation className="size-3.5 shrink-0 text-nk-accent" />
+                  <span>{formatDistance(p.distanceToCampusM)} {t("detail.distance")}</span>
+                </div>
 
                 {rulesData.patokan && (
-                  <div className="flex items-center gap-2 pt-3 border-t border-nk-border text-xs text-nk-text-muted">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-nk-accent">
-                      <circle cx="12" cy="10" r="3" />
-                      <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
-                    </svg>
-                    <span><strong>Patokan Lokasi:</strong> {rulesData.patokan}</span>
+                  <div className="flex items-start gap-3 border border-amber-200 bg-[#FBF8EF] p-4 text-xs text-[#7A5A17]">
+                    <Navigation className="size-4 shrink-0 text-[#8A6A1F] mt-0.5" />
+                    <div>
+                      <span className="font-semibold block text-[13px] text-[#5A410E]">
+                        {t("detail.landmark")}
+                      </span>
+                      <p className="mt-0.5 leading-relaxed">{rulesData.patokan}</p>
+                    </div>
                   </div>
                 )}
               </div>
-            </div>
+            </section>
 
-            {/* Deposit */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-medium tracking-tight text-nk-text">
-                {t("detail.deposit")}
-              </h2>
-              <p className="max-w-2xl text-base leading-relaxed text-nk-text-muted">
-                {p.depositInfo}
-              </p>
-            </div>
+            {/* 7. Ketentuan Deposit & Pembayaran */}
+            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-4">
+              <div className="border-b border-nk-border pb-4">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="size-5 text-nk-text-muted" />
+                  <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+                    {t("detail.depositTerms")}
+                  </h2>
+                </div>
+                <p className="text-xs text-nk-text-muted mt-1">
+                  {isEn ? "Security deposit details and initial payment terms" : "Keterangan uang muka / deposit dan syarat pelunasan sewa"}
+                </p>
+              </div>
+              <div className="flex items-start gap-3 border border-nk-border/80 bg-stone-50/50 p-4 text-xs text-nk-text leading-relaxed">
+                <ShieldCheck className="size-4 shrink-0 text-nk-accent mt-0.5" />
+                <div>
+                  <p className="font-semibold text-sm text-nk-text">{p.depositInfo}</p>
+                  <p className="text-nk-text-muted mt-1">
+                    {isEn
+                      ? "The booking deposit secures your room reservation. Remaining rental balance is settled upon check-in and key handover."
+                      : "Uang muka/deposit mengikat reservasi kamar agar tidak diambil penyewa lain. Sisa pelunasan sewa diselesaikan saat serah terima kunci."}
+                  </p>
+                </div>
+              </div>
+            </section>
 
-            {/* Reviews & Ratings */}
-            <div className="pt-4 border-t border-nk-border">
+            {/* 8. Ulasan & Penilaian Penghuni */}
+            <section className="border border-nk-border bg-white p-6 md:p-8">
               <PropertyReviewsSection
                 propertyId={p.id}
                 propertySlug={p.slug}
@@ -544,7 +915,7 @@ export default async function DetailPage({
                 initialRating={p.rating}
                 initialReviewCount={p.reviewCount}
               />
-            </div>
+            </section>
           </div>
 
           {/* Sidebar - CTA */}
