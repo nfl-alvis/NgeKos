@@ -689,26 +689,20 @@ export default async function DetailPage({
               </div>
 
               {roomFacilities.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 pt-1">
                   {roomFacilities.map((f) => {
                     const meta = FACILITY_META[f];
                     const label = isEn ? (meta?.labelEn || f) : (meta?.labelId || f);
                     return (
-                      <div
-                        key={f}
-                        className="flex items-center justify-between gap-2 border border-nk-border/80 bg-white p-3.5 text-xs text-nk-text"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <FacilityIcon facility={f} />
-                          <span className="font-medium truncate">{label}</span>
-                        </div>
-                        <CheckCircle2 className="size-4 shrink-0 text-[#2F6B3C]" />
+                      <div key={f} className="flex items-center gap-3">
+                        <FacilityIcon facility={f} className="size-6 shrink-0 opacity-90" />
+                        <span className="text-sm sm:text-[15px] font-medium text-nk-text leading-tight">{label}</span>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <p className="text-xs text-nk-text-muted italic bg-stone-50 border border-nk-border p-4">
+                <p className="text-xs text-nk-text-muted italic py-1">
                   {t("detail.noRoomFacilities")}
                 </p>
               )}
@@ -734,26 +728,20 @@ export default async function DetailPage({
               </div>
 
               {sharedFacilities.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 pt-1">
                   {sharedFacilities.map((f) => {
                     const meta = FACILITY_META[f];
                     const label = isEn ? (meta?.labelEn || f) : (meta?.labelId || f);
                     return (
-                      <div
-                        key={f}
-                        className="flex items-center justify-between gap-2 border border-nk-border/80 bg-white p-3.5 text-xs text-nk-text"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <FacilityIcon facility={f} />
-                          <span className="font-medium truncate">{label}</span>
-                        </div>
-                        <CheckCircle2 className="size-4 shrink-0 text-[#2F6B3C]" />
+                      <div key={f} className="flex items-center gap-3">
+                        <FacilityIcon facility={f} className="size-6 shrink-0 opacity-90" />
+                        <span className="text-sm sm:text-[15px] font-medium text-nk-text leading-tight">{label}</span>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <p className="text-xs text-nk-text-muted italic bg-stone-50 border border-nk-border p-4">
+                <p className="text-xs text-nk-text-muted italic py-1">
                   {t("detail.noSharedFacilities")}
                 </p>
               )}

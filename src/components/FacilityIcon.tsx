@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { Facility } from "@/lib/data/types";
+import { cn } from "@/lib/utils";
 
 /**
  * Ikon fasilitas dari Icons8 (style: iOS7 Outline, monochrome) - diambil
@@ -23,7 +24,13 @@ const FILES: Record<Facility, string> = {
   "access-24h": "access-24h",
 };
 
-export default function FacilityIcon({ facility }: { facility: Facility; className?: string }) {
+export default function FacilityIcon({
+  facility,
+  className,
+}: {
+  facility: Facility;
+  className?: string;
+}) {
   const name = FILES[facility];
   if (!name) return null;
   return (
@@ -34,7 +41,7 @@ export default function FacilityIcon({ facility }: { facility: Facility; classNa
       height={28}
       loading="eager"
       unoptimized
-      className="size-[14px] shrink-0 opacity-80"
+      className={cn("size-[14px] shrink-0 opacity-80", className)}
     />
   );
 }
