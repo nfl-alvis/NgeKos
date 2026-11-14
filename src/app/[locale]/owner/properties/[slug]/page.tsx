@@ -24,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FACILITY_META } from "@/lib/data/facilities";
+import { FACILITY_META, ROOM_FACILITY_KEYS } from "@/lib/data/facilities";
 import FacilityIcon from "@/components/FacilityIcon";
 import type { Property, Facility, Gender } from "@/lib/data/types";
 import { formatIDR, cn } from "@/lib/utils";
@@ -120,7 +120,20 @@ export default function OwnerPropertyDetailPage() {
   const [newTypePrice, setNewTypePrice] = useState("");
   const [newTypeSize, setNewTypeSize] = useState("");
   const [newTypeDesc, setNewTypeDesc] = useState("");
+  const [newTypeFacilities, setNewTypeFacilities] = useState<string[]>([
+    "bed",
+    "wardrobe",
+    "desk",
+    "bathroom-in",
+    "ac",
+  ]);
   const [submittingType, setSubmittingType] = useState(false);
+
+  const toggleNewTypeFacility = (key: string) => {
+    setNewTypeFacilities((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  };
 
   // Dialog State: Edit Tipe Kamar
   const [editTypeOpen, setEditTypeOpen] = useState(false);
@@ -129,9 +142,21 @@ export default function OwnerPropertyDetailPage() {
     name: string;
     pricePerMonth: number;
     sizeM2: number;
+    facilities: string[];
   } | null>(null);
   const [submittingEditType, setSubmittingEditType] = useState(false);
   const [deletingType, setDeletingType] = useState(false);
+
+  const toggleEditingTypeFacility = (key: string) => {
+    if (!editingType) return;
+    const exists = editingType.facilities.includes(key);
+    setEditingType({
+      ...editingType,
+      facilities: exists
+        ? editingType.facilities.filter((k) => k !== key)
+        : [...editingType.facilities, key],
+    });
+  };
 
   // Dialog State: Tambah Unit Kamar
   const [addUnitOpen, setAddUnitOpen] = useState(false);
@@ -222,6 +247,7 @@ export default function OwnerPropertyDetailPage() {
               available: rt.available ?? 0,
               total: rt.total ?? 0,
               sizeM2: rt.sizeM2 ?? 12,
+              facilities: rt.facilities || [],
             })),
           };
           setProperty(mapped);
@@ -468,6 +494,7 @@ export default function OwnerPropertyDetailPage() {
           sizeM2: newTypeSize ? Number(newTypeSize) : undefined,
           description: newTypeDesc.trim() || undefined,
           capacity: 1,
+          facilities: newTypeFacilities,
         }),
       });
 
@@ -481,6 +508,7 @@ export default function OwnerPropertyDetailPage() {
       setNewTypePrice("");
       setNewTypeSize("");
       setNewTypeDesc("");
+      setNewTypeFacilities(["bed", "wardrobe", "desk", "bathroom-in", "ac"]);
       await refreshProperty();
     } catch (err: unknown) {
       setActionError(
@@ -508,6 +536,7 @@ export default function OwnerPropertyDetailPage() {
             name: editingType.name.trim(),
             pricePerMonth: Number(editingType.pricePerMonth),
             sizeM2: editingType.sizeM2 ? Number(editingType.sizeM2) : undefined,
+            facilities: editingType.facilities,
           }),
         }
       );
@@ -1019,6 +1048,22 @@ export default function OwnerPropertyDetailPage() {
                             {rtVacant} kosong · {rtOccupied} terisi · {currentUnits.length} total unit
                           </span>
                         </div>
+                        {rt.facilities && rt.facilities.length > 0 && (
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            {rt.facilities.map((fKey: string) => {
+                              const meta = FACILITY_META[fKey as Facility];
+                              return (
+                                <span
+                                  key={fKey}
+                                  className="inline-flex items-center gap-1 rounded border border-nk-border bg-nk-warm/40 px-2 py-0.5 text-[11px] font-medium text-nk-text"
+                                >
+                                  <FacilityIcon facility={fKey as Facility} className="size-3 text-nk-accent" />
+                                  <span>{meta?.labelId || fKey}</span>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </button>
 
@@ -1031,6 +1076,7 @@ export default function OwnerPropertyDetailPage() {
                             name: rt.name,
                             pricePerMonth: rt.pricePerMonth,
                             sizeM2: rt.sizeM2 ?? 12,
+                            facilities: (rt.facilities as string[]) || [],
                           });
                           setEditTypeOpen(true);
                         }}
@@ -1741,6 +1787,35 @@ export default function OwnerPropertyDetailPage() {
                 className="mt-1"
               />
             </div>
+            <div>
+              <Label className="text-xs">Fasilitas Kamar</Label>
+              <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {ROOM_FACILITY_KEYS.map((key) => {
+                  const checked = newTypeFacilities.includes(key);
+                  const meta = FACILITY_META[key];
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => toggleNewTypeFacility(key)}
+                      className={`flex items-center gap-2 rounded-lg border p-2 text-left text-xs font-medium transition-all cursor-pointer ${
+                        checked
+                          ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
+                          : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
+                      }`}
+                    >
+                      <FacilityIcon
+                        facility={key}
+                        className={`size-3.5 shrink-0 transition-colors ${
+                          checked ? "text-nk-accent" : "text-nk-text-muted"
+                        }`}
+                      />
+                      <span className="truncate">{meta?.labelId || key}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <DialogFooter className="mt-4">
               <button
                 type="button"
@@ -1810,6 +1885,35 @@ export default function OwnerPropertyDetailPage() {
                       setEditingType({ ...editingType, sizeM2: Number(e.target.value) })}
                     className="mt-1"
                   />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Fasilitas Kamar</Label>
+                <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {ROOM_FACILITY_KEYS.map((key) => {
+                    const checked = editingType.facilities.includes(key);
+                    const meta = FACILITY_META[key];
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => toggleEditingTypeFacility(key)}
+                        className={`flex items-center gap-2 rounded-lg border p-2 text-left text-xs font-medium transition-all cursor-pointer ${
+                          checked
+                            ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
+                            : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
+                        }`}
+                      >
+                        <FacilityIcon
+                          facility={key}
+                          className={`size-3.5 shrink-0 transition-colors ${
+                            checked ? "text-nk-accent" : "text-nk-text-muted"
+                          }`}
+                        />
+                        <span className="truncate">{meta?.labelId || key}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <DialogFooter className="mt-4">

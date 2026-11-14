@@ -42,11 +42,28 @@ async function refreshMinPrice(tx: Prisma.TransactionClient, propertyId: string)
 export async function createRoomType(profile: Profile, propertyId: string, input: RoomTypeInput) {
   await ownedProperty(profile, propertyId);
   return prisma.$transaction(async (tx) => {
+    const { facilities, ...rest } = input;
+    const desc =
+      input.description ??
+      (facilities && facilities.length > 0
+        ? JSON.stringify({ facilities })
+        : null);
     const roomType = await tx.roomType.create({
-      data: { ...input, propertyId, pricePerMonth: new Prisma.Decimal(input.pricePerMonth), sizeM2: input.sizeM2 ? new Prisma.Decimal(input.sizeM2) : undefined },
+      data: {
+        ...rest,
+        description: desc,
+        propertyId,
+        pricePerMonth: new Prisma.Decimal(input.pricePerMonth),
+        sizeM2: input.sizeM2 ? new Prisma.Decimal(input.sizeM2) : undefined,
+      },
     });
     await refreshMinPrice(tx, propertyId);
-    return { ...roomType, pricePerMonth: Number(roomType.pricePerMonth), sizeM2: roomType.sizeM2 ? Number(roomType.sizeM2) : null };
+    return {
+      ...roomType,
+      pricePerMonth: Number(roomType.pricePerMonth),
+      sizeM2: roomType.sizeM2 ? Number(roomType.sizeM2) : null,
+      facilities: facilities ?? [],
+    };
   });
 }
 
@@ -113,15 +130,34 @@ export async function updateRoomType(
   });
   if (!existing) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Room type not found");
 
+  const { facilities, ...rest } = input;
+  let newDescription = input.description;
+  if (facilities !== undefined) {
+    let currentNote: string | undefined;
+    if (existing.description) {
+      try {
+        const parsed = JSON.parse(existing.description);
+        currentNote = parsed.note;
+      } catch {
+        currentNote = existing.description;
+      }
+    }
+    newDescription = JSON.stringify({
+      facilities,
+      ...(currentNote ? { note: currentNote } : {}),
+      ...(input.description ? { note: input.description } : {}),
+    });
+  }
+
   return prisma.$transaction(async (tx) => {
     const updated = await tx.roomType.update({
       where: { id: roomTypeId },
       data: {
-        ...(input.name ? { name: input.name } : {}),
-        ...(input.description !== undefined ? { description: input.description } : {}),
-        ...(input.pricePerMonth !== undefined ? { pricePerMonth: new Prisma.Decimal(input.pricePerMonth) } : {}),
-        ...(input.sizeM2 !== undefined ? { sizeM2: input.sizeM2 ? new Prisma.Decimal(input.sizeM2) : null } : {}),
-        ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
+        ...(rest.name ? { name: rest.name } : {}),
+        ...(newDescription !== undefined ? { description: newDescription } : {}),
+        ...(rest.pricePerMonth !== undefined ? { pricePerMonth: new Prisma.Decimal(rest.pricePerMonth) } : {}),
+        ...(rest.sizeM2 !== undefined ? { sizeM2: rest.sizeM2 ? new Prisma.Decimal(rest.sizeM2) : null } : {}),
+        ...(rest.capacity !== undefined ? { capacity: rest.capacity } : {}),
       },
     });
     await refreshMinPrice(tx, propertyId);
@@ -129,6 +165,7 @@ export async function updateRoomType(
       ...updated,
       pricePerMonth: Number(updated.pricePerMonth),
       sizeM2: updated.sizeM2 ? Number(updated.sizeM2) : null,
+      facilities: facilities ?? undefined,
     };
   });
 }

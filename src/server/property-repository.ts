@@ -189,11 +189,16 @@ export class PrismaPropertyRepository implements PropertyRepository {
 
         if (roomTypes && roomTypes.length > 0) {
           for (const rt of roomTypes) {
+            const desc =
+              rt.description ??
+              (rt.facilities && rt.facilities.length > 0
+                ? JSON.stringify({ facilities: rt.facilities })
+                : null);
             const createdRt = await tx.roomType.create({
               data: {
                 propertyId: prop.id,
                 name: rt.name,
-                description: rt.description ?? null,
+                description: desc,
                 pricePerMonth: new Prisma.Decimal(rt.pricePerMonth),
                 sizeM2: rt.sizeM2 ? new Prisma.Decimal(rt.sizeM2) : new Prisma.Decimal(12),
                 capacity: 1,
@@ -458,7 +463,11 @@ export class InMemoryPropertyRepository implements PropertyRepository {
         id: `rt-${idx}`,
         propertyId: id,
         name: rt.name,
-        description: rt.description ?? null,
+        description:
+          rt.description ??
+          (rt.facilities && rt.facilities.length > 0
+            ? JSON.stringify({ facilities: rt.facilities })
+            : null),
         pricePerMonth: new Prisma.Decimal(rt.pricePerMonth),
         sizeM2: rt.sizeM2 ? new Prisma.Decimal(rt.sizeM2) : new Prisma.Decimal(12),
         capacity: 1,

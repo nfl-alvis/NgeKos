@@ -52,26 +52,41 @@ export function propertyDto(property: PropertyRecord) {
       nameEn: facility.nameEn,
       icon: facility.icon,
     })),
-    roomTypes: property.roomTypes.map((roomType) => ({
-      id: roomType.id,
-      name: roomType.name,
-      description: roomType.description,
-      pricePerMonth: Number(roomType.pricePerMonth),
-      sizeM2: roomType.sizeM2 === null ? null : Number(roomType.sizeM2),
-      capacity: roomType.capacity,
-      facilities: property.facilities
-        .filter(({ facility }) => isRoomFacility(facility.key))
-        .map(({ facility }) => facility.key as Facility),
-      total: roomType.units.length,
-      available: roomType.units.filter((unit) => unit.status === "AVAILABLE").length,
-      units: roomType.units.map((unit) => ({
-        id: unit.id,
-        number: unit.number,
-        floor: unit.floor,
-        status: unit.status,
-        roomTypeId: unit.roomTypeId,
-      })),
-    })),
+    roomTypes: property.roomTypes.map((roomType) => {
+      let specificFacilities: Facility[] | null = null;
+      if (roomType.description) {
+        try {
+          const parsed = JSON.parse(roomType.description);
+          if (Array.isArray(parsed.facilities)) {
+            specificFacilities = parsed.facilities as Facility[];
+          }
+        } catch {
+          // not JSON, ignore
+        }
+      }
+      return {
+        id: roomType.id,
+        name: roomType.name,
+        description: roomType.description,
+        pricePerMonth: Number(roomType.pricePerMonth),
+        sizeM2: roomType.sizeM2 === null ? null : Number(roomType.sizeM2),
+        capacity: roomType.capacity,
+        facilities:
+          specificFacilities ??
+          property.facilities
+            .filter(({ facility }) => isRoomFacility(facility.key))
+            .map(({ facility }) => facility.key as Facility),
+        total: roomType.units.length,
+        available: roomType.units.filter((unit) => unit.status === "AVAILABLE").length,
+        units: roomType.units.map((unit) => ({
+          id: unit.id,
+          number: unit.number,
+          floor: unit.floor,
+          status: unit.status,
+          roomTypeId: unit.roomTypeId,
+        })),
+      };
+    }),
   };
 }
 

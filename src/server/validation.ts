@@ -37,6 +37,7 @@ export const propertyCreateSchema = z
           sizeM2: z.coerce.number().positive().max(10_000).optional(),
           total: z.coerce.number().int().min(1).max(1_000).default(1),
           available: z.coerce.number().int().min(0).max(1_000).optional(),
+          facilities: z.array(z.string().trim().min(1).max(64)).max(50).optional(),
         })
       )
       .optional(),
@@ -71,6 +72,7 @@ export const roomTypeCreateSchema = z
     pricePerMonth: money,
     sizeM2: z.coerce.number().positive().max(10_000).optional(),
     capacity: z.coerce.number().int().min(1).max(20).default(1),
+    facilities: z.array(z.string().trim().min(1).max(64)).max(50).optional(),
   })
   .strict();
 

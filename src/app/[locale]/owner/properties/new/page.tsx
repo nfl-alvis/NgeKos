@@ -165,60 +165,24 @@ const PHOTO_SLOTS = [
   { key: "lainnya", label: "Foto Lainnya", icon: ImagePlus, required: false },
 ];
 
-const FASILITAS_DASAR_ITEMS = [
-  { label: "Kamar Mandi Dalam", icon: Bath },
-  { label: "Kamar Mandi Luar", icon: Bath },
-  { label: "Kasur", icon: Bed },
-  { label: "Bantal", icon: Sparkles },
-  { label: "Guling", icon: Sparkles },
-  { label: "Tanpa Kasur", icon: Ban },
-  { label: "AC", icon: AirVent },
-  { label: "Ventilasi", icon: Wind },
-  { label: "Jendela", icon: AppWindow },
-  { label: "Kipas Angin", icon: Fan },
-  { label: "WiFi", icon: Wifi },
-  { label: "Termasuk Listrik", icon: Zap },
-  { label: "Tidak termasuk listrik", icon: ZapOff },
-  { label: "Dapur Bersama", icon: Utensils },
-  { label: "Dispenser Bersama", icon: Droplets },
-  { label: "Kulkas Bersama", icon: Refrigerator },
-  { label: "Kunci Gerbang 24 Jam", icon: KeyRound },
-  { label: "Penjaga Kos", icon: UserCheck },
-  { label: "Pengurus Kos", icon: UserCheck },
-  { label: "CCTV", icon: Video },
-  { label: "Kartu Akses", icon: IdCard },
-  { label: "Parkir Motor", icon: Bike },
-  { label: "Parkir Mobil", icon: Car },
+const FASILITAS_BERSAMA_UTAMA = [
+  { key: "wifi", label: "WiFi Internet", icon: Wifi },
+  { key: "parking", label: "Area Parkir (Motor / Mobil)", icon: Bike },
+  { key: "kitchen", label: "Dapur Bersama", icon: Utensils },
+  { key: "laundry", label: "Mesin Cuci & Jemuran", icon: Sparkles },
+  { key: "fridge", label: "Kulkas & Dispenser Bersama", icon: Refrigerator },
+  { key: "cctv", label: "CCTV & Keamanan 24 Jam", icon: Video },
+  { key: "access-24h", label: "Kunci / Gerbang 24 Jam", icon: KeyRound },
 ];
 
-const FASILITAS_LANJUTAN_ITEMS = [
-  { label: "Meja Belajar", icon: Armchair },
-  { label: "Kursi", icon: Armchair },
-  { label: "Lemari Baju", icon: Shirt },
-  { label: "Cermin", icon: Sparkles },
-  { label: "Gantungan Baju", icon: Shirt },
-  { label: "Water Heater", icon: Flame },
-  { label: "Kloset Duduk", icon: Bath },
-  { label: "Kloset Jongkok", icon: Bath },
-  { label: "Ember Mandi", icon: Droplet },
-  { label: "Shower", icon: Droplet },
-  { label: "TV", icon: Tv },
-  { label: "Ruang Santai", icon: Sofa },
-  { label: "Balkon", icon: Sun },
-];
-
-const FASILITAS_BERSAMA_ITEMS = [
-  { label: "Mesin Cuci", icon: Sparkles },
-  { label: "Tempat Jemuran", icon: SunMedium },
-  { label: "Wastafel", icon: Droplet },
-  { label: "Air PDAM", icon: Droplets },
-  { label: "Sumur Bor", icon: Droplet },
+const FASILITAS_BERSAMA_TAMBAHAN = [
   { label: "Ruang Tamu Bersama", icon: Users },
-  { label: "Gazebo", icon: Trees },
-  { label: "Taman", icon: Flower2 },
+  { label: "Petugas Kebersihan Gedung", icon: Sparkles },
+  { label: "Ruang Santai / Balkon", icon: Sofa },
+  { label: "Air PDAM / Sumur Bor", icon: Droplets },
+  { label: "Gazebo / Taman", icon: Flower2 },
   { label: "Area Merokok", icon: Cigarette },
-  { label: "Petugas Kebersihan", icon: Sparkles },
-  { label: "Tempat Sampah Tiap Lantai", icon: Trash2 },
+  { label: "Tempat Sampah Terpadu", icon: Trash2 },
 ];
 
 const PERATURAN_KOS_ITEMS = [
@@ -233,6 +197,25 @@ const PERATURAN_KOS_ITEMS = [
   { label: "Wajib KTP saat Check-in", icon: IdCard },
   { label: "Denda Kerusakan / Piket", icon: AlertTriangle },
 ];
+
+const ROOM_FACILITY_OPTIONS = [
+  { key: "ac", label: "AC", icon: Wind },
+  { key: "bathroom-in", label: "Kamar Mandi Dalam", icon: Bath },
+  { key: "bed", label: "Kasur", icon: Bed },
+  { key: "wardrobe", label: "Lemari Pakaian", icon: Armchair },
+  { key: "desk", label: "Meja Belajar", icon: Briefcase },
+  { key: "hot-water", label: "Air Panas (Water Heater)", icon: Droplets },
+];
+
+export interface ExtraRoomTypeForm {
+  id: string;
+  name: string;
+  ukuranKamar: string;
+  totalKamar: number;
+  kamarKosong: number;
+  hargaBulanan: string;
+  facilities: string[];
+}
 
 export default function NewPropertyPage() {
   const router = useRouter();
@@ -292,6 +275,60 @@ export default function NewPropertyPage() {
   const [totalKamar, setTotalKamar] = useState(5);
   const [kamarKosong, setKamarKosong] = useState(5);
   const [hargaPerbulan, setHargaPerbulan] = useState("1500000");
+  const [tipeKamarFacilities, setTipeKamarFacilities] = useState<string[]>([
+    "bed",
+    "wardrobe",
+    "desk",
+    "bathroom-in",
+    "ac",
+  ]);
+  const [extraRoomTypes, setExtraRoomTypes] = useState<ExtraRoomTypeForm[]>([]);
+
+  const toggleRoomFacility = (key: string) => {
+    setTipeKamarFacilities((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  };
+
+  const addExtraRoomType = () => {
+    setExtraRoomTypes((prev) => [
+      ...prev,
+      {
+        id: `rt-${Date.now()}`,
+        name: `Tipe Kamar ${prev.length + 2}`,
+        ukuranKamar: "3 x 4 meter",
+        totalKamar: 3,
+        kamarKosong: 3,
+        hargaBulanan: "1800000",
+        facilities: ["bed", "wardrobe", "desk", "bathroom-in", "ac"],
+      },
+    ]);
+  };
+
+  const removeExtraRoomType = (id: string) => {
+    setExtraRoomTypes((prev) => prev.filter((rt) => rt.id !== id));
+  };
+
+  const updateExtraRoomType = (id: string, updates: Partial<ExtraRoomTypeForm>) => {
+    setExtraRoomTypes((prev) =>
+      prev.map((rt) => (rt.id === id ? { ...rt, ...updates } : rt))
+    );
+  };
+
+  const toggleExtraRoomFacility = (id: string, key: string) => {
+    setExtraRoomTypes((prev) =>
+      prev.map((rt) => {
+        if (rt.id !== id) return rt;
+        const exists = rt.facilities.includes(key);
+        return {
+          ...rt,
+          facilities: exists
+            ? rt.facilities.filter((k) => k !== key)
+            : [...rt.facilities, key],
+        };
+      })
+    );
+  };
 
   // 3 Checkboxes under "Apakah Anda ingin:"
   const [enableHargaSpesial, setEnableHargaSpesial] = useState(false);
@@ -339,11 +376,12 @@ export default function NewPropertyPage() {
     "Kloset Duduk",
   ]);
 
-  // Fasilitas Bersama (Opsional)
+  // Fasilitas Bersama (Gedung)
   const [fasilitasBersama, setFasilitasBersama] = useState<string[]>([
+    "WiFi Internet",
+    "Area Parkir (Motor / Mobil)",
     "Dapur Bersama",
-    "Dispenser Bersama",
-    "Tempat Jemuran",
+    "CCTV & Keamanan 24 Jam",
   ]);
 
   // Peraturan Kos & Deskripsi
@@ -541,6 +579,8 @@ export default function NewPropertyPage() {
     totalKamar,
     kamarKosong,
     hargaPerbulan,
+    tipeKamarFacilities,
+    extraRoomTypes,
     enableHargaSpesial,
     hargaSpesial,
     durasiSpesial,
@@ -596,6 +636,8 @@ export default function NewPropertyPage() {
     if (draft.totalKamar !== undefined) setTotalKamar(draft.totalKamar);
     if (draft.kamarKosong !== undefined) setKamarKosong(draft.kamarKosong);
     if (draft.hargaPerbulan !== undefined) setHargaPerbulan(draft.hargaPerbulan);
+    if (draft.tipeKamarFacilities !== undefined) setTipeKamarFacilities(draft.tipeKamarFacilities);
+    if (draft.extraRoomTypes !== undefined) setExtraRoomTypes(draft.extraRoomTypes);
 
     if (draft.enableHargaSpesial !== undefined) setEnableHargaSpesial(draft.enableHargaSpesial);
     if (draft.hargaSpesial !== undefined) setHargaSpesial(draft.hargaSpesial);
@@ -720,6 +762,8 @@ export default function NewPropertyPage() {
     totalKamar,
     kamarKosong,
     hargaPerbulan,
+    tipeKamarFacilities,
+    extraRoomTypes,
     enableHargaSpesial,
     hargaSpesial,
     durasiSpesial,
@@ -793,6 +837,8 @@ export default function NewPropertyPage() {
     setTotalKamar(5);
     setKamarKosong(5);
     setHargaPerbulan("1500000");
+    setTipeKamarFacilities(["bed", "wardrobe", "desk", "bathroom-in", "ac"]);
+    setExtraRoomTypes([]);
     setEnableHargaSpesial(false);
     setHargaSpesial("1350000");
     setDurasiSpesial("6 bulan");
@@ -1004,7 +1050,7 @@ export default function NewPropertyPage() {
   const uploadedPhotosCount = Object.values(photos).filter(Boolean).length;
   const isStep3Valid = uploadedPhotosCount >= 1;
 
-  const isStep4Valid = fasilitasDasar.length >= 2;
+  const isStep4Valid = fasilitasBersama.length >= 1;
 
   const isStep5Valid = deskripsiKos.trim().length >= 20;
 
@@ -1030,24 +1076,18 @@ export default function NewPropertyPage() {
           ? parseInt(nominalJaminan.replace(/\D/g, "") || "0", 10)
           : undefined;
 
-        // Map facilities to database facilities keys
-        const mappedFacilities: string[] = [];
-        if (fasilitasDasar.some((f) => f.includes("WiFi"))) mappedFacilities.push("wifi");
-        if (fasilitasDasar.some((f) => f.includes("AC"))) mappedFacilities.push("ac");
-        if (fasilitasDasar.some((f) => f.includes("Kamar Mandi Dalam"))) mappedFacilities.push("bathroom-in");
-        if (fasilitasDasar.some((f) => f.includes("Parkir"))) mappedFacilities.push("parking");
-        if (fasilitasBersama.some((f) => f.includes("Dapur"))) mappedFacilities.push("kitchen");
-        if (fasilitasBersama.some((f) => f.includes("Cuci") || f.includes("Jemuran"))) mappedFacilities.push("laundry");
-        if (fasilitasDasar.some((f) => f.includes("Kasur"))) mappedFacilities.push("bed");
-        if (fasilitasLanjutan.some((f) => f.includes("Lemari"))) mappedFacilities.push("wardrobe");
-        if (fasilitasLanjutan.some((f) => f.includes("Meja"))) mappedFacilities.push("desk");
-        if (fasilitasBersama.some((f) => f.includes("Dispenser") || f.includes("Kulkas"))) mappedFacilities.push("fridge");
-        if (fasilitasLanjutan.some((f) => f.includes("Water Heater"))) mappedFacilities.push("hot-water");
-        if (fasilitasDasar.some((f) => f.includes("CCTV") || f.includes("Keamanan"))) mappedFacilities.push("cctv");
-        if (peraturanKos.some((f) => f.includes("24 Jam"))) mappedFacilities.push("access-24h");
+        // Map shared facilities to database facilities keys
+        const mappedShared: string[] = [];
+        if (fasilitasBersama.some((f) => f.includes("WiFi") || f.toLowerCase() === "wifi")) mappedShared.push("wifi");
+        if (fasilitasBersama.some((f) => f.includes("Parkir") || f.toLowerCase() === "parking")) mappedShared.push("parking");
+        if (fasilitasBersama.some((f) => f.includes("Dapur") || f.toLowerCase() === "kitchen")) mappedShared.push("kitchen");
+        if (fasilitasBersama.some((f) => f.includes("Cuci") || f.includes("Jemuran") || f.toLowerCase() === "laundry")) mappedShared.push("laundry");
+        if (fasilitasBersama.some((f) => f.includes("Dispenser") || f.includes("Kulkas") || f.toLowerCase() === "fridge")) mappedShared.push("fridge");
+        if (fasilitasBersama.some((f) => f.includes("CCTV") || f.includes("Keamanan") || f.toLowerCase() === "cctv")) mappedShared.push("cctv");
+        if (fasilitasBersama.some((f) => f.includes("24 Jam") || f.toLowerCase() === "access-24h") || peraturanKos.some((f) => f.includes("24 Jam"))) mappedShared.push("access-24h");
 
         // Clean unique list
-        const facilities = Array.from(new Set(mappedFacilities));
+        const facilities = Array.from(new Set(mappedShared));
 
         const fullNameKos = `Kos ${namaKos.trim().replace(/^kos\s+/i, "")}`;
 
@@ -1061,6 +1101,34 @@ export default function NewPropertyPage() {
           .filter(Boolean)
           .join("\n\n");
 
+        // Compile all room types
+        const allRoomTypes = [
+          {
+            name: tipeKamar.trim() || "Kamar Standar",
+            pricePerMonth: parsedMonthly,
+            sizeM2: parseInt(ukuranKamar.replace(/\D/g, "") || "12", 10) || 12,
+            total: totalKamar,
+            available: kamarKosong,
+            facilities: tipeKamarFacilities,
+          },
+          ...extraRoomTypes.map((rt) => ({
+            name: rt.name.trim() || "Kamar Tambahan",
+            pricePerMonth: parseInt(rt.hargaBulanan.replace(/\D/g, "") || "0", 10) || parsedMonthly,
+            sizeM2: parseInt(rt.ukuranKamar.replace(/\D/g, "") || "12", 10) || 12,
+            total: rt.totalKamar,
+            available: rt.kamarKosong,
+            facilities: rt.facilities,
+          })),
+        ];
+
+        // Collect all facilities (shared from step 4 + room facilities from all room types)
+        const allFacilitiesSet = new Set(facilities);
+        allRoomTypes.forEach((rt) => {
+          (rt.facilities || []).forEach((f) => allFacilitiesSet.add(f));
+        });
+        const finalFacilities = Array.from(allFacilitiesSet);
+        const calculatedMaxRooms = allRoomTypes.reduce((sum, rt) => sum + rt.total, 0);
+
         const payload = {
           name: fullNameKos,
           tagline: `Hunian nyaman di ${kabupatenKota}`,
@@ -1073,17 +1141,9 @@ export default function NewPropertyPage() {
           longitude: lon,
           gender,
           depositAmount: parsedDeposit,
-          maxRooms: totalKamar,
-          facilities: facilities.length > 0 ? facilities : ["wifi", "bed"],
-          roomTypes: [
-            {
-              name: tipeKamar.trim() || "Kamar Standar",
-              pricePerMonth: parsedMonthly,
-              sizeM2: parseInt(ukuranKamar.replace(/\D/g, "") || "12", 10) || 12,
-              total: totalKamar,
-              available: kamarKosong,
-            },
-          ],
+          maxRooms: calculatedMaxRooms,
+          facilities: finalFacilities.length > 0 ? finalFacilities : ["wifi", "bed"],
+          roomTypes: allRoomTypes,
           images: Object.entries(photos)
             .filter(([_, url]) => Boolean(url))
             .map(([key, url], idx) => ({
@@ -1606,6 +1666,234 @@ export default function NewPropertyPage() {
               </div>
             </div>
 
+            {/* Fasilitas Kamar Khusus Tipe Utama */}
+            <div className="flex flex-col gap-2.5 rounded-xl border border-nk-border bg-stone-50/50 p-4 sm:p-5">
+              <div>
+                <label className="text-sm font-semibold text-nk-text">
+                  Fasilitas Kamar (Spesifik Tipe Ini)
+                </label>
+                <p className="text-xs text-nk-text-muted mt-0.5">
+                  Pilih fasilitas yang tersedia langsung di dalam kamar tipe ini.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+                {ROOM_FACILITY_OPTIONS.map((item) => {
+                  const checked = tipeKamarFacilities.includes(item.key);
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => toggleRoomFacility(item.key)}
+                      className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
+                        checked
+                          ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
+                          : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
+                      }`}
+                    >
+                      <Icon
+                        className={`size-4 shrink-0 transition-colors ${
+                          checked ? "text-nk-accent" : "text-nk-text-muted"
+                        }`}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Daftar Tipe Kamar Tambahan (Multi-Room-Type) */}
+            {extraRoomTypes.length > 0 && (
+              <div className="space-y-4 pt-2">
+                <div className="border-b border-nk-border pb-2">
+                  <h3 className="text-sm font-semibold text-nk-text">
+                    Tipe Kamar Tambahan
+                  </h3>
+                  <p className="text-xs text-nk-text-muted">
+                    Kos Anda memiliki varian tipe kamar lain dengan harga atau fasilitas berbeda.
+                  </p>
+                </div>
+
+                {extraRoomTypes.map((extraRt, idx) => (
+                  <div
+                    key={extraRt.id}
+                    className="space-y-4 rounded-xl border border-nk-border bg-white p-5 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between border-b border-nk-border/70 pb-3">
+                      <span className="text-sm font-semibold text-nk-text">
+                        Tipe Kamar #{idx + 2}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeExtraRoomType(extraRt.id)}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 hover:text-rose-700"
+                      >
+                        <Trash2 className="size-3.5" />
+                        Hapus Tipe Ini
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Nama Tipe Kamar */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-nk-text">
+                          Nama Tipe Kamar
+                        </label>
+                        <input
+                          type="text"
+                          value={extraRt.name}
+                          onChange={(e) =>
+                            updateExtraRoomType(extraRt.id, { name: e.target.value })
+                          }
+                          placeholder="Contoh: Kamar Deluxe AC"
+                          className="h-10 rounded-lg border border-nk-border bg-nk-bg px-3 text-xs text-nk-text focus:border-nk-accent focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Ukuran Kamar */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-nk-text">
+                          Ukuran Kamar
+                        </label>
+                        <select
+                          value={extraRt.ukuranKamar}
+                          onChange={(e) =>
+                            updateExtraRoomType(extraRt.id, { ukuranKamar: e.target.value })
+                          }
+                          className="h-10 rounded-lg border border-nk-border bg-nk-surface px-3 text-xs text-nk-text focus:border-nk-accent focus:outline-none"
+                        >
+                          <option value="3 x 3 meter">3 x 3 meter</option>
+                          <option value="3 x 4 meter">3 x 4 meter</option>
+                          <option value="4 x 4 meter">4 x 4 meter</option>
+                          <option value="3 x 5 meter">3 x 5 meter</option>
+                          <option value="4 x 5 meter">4 x 5 meter</option>
+                          <option value="Ukuran Lainnya">Ukuran Lainnya</option>
+                        </select>
+                      </div>
+
+                      {/* Total Kamar */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-nk-text">
+                          Total Unit Kamar
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={extraRt.totalKamar}
+                          onChange={(e) => {
+                            const val = Math.max(1, parseInt(e.target.value || "1", 10));
+                            updateExtraRoomType(extraRt.id, {
+                              totalKamar: val,
+                              kamarKosong: Math.min(val, extraRt.kamarKosong),
+                            });
+                          }}
+                          className="h-10 rounded-lg border border-nk-border bg-nk-bg px-3 text-xs text-nk-text focus:border-nk-accent focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Kamar Kosong */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-nk-text">
+                          Unit Kosong (Tersedia)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={extraRt.totalKamar}
+                          value={extraRt.kamarKosong}
+                          onChange={(e) => {
+                            const val = Math.max(
+                              0,
+                              Math.min(extraRt.totalKamar, parseInt(e.target.value || "0", 10))
+                            );
+                            updateExtraRoomType(extraRt.id, { kamarKosong: val });
+                          }}
+                          className="h-10 rounded-lg border border-nk-border bg-nk-bg px-3 text-xs text-nk-text focus:border-nk-accent focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Harga Sewa Bulanan */}
+                      <div className="sm:col-span-2 flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-nk-text">
+                          Harga Sewa Bulanan
+                        </label>
+                        <div className="flex items-center rounded-lg border border-nk-border bg-nk-bg overflow-hidden">
+                          <span className="bg-nk-warm px-3 py-2 text-xs font-semibold text-nk-text border-r border-nk-border">
+                            Rp
+                          </span>
+                          <input
+                            type="text"
+                            value={
+                              extraRt.hargaBulanan
+                                ? parseInt(
+                                    extraRt.hargaBulanan.replace(/\D/g, "") || "0",
+                                    10
+                                  ).toLocaleString("id-ID")
+                                : ""
+                            }
+                            onChange={(e) =>
+                              updateExtraRoomType(extraRt.id, {
+                                hargaBulanan: e.target.value.replace(/\D/g, ""),
+                              })
+                            }
+                            placeholder="1.800.000"
+                            className="flex-1 bg-transparent px-3 py-2 text-xs text-nk-text focus:outline-none"
+                          />
+                          <span className="px-3 text-xs text-nk-text-muted">/ bulan</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fasilitas Kamar Tipe Tambahan Ini */}
+                    <div className="space-y-2 pt-2 border-t border-nk-border/60">
+                      <span className="text-xs font-medium text-nk-text">
+                        Fasilitas Kamar Tipe #{idx + 2}
+                      </span>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {ROOM_FACILITY_OPTIONS.map((item) => {
+                          const checked = extraRt.facilities.includes(item.key);
+                          const Icon = item.icon;
+                          return (
+                            <button
+                              key={item.key}
+                              type="button"
+                              onClick={() => toggleExtraRoomFacility(extraRt.id, item.key)}
+                              className={`flex items-center gap-2 rounded-lg border p-2.5 text-left text-xs font-medium transition-all cursor-pointer ${
+                                checked
+                                  ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
+                                  : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
+                              }`}
+                            >
+                              <Icon
+                                className={`size-3.5 shrink-0 transition-colors ${
+                                  checked ? "text-nk-accent" : "text-nk-text-muted"
+                                }`}
+                              />
+                              <span className="truncate">{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tombol Tambah Tipe Kamar Lain */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={addExtraRoomType}
+                className="inline-flex items-center gap-2 rounded-lg border border-dashed border-nk-accent bg-nk-warm/40 px-4 py-2.5 text-xs font-semibold text-nk-accent hover:bg-nk-warm transition-colors cursor-pointer"
+              >
+                <Plus className="size-4" />
+                + Tambah Tipe Kamar Lain
+              </button>
+            </div>
+
             {/* 3 Checkboxes under "Apakah Anda ingin:" */}
             <div className="space-y-4 rounded-xl border border-nk-border bg-nk-warm/40 p-5">
               <h3 className="text-sm font-semibold text-nk-text">
@@ -1958,247 +2246,95 @@ export default function NewPropertyPage() {
           <div className="space-y-8 rounded-xl border border-nk-border bg-nk-surface p-6 sm:p-8 shadow-sm">
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-                4. Fasilitas Kos
+                4. Fasilitas Bersama Gedung
               </h2>
               <p className="mt-1 text-sm text-nk-text-muted">
-                Centang fasilitas dasar, lanjutan, dan fasilitas bersama yang tersedia di properti kos Anda.
+                Pilih fasilitas umum dan fasilitas bersama yang dapat digunakan oleh seluruh penghuni kos (Fasilitas kamar spesifik telah diatur di Langkah 2).
               </p>
             </div>
 
-            {/* Menu Akordion Fasilitas Kos */}
-            <div className="space-y-4">
-              {/* Akordion 1: Fasilitas Dasar (Wajib) */}
-              <div className="rounded-xl border border-nk-border bg-nk-surface overflow-hidden transition-all shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("dasar")}
-                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-                      <ShieldCheck className="size-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-nk-text">
-                        Fasilitas Dasar (Wajib)
-                      </h3>
-                      <p className="text-xs text-nk-text-muted">
-                        Kamar mandi, kasur, AC, WiFi, listrik, keamanan, dan parkir
-                      </p>
-                    </div>
+            <div className="space-y-6">
+              {/* Fasilitas Bersama Utama */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-nk-text">
+                      Fasilitas Bersama Utama
+                    </h3>
+                    <p className="text-xs text-nk-text-muted">
+                      Fasilitas penting gedung kos (WiFi, parkir, dapur bersama, CCTV, akses gerbang, dll.)
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    {fasilitasDasar.length > 0 && (
-                      <span className="rounded-full bg-nk-accent/10 px-2.5 py-0.5 text-xs font-semibold text-nk-accent">
-                        {fasilitasDasar.length} dipilih
-                      </span>
-                    )}
-                    <ChevronDown
-                      className={`size-4 text-nk-text-muted transition-transform duration-200 ${
-                        accordionOpen.dasar ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-                </button>
-
-                <AnimatePresence initial={false}>
-                  {accordionOpen.dasar && (
-                    <motion.div
-                      key="accordion-dasar"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                          {FASILITAS_DASAR_ITEMS.map((item) => {
-                            const checked = fasilitasDasar.includes(item.label);
-                            const Icon = item.icon;
-                            return (
-                              <button
-                                key={item.label}
-                                type="button"
-                                onClick={() =>
-                                  toggleArrayItem(fasilitasDasar, setFasilitasDasar, item.label)
-                                }
-                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
-                                  checked
-                                    ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
-                                    : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
-                                }`}
-                              >
-                                <Icon
-                                  className={`size-4 shrink-0 transition-colors ${
-                                    checked ? "text-nk-accent" : "text-nk-text-muted"
-                                  }`}
-                                />
-                                <span className="truncate">{item.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                  <span className="rounded-full bg-nk-warm px-2.5 py-0.5 text-xs font-semibold text-nk-text">
+                    {fasilitasBersama.length} dipilih
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {FASILITAS_BERSAMA_UTAMA.map((item) => {
+                    const checked = fasilitasBersama.includes(item.label);
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={() =>
+                          toggleArrayItem(fasilitasBersama, setFasilitasBersama, item.label)
+                        }
+                        className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
+                          checked
+                            ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
+                            : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
+                        }`}
+                      >
+                        <Icon
+                          className={`size-4 shrink-0 transition-colors ${
+                            checked ? "text-nk-accent" : "text-nk-text-muted"
+                          }`}
+                        />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Akordion 2: Fasilitas Lanjutan (Opsional) */}
-              <div className="rounded-xl border border-nk-border bg-nk-surface overflow-hidden transition-all shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("lanjutan")}
-                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
-                      <Sparkles className="size-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-nk-text">
-                        Fasilitas Lanjutan (Opsional)
-                      </h3>
-                      <p className="text-xs text-nk-text-muted">
-                        Perabot kamar, water heater, kloset, TV, dan balkon
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    {fasilitasLanjutan.length > 0 && (
-                      <span className="rounded-full bg-nk-accent/10 px-2.5 py-0.5 text-xs font-semibold text-nk-accent">
-                        {fasilitasLanjutan.length} dipilih
-                      </span>
-                    )}
-                    <ChevronDown
-                      className={`size-4 text-nk-text-muted transition-transform duration-200 ${
-                        accordionOpen.lanjutan ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-                </button>
-
-                <AnimatePresence initial={false}>
-                  {accordionOpen.lanjutan && (
-                    <motion.div
-                      key="accordion-lanjutan"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                          {FASILITAS_LANJUTAN_ITEMS.map((item) => {
-                            const checked = fasilitasLanjutan.includes(item.label);
-                            const Icon = item.icon;
-                            return (
-                              <button
-                                key={item.label}
-                                type="button"
-                                onClick={() =>
-                                  toggleArrayItem(fasilitasLanjutan, setFasilitasLanjutan, item.label)
-                                }
-                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
-                                  checked
-                                    ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
-                                    : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
-                                }`}
-                              >
-                                <Icon
-                                  className={`size-4 shrink-0 transition-colors ${
-                                    checked ? "text-nk-accent" : "text-nk-text-muted"
-                                  }`}
-                                />
-                                <span className="truncate">{item.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Akordion 3: Fasilitas Bersama (Opsional) */}
-              <div className="rounded-xl border border-nk-border bg-nk-surface overflow-hidden transition-all shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("bersama")}
-                  className="flex w-full items-center justify-between p-4 sm:p-5 text-left hover:bg-nk-warm/40 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
-                      <Users className="size-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-nk-text">
-                        Fasilitas Bersama (Opsional)
-                      </h3>
-                      <p className="text-xs text-nk-text-muted">
-                        Mesin cuci, jemuran, ruang tamu, gazebo, taman, dan kebersihan
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    {fasilitasBersama.length > 0 && (
-                      <span className="rounded-full bg-nk-accent/10 px-2.5 py-0.5 text-xs font-semibold text-nk-accent">
-                        {fasilitasBersama.length} dipilih
-                      </span>
-                    )}
-                    <ChevronDown
-                      className={`size-4 text-nk-text-muted transition-transform duration-200 ${
-                        accordionOpen.bersama ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-                </button>
-
-                <AnimatePresence initial={false}>
-                  {accordionOpen.bersama && (
-                    <motion.div
-                      key="accordion-bersama"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="border-t border-nk-border bg-nk-warm/20 p-4 sm:p-5">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                          {FASILITAS_BERSAMA_ITEMS.map((item) => {
-                            const checked = fasilitasBersama.includes(item.label);
-                            const Icon = item.icon;
-                            return (
-                              <button
-                                key={item.label}
-                                type="button"
-                                onClick={() =>
-                                  toggleArrayItem(fasilitasBersama, setFasilitasBersama, item.label)
-                                }
-                                className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
-                                  checked
-                                    ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
-                                    : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
-                                }`}
-                              >
-                                <Icon
-                                  className={`size-4 shrink-0 transition-colors ${
-                                    checked ? "text-nk-accent" : "text-nk-text-muted"
-                                  }`}
-                                />
-                                <span className="truncate">{item.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+              {/* Fasilitas Tambahan Gedung */}
+              <div className="space-y-3 pt-4 border-t border-nk-border/60">
+                <div>
+                  <h3 className="text-sm font-semibold text-nk-text">
+                    Fasilitas Tambahan Lingkungan Gedung (Opsional)
+                  </h3>
+                  <p className="text-xs text-nk-text-muted">
+                    Kenyamanan ekstra di area umum properti Anda
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {FASILITAS_BERSAMA_TAMBAHAN.map((item) => {
+                    const checked = fasilitasBersama.includes(item.label);
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={() =>
+                          toggleArrayItem(fasilitasBersama, setFasilitasBersama, item.label)
+                        }
+                        className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
+                          checked
+                            ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
+                            : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
+                        }`}
+                      >
+                        <Icon
+                          className={`size-4 shrink-0 transition-colors ${
+                            checked ? "text-nk-accent" : "text-nk-text-muted"
+                          }`}
+                        />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

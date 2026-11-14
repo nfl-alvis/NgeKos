@@ -19,6 +19,16 @@ export interface PropertyFormDraft {
   totalKamar: number;
   kamarKosong: number;
   hargaPerbulan: string;
+  tipeKamarFacilities?: string[];
+  extraRoomTypes?: Array<{
+    id: string;
+    name: string;
+    ukuranKamar: string;
+    totalKamar: number;
+    kamarKosong: number;
+    hargaBulanan: string;
+    facilities: string[];
+  }>;
   enableHargaSpesial: boolean;
   hargaSpesial: string;
   durasiSpesial: string;
@@ -65,6 +75,15 @@ export function hasMeaningfulDraft(draft: PropertyFormDraft | null | undefined):
     (draft.photos && Object.keys(draft.photos).length > 0) ||
     (draft.hargaPerbulan && draft.hargaPerbulan.trim().length > 0)
   );
+}
+
+export function savePropertyDraft(draft: Partial<PropertyFormDraft>): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  } catch (e) {
+    console.error("Failed to save property draft:", e);
+  }
 }
 
 export function getSavedPropertyDraft(): PropertyFormDraft | null {
