@@ -56,6 +56,8 @@ export interface Property {
   verificationNote?: string;
   /** DP policy: if set, tenant pays deposit up front and remainder on approval */
   dpAmount?: number;
+  /** property manager / owner */
+  owner?: { id?: string; fullName?: string; phone?: string | null } | null;
   /** subscription limit rule per owner tier */
   maxRooms?: number;
   latitude?: number | null;

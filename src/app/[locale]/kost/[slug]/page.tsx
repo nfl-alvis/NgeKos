@@ -14,13 +14,22 @@ import FavoriteButton from "@/components/FavoriteButton";
 import PropertyReviewsSection from "@/components/PropertyReviewsSection";
 import ReportPropertyModal from "@/components/ReportPropertyModal";
 import PropertyGallery from "@/components/PropertyGallery";
+import PropertyDetailSubNav from "@/components/kost/PropertyDetailSubNav";
 import { getProperty, propertyDto } from "@/server/property-service";
 import { getKosImage, getKosGalleryItems } from "@/lib/kosImages";
 import type { Property, Gender, Facility } from "@/lib/data/types";
 import {
+  parsePropertyRules,
+  type RuleCategory,
+  type RuleCategoryKey,
+  type RuleItem,
+  type RuleIconKey,
+} from "@/lib/data/propertyRules";
+import {
   Users,
   Clock,
   DoorOpen,
+  DoorClosed,
   Ban,
   FileText,
   MapPin,
@@ -34,6 +43,15 @@ import {
   GraduationCap,
   Hospital,
   Store,
+  KeyRound,
+  Moon,
+  Heart,
+  Cigarette,
+  PawPrint,
+  VolumeX,
+  Sparkles,
+  IdCard,
+  CreditCard,
 } from "lucide-react";
 
 import PropertyLocationMap from "@/components/PropertyLocationMap";
@@ -72,6 +90,7 @@ function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
     latitude: dto.latitude ?? undefined,
     longitude: dto.longitude ?? undefined,
     verificationStatus: dto.status === "VERIFIED" ? "verified" : dto.status === "REJECTED" ? "rejected" : "pending",
+    owner: dto.owner,
     roomTypes: dto.roomTypes.map((rt) => ({
       id: rt.id,
       name: rt.name,
@@ -83,266 +102,27 @@ function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
   };
 }
 
-export type RuleItem = {
-  text: string;
-  type: "allowed" | "prohibited" | "neutral";
+export type { RuleItem, RuleCategoryKey, RuleCategory, RuleIconKey };
+
+const RULE_ICONS: Record<RuleIconKey, React.ComponentType<{ className?: string }>> = {
+  key: KeyRound,
+  clock: Clock,
+  moon: Moon,
+  users: Users,
+  heart: Heart,
+  "door-closed": DoorClosed,
+  "door-open": DoorOpen,
+  cigarette: Cigarette,
+  paw: PawPrint,
+  ban: Ban,
+  "volume-x": VolumeX,
+  sparkles: Sparkles,
+  "id-card": IdCard,
+  "credit-card": CreditCard,
+  "file-text": FileText,
+  check: CheckCircle2,
+  info: Info,
 };
-
-export type RuleCategoryKey = "occupancy" | "access" | "guest" | "conduct" | "documents";
-
-export interface RuleCategory {
-  key: RuleCategoryKey;
-  titleId: string;
-  titleEn: string;
-  items: RuleItem[];
-}
-
-export function parsePropertyRules(property: Property): {
-  cleanDescription: string;
-  rules: string[];
-  patokan?: string;
-  highlights: { label: string; tone: "green" | "blue" | "amber" | "neutral" }[];
-  categories: RuleCategory[];
-} {
-  const desc = property.description || "";
-  let cleanDescription = desc;
-  let parsedRules: string[] = [];
-  let patokan: string | undefined;
-
-  const patokanMatch = desc.match(/Patokan:\s*([^\n]+)/i);
-  if (patokanMatch) {
-    patokan = patokanMatch[1].trim();
-  }
-
-  const rulesMatch = desc.match(
-    /(?:Aturan & Ketentuan Kos|Peraturan Kos|Persyaratan Sewa|Aturan Kos):\s*([\s\S]+)/i
-  );
-  if (rulesMatch) {
-    const rawRules = rulesMatch[1];
-    parsedRules = rawRules
-      .split(/\r?\n/)
-      .map((line) => line.replace(/^[\s•\-\*]+/, "").trim())
-      .filter((line) => line.length > 0 && !line.toLowerCase().startsWith("patokan:"));
-
-    cleanDescription = desc
-      .replace(/(?:Aturan & Ketentuan Kos|Peraturan Kos|Persyaratan Sewa|Aturan Kos):\s*([\s\S]+)/i, "")
-      .replace(/Patokan:\s*[^\n]+/i, "")
-      .trim();
-  } else {
-    cleanDescription = desc.replace(/Patokan:\s*[^\n]+/i, "").trim();
-  }
-
-  const has24h = property.facilities?.some(
-    (f) => f === "access-24h" || (typeof f === "object" && (f as any)?.key === "access-24h")
-  );
-
-  const catMap: Record<RuleCategoryKey, RuleItem[]> = {
-    occupancy: [],
-    access: [],
-    guest: [],
-    conduct: [],
-    documents: [],
-  };
-
-  const classify = (text: string): { category: RuleCategoryKey; item: RuleItem } => {
-    const lower = text.toLowerCase();
-    const isProhibited =
-      lower.includes("dilarang") ||
-      lower.includes("tidak boleh") ||
-      lower.includes("tidak diperkenankan") ||
-      lower.includes("no smoking") ||
-      lower.includes("jangan");
-
-    const isAllowed =
-      lower.includes("bebas") ||
-      lower.includes("boleh") ||
-      lower.includes("diperbolehkan") ||
-      lower.includes("tersedia") ||
-      lower.includes("24 jam") ||
-      lower.includes("khusus");
-
-    const type: RuleItem["type"] = isProhibited ? "prohibited" : isAllowed ? "allowed" : "neutral";
-
-    if (
-      lower.includes("tamu") ||
-      lower.includes("kunjungan") ||
-      lower.includes("lawan jenis") ||
-      lower.includes("menginap")
-    ) {
-      return { category: "guest", item: { text, type } };
-    }
-
-    if (
-      lower.includes("jam malam") ||
-      lower.includes("24 jam") ||
-      lower.includes("gerbang") ||
-      lower.includes("kunci")
-    ) {
-      return { category: "access", item: { text, type } };
-    }
-
-    if (
-      lower.includes("ktp") ||
-      lower.includes("buku nikah") ||
-      lower.includes("kartu keluarga") ||
-      lower.includes("kk") ||
-      lower.includes("identitas") ||
-      lower.includes("dokumen") ||
-      lower.includes("deposit") ||
-      lower.includes("dp") ||
-      lower.includes("pelunasan")
-    ) {
-      return { category: "documents", item: { text, type } };
-    }
-
-    if (
-      lower.includes("putri") ||
-      lower.includes("putra") ||
-      lower.includes("campur") ||
-      lower.includes("pasutri") ||
-      lower.includes("kapasitas") ||
-      lower.includes("orang per kamar") ||
-      lower.includes("penghuni") ||
-      lower.includes("kriteria") ||
-      lower.includes("anak")
-    ) {
-      return { category: "occupancy", item: { text, type } };
-    }
-
-    return { category: "conduct", item: { text, type } };
-  };
-
-  for (const rule of parsedRules) {
-    const { category, item } = classify(rule);
-    catMap[category].push(item);
-  }
-
-  // Populate standard baseline items if empty to mirror Mamikos standard completeness
-  if (catMap.occupancy.length === 0) {
-    if (property.gender === "female") {
-      catMap.occupancy.push({ text: "Khusus Penghuni Putri (Wanita)", type: "allowed" });
-      catMap.occupancy.push({ text: "Maksimal 1 penghuni per kamar (biaya tambahan bila 2 orang)", type: "neutral" });
-      catMap.occupancy.push({ text: "Tidak diperkenankan untuk pasutri", type: "prohibited" });
-    } else if (property.gender === "male") {
-      catMap.occupancy.push({ text: "Khusus Penghuni Putra (Pria)", type: "allowed" });
-      catMap.occupancy.push({ text: "Maksimal 1 penghuni per kamar", type: "neutral" });
-      catMap.occupancy.push({ text: "Tidak diperkenankan untuk pasutri", type: "prohibited" });
-    } else {
-      catMap.occupancy.push({ text: "Tipe Kos Campur (Putra & Putri di kamar/lantai terpisah)", type: "allowed" });
-      catMap.occupancy.push({ text: "Pasutri diperbolehkan dengan membawa fotokopi Surat Nikah", type: "allowed" });
-      catMap.occupancy.push({ text: "Maksimal 2 orang per kamar", type: "neutral" });
-    }
-  }
-
-  if (catMap.access.length === 0) {
-    if (has24h) {
-      catMap.access.push({ text: "Akses gerbang 24 Jam (bebas jam malam)", type: "allowed" });
-      catMap.access.push({ text: "Setiap penghuni diberikan kunci akses mandiri", type: "allowed" });
-    } else {
-      catMap.access.push({ text: "Akses gerbang ditutup pukul 23:00 WIB", type: "neutral" });
-      catMap.access.push({ text: "Kepulangan larut malam wajib konfirmasi ke pengelola kos", type: "neutral" });
-    }
-    catMap.access.push({ text: "Wajib menutup dan mengunci kembali gerbang demi keamanan bersama", type: "neutral" });
-  }
-
-  if (catMap.guest.length === 0) {
-    catMap.guest.push({ text: "Tamu lawan jenis dilarang masuk ke dalam kamar penghuni", type: "prohibited" });
-    catMap.guest.push({ text: "Tamu boleh berkunjung di area ruang tamu bersama hingga pukul 21:00 WIB", type: "allowed" });
-    catMap.guest.push({ text: "Tamu yang menginap wajib melapor pengelola kos sebelumnya", type: "neutral" });
-  }
-
-  if (catMap.conduct.length === 0) {
-    catMap.conduct.push({ text: "Dilarang merokok di dalam kamar ber-AC atau lorong tertutup", type: "prohibited" });
-    catMap.conduct.push({ text: "Dilarang membawa hewan peliharaan", type: "prohibited" });
-    catMap.conduct.push({ text: "Dilarang membawa miras, narkoba, atau zat terlarang", type: "prohibited" });
-    catMap.conduct.push({ text: "Menjaga ketenangan dan kenyamanan bersama setelah pukul 22:00 WIB", type: "allowed" });
-    catMap.conduct.push({ text: "Menjaga kebersihan area bersama setelah selesai digunakan", type: "allowed" });
-  }
-
-  if (catMap.documents.length === 0) {
-    catMap.documents.push({ text: "Wajib menyertakan foto KTP asli yang masih berlaku saat check-in", type: "allowed" });
-    catMap.documents.push({ text: "Booking kamar wajib disertai deposit (DP) sesuai ketentuan", type: "neutral" });
-    catMap.documents.push({ text: "Pelunasan sisa uang sewa dilakukan sebelum serah terima kunci", type: "neutral" });
-  }
-
-  const highlights: { label: string; tone: "green" | "blue" | "amber" | "neutral" }[] = [];
-  if (property.gender === "female") {
-    highlights.push({ label: "Khusus Putri", tone: "blue" });
-  } else if (property.gender === "male") {
-    highlights.push({ label: "Khusus Putra", tone: "blue" });
-  } else {
-    highlights.push({ label: "Campur (Putra/Putri)", tone: "neutral" });
-  }
-
-  if (has24h || catMap.access.some((i) => i.text.toLowerCase().includes("24 jam"))) {
-    highlights.push({ label: "Akses 24 Jam", tone: "green" });
-  } else {
-    highlights.push({ label: "Jam Malam Berlaku", tone: "amber" });
-  }
-
-  highlights.push({ label: "Wajib KTP", tone: "neutral" });
-
-  const allRulesText = [
-    ...catMap.occupancy,
-    ...catMap.access,
-    ...catMap.guest,
-    ...catMap.conduct,
-    ...catMap.documents,
-  ].map((i) => i.text.toLowerCase());
-
-  if (allRulesText.some((t) => t.includes("pasutri") && !t.includes("tidak"))) {
-    highlights.push({ label: "Boleh Pasutri (Buku Nikah)", tone: "green" });
-  } else {
-    highlights.push({ label: "Tanpa Pasutri", tone: "neutral" });
-  }
-
-  if (allRulesText.some((t) => t.includes("boleh bawa hewan") || (t.includes("hewan") && !t.includes("dilarang")))) {
-    highlights.push({ label: "Boleh Bawa Hewan", tone: "neutral" });
-  }
-
-  const categories: RuleCategory[] = [
-    {
-      key: "occupancy",
-      titleId: "Tipe & Kapasitas Penghuni",
-      titleEn: "Occupancy & Tenant Type",
-      items: catMap.occupancy,
-    },
-    {
-      key: "access",
-      titleId: "Akses & Jam Malam",
-      titleEn: "Access & Curfew",
-      items: catMap.access,
-    },
-    {
-      key: "guest",
-      titleId: "Kebijakan Tamu",
-      titleEn: "Guest Policy",
-      items: catMap.guest,
-    },
-    {
-      key: "conduct",
-      titleId: "Ketertiban & Larangan",
-      titleEn: "Conduct & Prohibitions",
-      items: catMap.conduct,
-    },
-    {
-      key: "documents",
-      titleId: "Syarat & Dokumen Sewa",
-      titleEn: "Documents & Requirements",
-      items: catMap.documents,
-    },
-  ];
-
-  const flatRules = categories.flatMap((c) => c.items.map((i) => i.text));
-
-  return {
-    cleanDescription: cleanDescription || desc,
-    rules: flatRules,
-    patokan,
-    highlights,
-    categories,
-  };
-}
 
 export async function generateStaticParams() {
   const props = getVerifiedProperties();
@@ -494,6 +274,12 @@ export default async function DetailPage({
     <BookingFlowProvider>
       <JsonLd data={propertySchema} />
       <JsonLd data={breadcrumbSchema} />
+      <PropertyDetailSubNav
+        propertyName={p.name}
+        minPrice={getMinAvailablePrice(p)}
+        isAvailable={getTotalAvailableRooms(p) > 0}
+        isEn={isEn}
+      />
       <>      {/* Back link */}
       <div className="mx-auto w-full max-w-7xl px-6 pt-8 lg:px-10">
         <Link
@@ -509,13 +295,15 @@ export default async function DetailPage({
 
       <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-10 lg:py-12">
         {/* Gallery */}
-        <PropertyGallery
-          propertyName={p.name}
-          propertySlug={p.slug}
-          images={getKosGalleryItems(p.slug || p.imageSeed, p.name)}
-          tViewAll={t("detail.viewAllPhotos")}
-          tClose={t("detail.closeGallery")}
-        />
+        <div id="foto-properti">
+          <PropertyGallery
+            propertyName={p.name}
+            propertySlug={p.slug}
+            images={getKosGalleryItems(p.slug || p.imageSeed, p.name)}
+            tViewAll={t("detail.viewAllPhotos")}
+            tClose={t("detail.closeGallery")}
+          />
+        </div>
 
         {/* Body */}
         <div className="mt-12 grid grid-cols-1 gap-12 lg:grid-cols-[1fr_380px]">
@@ -581,7 +369,7 @@ export default async function DetailPage({
             </section>
 
             {/* 2. Spesifikasi Tipe Kamar & Pilihan Kamar */}
-            <section className="py-8 space-y-5">
+            <section id="fasilitas-kamar" className="py-8 space-y-5">
               <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
                 {t("detail.roomTypes")}
               </h2>
@@ -673,7 +461,7 @@ export default async function DetailPage({
             </section>
 
             {/* 3. Fasilitas Bersama (Umum) */}
-            <section className="py-8 space-y-4">
+            <section id="fasilitas-umum" className="py-8 space-y-4">
               <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
                 {t("detail.sharedFacilities")}
               </h2>
@@ -698,95 +486,37 @@ export default async function DetailPage({
               )}
             </section>
 
-            {/* 5. Peraturan & Ketentuan Menginap */}
-            <section className="py-8 space-y-5">
-              <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
-                {t("detail.rulesTitle")}
-              </h2>
-
-              {/* Quick scanning highlight badges */}
-              <div className="flex flex-wrap gap-2">
-                {rulesData.highlights.map((h, idx) => (
-                  <span
-                    key={idx}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium border",
-                      h.tone === "green" && "border-[#BFDCC5] bg-[#E9F4EC] text-[#2F6B3C]",
-                      h.tone === "blue" && "border-blue-200 bg-blue-50 text-blue-800",
-                      h.tone === "amber" && "border-[#EAD9A8] bg-[#FBF3DC] text-[#8A6A1F]",
-                      h.tone === "neutral" && "border-nk-border bg-stone-50 text-nk-text"
-                    )}
-                  >
-                    <span className="size-1.5 rounded-full bg-current opacity-70" />
-                    {h.label}
-                  </span>
-                ))}
-              </div>
-
-              {/* Categorized Rules Grid */}
-              <div className="grid gap-6 sm:grid-cols-2 pt-2">
-                {rulesData.categories.map((category) => {
-                  const icon =
-                    category.key === "occupancy" ? (
-                      <Users className="size-4 text-stone-600" />
-                    ) : category.key === "access" ? (
-                      <Clock className="size-4 text-stone-600" />
-                    ) : category.key === "guest" ? (
-                      <DoorOpen className="size-4 text-stone-600" />
-                    ) : category.key === "conduct" ? (
-                      <Ban className="size-4 text-stone-600" />
-                    ) : (
-                      <FileText className="size-4 text-stone-600" />
-                    );
-
-                  const title = isEn ? category.titleEn : category.titleId;
-
-                  return (
-                    <div
-                      key={category.key}
-                      className={cn(
-                        "space-y-2.5",
-                        category.key === "conduct" && "sm:col-span-2"
-                      )}
-                    >
-                      <div className="flex items-center gap-2 border-b border-nk-border/70 pb-2">
-                        <div className="flex size-6 items-center justify-center rounded-full bg-stone-100 text-stone-700">
-                          {icon}
-                        </div>
-                        <h3 className="text-sm font-semibold text-nk-text">{title}</h3>
-                      </div>
-
-                      <ul className="space-y-2">
-                        {category.items.map((item, iIdx) => (
-                          <li
-                            key={iIdx}
-                            className="flex items-start gap-2.5 text-xs text-nk-text leading-relaxed"
-                          >
-                            {item.type === "prohibited" ? (
-                              <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-700">
-                                <Ban className="size-2.5" />
-                              </span>
-                            ) : item.type === "allowed" ? (
-                              <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
-                                <CheckCircle2 className="size-2.5" />
-                              </span>
-                            ) : (
-                              <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-stone-200 text-stone-700">
-                                <Info className="size-2.5" />
-                              </span>
-                            )}
-                            <span>{item.text}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
+            {/* 4. Ketentuan & Aturan Kos (Per Kategori Sebagai Section Mandiri) */}
+            {rulesData.categories.map((category) => {
+              const title = isEn ? category.titleEn : category.titleId;
+              return (
+                <section key={category.key} className="py-8 space-y-4">
+                  <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                    {title}
+                  </h2>
+                  <ul className="space-y-3">
+                    {category.items.map((item, iIdx) => {
+                      const Icon = RULE_ICONS[item.iconKey || "info"] || Info;
+                      return (
+                        <li
+                          key={iIdx}
+                          className="flex items-center gap-3 text-sm text-nk-text leading-relaxed"
+                        >
+                          <Icon
+                            className="size-4 shrink-0 text-nk-accent"
+                            aria-hidden="true"
+                          />
+                          <span>{item.text}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              );
+            })}
 
             {/* 6. Lokasi & Lingkungan Sekitar (Maps + Automated Nearby POIs) */}
-            <section className="py-8 space-y-5">
+            <section id="lokasi" className="py-8 space-y-5">
               <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
                 {t("detail.neighborhoodTitle")}
               </h2>
@@ -876,7 +606,7 @@ export default async function DetailPage({
             </section>
 
             {/* 8. Ulasan & Penilaian Penghuni */}
-            <section className="py-8">
+            <section id="review" className="py-8">
               <PropertyReviewsSection
                 propertyId={p.id}
                 propertySlug={p.slug}
@@ -884,6 +614,42 @@ export default async function DetailPage({
                 initialRating={p.rating}
                 initialReviewCount={p.reviewCount}
               />
+            </section>
+
+            {/* 9. Pengelola / Pemilik Kos */}
+            <section id="pemilik" className="py-8 space-y-4">
+              <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
+                {isEn ? "Property Owner" : "Pemilik Kos"}
+              </h2>
+              <div className="flex items-center gap-4 border border-nk-border/80 bg-stone-50/50 p-5">
+                <div className="flex size-14 items-center justify-center rounded-full bg-nk-accent/10 font-bold text-lg text-nk-accent shrink-0">
+                  {(p.owner?.fullName || p.name).slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 space-y-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-base text-nk-text truncate">
+                      {p.owner?.fullName || `Pengelola ${p.name}`}
+                    </h3>
+                    <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 border border-emerald-200">
+                      <ShieldCheck className="size-3" />
+                      {isEn ? "Verified Owner" : "Pemilik Terverifikasi"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-nk-text-muted">
+                    {isEn
+                      ? "Fast response · Active property manager on NgeKos"
+                      : "Respon cepat · Pengelola aktif di NgeKos"}
+                  </p>
+                </div>
+                <a
+                  href="https://wa.me/6281234567890"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:inline-flex items-center gap-2 border border-nk-accent bg-nk-accent/10 px-4 py-2 text-xs font-semibold text-nk-accent transition-colors hover:bg-nk-accent hover:text-white"
+                >
+                  {isEn ? "Chat Owner" : "Hubungi Pemilik"}
+                </a>
+              </div>
             </section>
           </div>
 
