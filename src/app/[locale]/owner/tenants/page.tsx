@@ -71,6 +71,10 @@ export default function OwnerTenantsPage() {
               startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "-",
               joinedAt: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "-",
               paymentStatus: hasOverdue ? "menunggak" : hasPending ? "belum-bayar" : "lunas",
+              bookingId: b.id,
+              checkedInAt: b.checkedInAt || null,
+              checkOutRequestedAt: b.checkOutRequestedAt || null,
+              checkedOutAt: b.checkedOutAt || null,
             };
           });
           setTenantsList(mapped);
@@ -157,6 +161,7 @@ export default function OwnerTenantsPage() {
             <TableRow className="border-b border-nk-border text-left text-xs text-nk-text-muted">
               <TableHead className="px-4 py-3 font-medium">{t("colTenant")}</TableHead>
               <TableHead className="px-4 py-3 font-medium">{t("colProperty")}</TableHead>
+              <TableHead className="px-4 py-3 font-medium">Status Hunian</TableHead>
               <TableHead className="px-4 py-3 font-medium">{t("colPayment")}</TableHead>
               <TableHead className="px-4 py-3 font-medium">{t("colAction")}</TableHead>
             </TableRow>
@@ -164,14 +169,14 @@ export default function OwnerTenantsPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="py-12 text-center text-xs text-nk-text-muted">
+                <TableCell colSpan={5} className="py-12 text-center text-xs text-nk-text-muted">
                   <Loader2 className="mx-auto size-5 animate-spin text-nk-accent" />
                   <span className="mt-2 block">Memuat data penyewa...</span>
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-xs text-nk-text-muted">
+                <TableCell colSpan={5} className="py-8 text-center text-xs text-nk-text-muted">
                   Belum ada tenant aktif.
                 </TableCell>
               </TableRow>
@@ -192,6 +197,17 @@ export default function OwnerTenantsPage() {
                   <TableCell className="px-4 py-3 text-nk-text">
                     {tn.propertyName}
                     <span className="block text-xs text-nk-text-muted">Kamar {tn.roomNumber}</span>
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
+                    {tn.checkedOutAt ? (
+                      <StatusBadge color="gray">Selesai Out</StatusBadge>
+                    ) : tn.checkOutRequestedAt ? (
+                      <StatusBadge color="yellow">Pengajuan Out</StatusBadge>
+                    ) : tn.checkedInAt ? (
+                      <StatusBadge color="green">Check-in</StatusBadge>
+                    ) : (
+                      <StatusBadge color="blue">Belum In</StatusBadge>
+                    )}
                   </TableCell>
                   <TableCell className="px-4 py-3">{payBadge(tn.paymentStatus)}</TableCell>
                   <TableCell className="px-4 py-3">
@@ -300,10 +316,46 @@ export default function OwnerTenantsPage() {
               )}
             </ul>
 
+            <h3 className="mb-2 mt-5 text-sm font-medium text-nk-text">Status Hunian & Check-In</h3>
+            <div className="rounded-md border border-nk-border bg-nk-section/40 p-3 text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-nk-text-muted">Kedatangan:</span>
+                {detail.checkedOutAt ? (
+                  <span className="font-medium text-nk-text-muted">Sudah Check-out</span>
+                ) : detail.checkOutRequestedAt ? (
+                  <span className="font-medium text-amber-700">Pengajuan Check-out Diproses</span>
+                ) : detail.checkedInAt ? (
+                  <span className="font-medium text-emerald-700">Sudah Check-in</span>
+                ) : (
+                  <span className="font-medium text-blue-700">Belum Check-in</span>
+                )}
+              </div>
+            </div>
+
+            {detail.bookingId && !detail.checkedInAt && (
+              <button
+                type="button"
+                onClick={() => router.push("/owner/bookings")}
+                className="mt-3 w-full rounded-md bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition"
+              >
+                Kelola Check-In di Menu Booking
+              </button>
+            )}
+
+            {detail.bookingId && detail.checkedInAt && !detail.checkedOutAt && (
+              <button
+                type="button"
+                onClick={() => router.push("/owner/bookings")}
+                className="mt-3 w-full rounded-md border border-nk-border bg-nk-surface px-4 py-2 text-xs font-semibold text-nk-text hover:bg-nk-warm transition"
+              >
+                Kelola Check-Out di Menu Booking
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => router.push("/owner/messages")}
-              className="mt-6 w-full rounded-lg bg-nk-accent px-5 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+              className="mt-4 w-full rounded-lg bg-nk-accent px-5 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
             >
               {t("sendMessage")}
             </button>

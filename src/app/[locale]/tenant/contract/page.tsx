@@ -7,9 +7,13 @@ import {
   ArrowRight,
   Building2,
   Check,
+  CheckCircle2,
   Circle,
+  Clock,
   Download,
+  KeyRound,
   LogIn,
+  LogOut,
   RefreshCw,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -18,6 +22,13 @@ import { formatIDR, cn } from "@/lib/utils";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
 import { useSession } from "@/components/SessionProvider";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 type ApiBooking = {
   id: string;
@@ -28,6 +39,15 @@ type ApiBooking = {
   durationMonths: number;
   monthlyPriceSnapshot: number;
   depositSnapshot?: number | null;
+  checkedInAt?: string | null;
+  checkInNotes?: string | null;
+  checkOutRequestedAt?: string | null;
+  checkOutDate?: string | null;
+  checkOutNotes?: string | null;
+  refundBankInfo?: { bankName?: string; accountNumber?: string; accountHolder?: string } | null;
+  checkedOutAt?: string | null;
+  inspectionNotes?: string | null;
+  depositRefundAmount?: number | null;
   property?: {
     id: string;
     slug: string;
@@ -93,17 +113,107 @@ export default function TenantContractPage() {
 
   const [isFetching, setIsFetching] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+  const [actionErrorMsg, setActionErrorMsg] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [bookings, setBookings] = useState<ApiBooking[]>([]);
   const [activeBooking, setActiveBooking] = useState<ApiBooking | null>(null);
   const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
 
+  // Check-In state
+  const [checkInOpen, setCheckInOpen] = useState(false);
+  const [checkInNotes, setCheckInNotes] = useState("");
+  const [isSubmittingCheckIn, setIsSubmittingCheckIn] = useState(false);
+
+  // Check-Out state
+  const [checkOutOpen, setCheckOutOpen] = useState(false);
+  const [checkOutDate, setCheckOutDate] = useState("");
+  const [checkOutNotes, setCheckOutNotes] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountHolder, setAccountHolder] = useState("");
+  const [isSubmittingCheckOut, setIsSubmittingCheckOut] = useState(false);
+
   const handleRefresh = useCallback(() => {
     setIsFetching(true);
     setErrorMessage(null);
+    setActionSuccessMsg(null);
+    setActionErrorMsg(null);
     setRefreshKey((k) => k + 1);
   }, []);
+
+  const handleCheckInSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeBooking) return;
+    setIsSubmittingCheckIn(true);
+    setActionErrorMsg(null);
+    setActionSuccessMsg(null);
+    try {
+      const res = await fetch(`/api/bookings/${activeBooking.id}/check-in`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checkInNotes: checkInNotes.trim() || undefined }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error?.message || data?.message || "Gagal melakukan check-in");
+      }
+      setCheckInOpen(false);
+      setCheckInNotes("");
+      setActionSuccessMsg(
+        locale === "id"
+          ? "Check-in berhasil dikonfirmasi! Selamat menikmati kamar Anda."
+          : "Check-in confirmed successfully! Welcome to your room."
+      );
+      handleRefresh();
+    } catch (err) {
+      setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat check-in.");
+    } finally {
+      setIsSubmittingCheckIn(false);
+    }
+  };
+
+  const handleCheckOutSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeBooking) return;
+    setIsSubmittingCheckOut(true);
+    setActionErrorMsg(null);
+    setActionSuccessMsg(null);
+    try {
+      const res = await fetch(`/api/bookings/${activeBooking.id}/check-out-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          checkOutDate: checkOutDate || undefined,
+          checkOutNotes: checkOutNotes.trim() || undefined,
+          bankName: bankName.trim() || undefined,
+          accountNumber: accountNumber.trim() || undefined,
+          accountHolder: accountHolder.trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error?.message || data?.message || "Gagal mengajukan check-out");
+      }
+      setCheckOutOpen(false);
+      setCheckOutDate("");
+      setCheckOutNotes("");
+      setBankName("");
+      setAccountNumber("");
+      setAccountHolder("");
+      setActionSuccessMsg(
+        locale === "id"
+          ? "Pengajuan check-out berhasil dikirim! Menunggu konfirmasi dan inspeksi dari pemilik kos."
+          : "Checkout request submitted successfully! Awaiting owner inspection."
+      );
+      handleRefresh();
+    } catch (err) {
+      setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat mengajukan check-out.");
+    } finally {
+      setIsSubmittingCheckOut(false);
+    }
+  };
 
   useEffect(() => {
     if (!ready || !user) return;
@@ -294,6 +404,20 @@ export default function TenantContractPage() {
         ) : undefined
       }
     >
+      {/* Feedback Banners */}
+      {actionSuccessMsg && (
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+          <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
+          <p className="font-medium">{actionSuccessMsg}</p>
+        </div>
+      )}
+      {actionErrorMsg && (
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+          <AlertCircle className="size-5 shrink-0 text-red-600" />
+          <p className="font-medium">{actionErrorMsg}</p>
+        </div>
+      )}
+
       {/* Error Banner */}
       {errorMessage && (
         <div className="mb-6 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
@@ -378,6 +502,86 @@ export default function TenantContractPage() {
                   <StatusBadge color="blue">{t("statusActive")}</StatusBadge>
                 </div>
                 <div className="flex-1 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10">
+                  {/* Status Check-In & Check-Out */}
+                  <div className="mb-4 rounded-lg border border-nk-border bg-nk-section/40 p-3.5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-nk-text-muted">
+                          {locale === "id" ? "Status Kedatangan & Kamar" : "Occupancy Status"}
+                        </span>
+                        <div className="mt-1 flex items-center gap-2">
+                          {activeBooking.checkedOutAt ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-nk-text-muted">
+                              <CheckCircle2 className="size-4 text-gray-500" />
+                              {locale === "id"
+                                ? `Sudah Check-out (${fmt(activeBooking.checkedOutAt)})`
+                                : `Checked Out (${fmt(activeBooking.checkedOutAt)})`}
+                            </span>
+                          ) : activeBooking.checkOutRequestedAt ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700">
+                              <Clock className="size-4 text-amber-600 animate-pulse" />
+                              {locale === "id"
+                                ? `Pengajuan Check-out Diproses (${fmt(activeBooking.checkOutDate || activeEndIso)})`
+                                : `Checkout Pending (${fmt(activeBooking.checkOutDate || activeEndIso)})`}
+                            </span>
+                          ) : activeBooking.checkedInAt ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                              <CheckCircle2 className="size-4 text-emerald-600" />
+                              {locale === "id"
+                                ? `Sudah Check-in (${fmt(activeBooking.checkedInAt)})`
+                                : `Checked In (${fmt(activeBooking.checkedInAt)})`}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700">
+                              <Clock className="size-4 text-blue-600" />
+                              {locale === "id" ? "Belum Check-in" : "Not Checked In"}
+                            </span>
+                          )}
+                        </div>
+                        {activeBooking.checkInNotes && (
+                          <p className="mt-1 text-xs text-nk-text-muted">
+                            <span className="font-medium">{locale === "id" ? "Catatan Check-in:" : "Check-in Note:"}</span>{" "}
+                            {activeBooking.checkInNotes}
+                          </p>
+                        )}
+                        {activeBooking.checkOutNotes && (
+                          <p className="mt-1 text-xs text-nk-text-muted">
+                            <span className="font-medium">{locale === "id" ? "Catatan Check-out:" : "Check-out Note:"}</span>{" "}
+                            {activeBooking.checkOutNotes}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {/* Check-In Button */}
+                        {!activeBooking.checkedInAt && activeBooking.status === "ACTIVE" && (
+                          <button
+                            type="button"
+                            onClick={() => setCheckInOpen(true)}
+                            className="inline-flex items-center gap-1.5 rounded-none bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition cursor-pointer"
+                          >
+                            <KeyRound className="size-3.5" />
+                            {locale === "id" ? "Check-in Sekarang" : "Self Check-in"}
+                          </button>
+                        )}
+
+                        {/* Check-Out Button */}
+                        {activeBooking.checkedInAt &&
+                          !activeBooking.checkedOutAt &&
+                          !activeBooking.checkOutRequestedAt && (
+                            <button
+                              type="button"
+                              onClick={() => setCheckOutOpen(true)}
+                              className="inline-flex items-center gap-1.5 rounded-none border border-nk-border bg-nk-surface px-3 py-1.5 text-xs font-medium text-nk-text hover:bg-nk-warm transition cursor-pointer"
+                            >
+                              <LogOut className="size-3.5 text-nk-text-muted" />
+                              {locale === "id" ? "Ajukan Check-Out" : "Request Checkout"}
+                            </button>
+                          )}
+                      </div>
+                    </div>
+                  </div>
+
                   <dl className="flex flex-col divide-y divide-nk-border">
                     {activeRows.map((r) => (
                       <div
@@ -538,6 +742,201 @@ export default function TenantContractPage() {
           </aside>
         </div>
       )}
+
+      {/* Dialog Konfirmasi Check-In */}
+      <Dialog open={checkInOpen} onOpenChange={setCheckInOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {locale === "id" ? "Konfirmasi Check-In Mandiri" : "Self Check-In Confirmation"}
+            </DialogTitle>
+            <DialogDescription>
+              {locale === "id"
+                ? "Konfirmasikan bahwa Anda telah tiba di kos dan menerima kunci kamar."
+                : "Confirm that you have arrived at the property and received your room key."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCheckInSubmit} className="mt-4 space-y-4">
+            <div className="rounded-md border border-nk-border bg-nk-section/50 p-3 text-xs space-y-1">
+              <p>
+                <span className="font-semibold">{locale === "id" ? "Kos:" : "Property:"}</span>{" "}
+                {activeBooking?.property?.name || "-"}
+              </p>
+              <p>
+                <span className="font-semibold">{locale === "id" ? "Kamar:" : "Room:"}</span>{" "}
+                {activeBooking?.roomUnit?.number || activeBooking?.roomType?.name || "-"}
+              </p>
+              <p>
+                <span className="font-semibold">{locale === "id" ? "Tanggal Mulai:" : "Start Date:"}</span>{" "}
+                {fmt(activeBooking?.startDate)}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-nk-text mb-1">
+                {locale === "id"
+                  ? "Catatan Tambahan (opsional)"
+                  : "Additional Notes (optional)"}
+              </label>
+              <textarea
+                value={checkInNotes}
+                onChange={(e) => setCheckInNotes(e.target.value)}
+                placeholder={
+                  locale === "id"
+                    ? "Contoh: Kunci diterima dari penjaga kos, kondisi kamar bersih."
+                    : "e.g. Key received from caretaker, room is in clean condition."
+                }
+                rows={3}
+                className="w-full rounded-none border border-nk-border bg-nk-surface px-3 py-2 text-xs text-nk-text focus:outline-none focus:ring-1 focus:ring-nk-accent"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCheckInOpen(false)}
+                disabled={isSubmittingCheckIn}
+                className="border border-nk-border px-3 py-1.5 text-xs font-medium text-nk-text hover:bg-nk-warm transition"
+              >
+                {locale === "id" ? "Batal" : "Cancel"}
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingCheckIn}
+                className="bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition disabled:opacity-50"
+              >
+                {isSubmittingCheckIn
+                  ? locale === "id"
+                    ? "Memproses..."
+                    : "Processing..."
+                  : locale === "id"
+                  ? "Konfirmasi Check-In"
+                  : "Confirm Check-In"}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Pengajuan Check-Out */}
+      <Dialog open={checkOutOpen} onOpenChange={setCheckOutOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {locale === "id" ? "Pengajuan Check-Out Kamar" : "Room Check-Out Request"}
+            </DialogTitle>
+            <DialogDescription>
+              {locale === "id"
+                ? "Isi tanggal rencana keluar kos dan info pengembalian uang jaminan (deposit)."
+                : "Enter your planned departure date and refund account for your deposit."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCheckOutSubmit} className="mt-4 space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-nk-text mb-1">
+                {locale === "id" ? "Tanggal Rencana Keluar *" : "Planned Checkout Date *"}
+              </label>
+              <input
+                type="date"
+                required
+                value={checkOutDate}
+                onChange={(e) => setCheckOutDate(e.target.value)}
+                className="w-full rounded-none border border-nk-border bg-nk-surface px-3 py-1.5 text-xs text-nk-text focus:outline-none focus:ring-1 focus:ring-nk-accent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-nk-text mb-1">
+                {locale === "id" ? "Alasan / Catatan Keluar" : "Departure Reason / Note"}
+              </label>
+              <textarea
+                value={checkOutNotes}
+                onChange={(e) => setCheckOutNotes(e.target.value)}
+                placeholder={
+                  locale === "id"
+                    ? "Contoh: Masa studi selesai, rencana serah terima kunci jam 12:00."
+                    : "e.g. Studies completed, keys will be handed over at 12:00."
+                }
+                rows={2}
+                className="w-full rounded-none border border-nk-border bg-nk-surface px-3 py-2 text-xs text-nk-text focus:outline-none focus:ring-1 focus:ring-nk-accent"
+              />
+            </div>
+
+            {/* Refund Bank Info */}
+            <div className="space-y-2 border-t border-nk-border pt-3">
+              <span className="text-xs font-semibold text-nk-text">
+                {locale === "id"
+                  ? "Rekening Pengembalian Deposit"
+                  : "Deposit Refund Bank Details"}
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] text-nk-text-muted mb-0.5">
+                    {locale === "id" ? "Nama Bank" : "Bank Name"}
+                  </label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="BCA / Mandiri / BRI"
+                    className="w-full rounded-none border border-nk-border bg-nk-surface px-2.5 py-1 text-xs text-nk-text focus:outline-none focus:ring-1 focus:ring-nk-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-nk-text-muted mb-0.5">
+                    {locale === "id" ? "Nomor Rekening" : "Account Number"}
+                  </label>
+                  <input
+                    type="text"
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value)}
+                    placeholder="1234567890"
+                    className="w-full rounded-none border border-nk-border bg-nk-surface px-2.5 py-1 text-xs text-nk-text focus:outline-none focus:ring-1 focus:ring-nk-accent"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] text-nk-text-muted mb-0.5">
+                  {locale === "id" ? "Nama Pemilik Rekening" : "Account Holder Name"}
+                </label>
+                <input
+                  type="text"
+                  value={accountHolder}
+                  onChange={(e) => setAccountHolder(e.target.value)}
+                  placeholder="Nama Lengkap Pemilik Rekening"
+                  className="w-full rounded-none border border-nk-border bg-nk-surface px-2.5 py-1 text-xs text-nk-text focus:outline-none focus:ring-1 focus:ring-nk-accent"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCheckOutOpen(false)}
+                disabled={isSubmittingCheckOut}
+                className="border border-nk-border px-3 py-1.5 text-xs font-medium text-nk-text hover:bg-nk-warm transition"
+              >
+                {locale === "id" ? "Batal" : "Cancel"}
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingCheckOut}
+                className="bg-nk-accent px-4 py-1.5 text-xs font-semibold text-nk-text-inverse hover:opacity-90 transition disabled:opacity-50"
+              >
+                {isSubmittingCheckOut
+                  ? locale === "id"
+                    ? "Mengirim..."
+                    : "Submitting..."
+                  : locale === "id"
+                  ? "Kirim Pengajuan"
+                  : "Submit Request"}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </UserDashboardShell>
   );
 }

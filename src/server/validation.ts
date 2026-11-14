@@ -101,6 +101,24 @@ export const bookingDecisionSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("CANCELLED"), note: optionalText(1_000) }).strict(),
 ]);
 
+export const checkInSchema = z.object({
+  checkInNotes: optionalText(1_000),
+}).strict();
+
+export const checkOutRequestSchema = z.object({
+  checkOutDate: isoDate.optional(),
+  checkOutNotes: optionalText(1_000),
+  bankName: trimmedText(2, 50).optional(),
+  accountNumber: trimmedText(5, 50).optional(),
+  accountHolder: trimmedText(2, 100).optional(),
+}).strict();
+
+export const checkOutConfirmSchema = z.object({
+  inspectionNotes: optionalText(1_000),
+  depositRefundAmount: z.coerce.number().min(0).optional(),
+  roomStatus: z.enum(["AVAILABLE", "MAINTENANCE"]).default("AVAILABLE"),
+}).strict();
+
 export const profileUpdateSchema = z
   .object({
     fullName: trimmedText(2, 120).optional(),

@@ -382,6 +382,15 @@ model Booking {
   createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
   cancelledAt          DateTime?     @map("cancelled_at") @db.Timestamptz(3)
+  checkedInAt          DateTime?     @map("checked_in_at") @db.Timestamptz(3)
+  checkInNotes         String?       @map("check_in_notes")
+  checkOutRequestedAt  DateTime?     @map("check_out_requested_at") @db.Timestamptz(3)
+  checkOutDate         DateTime?     @map("check_out_date") @db.Date
+  checkOutNotes        String?       @map("check_out_notes")
+  refundBankInfo       Json?         @map("refund_bank_info")
+  checkedOutAt         DateTime?     @map("checked_out_at") @db.Timestamptz(3)
+  inspectionNotes      String?       @map("inspection_notes")
+  depositRefundAmount  Decimal?      @map("deposit_refund_amount") @db.Decimal(14, 0)
 
   applicant Profile                @relation("ApplicantBookings", fields: [applicantId], references: [id], onDelete: Restrict)
   property  Property               @relation(fields: [propertyId], references: [id], onDelete: Restrict)

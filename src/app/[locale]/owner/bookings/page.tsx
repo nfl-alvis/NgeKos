@@ -57,6 +57,15 @@ function mapDbBooking(b: any): Booking {
     monthlyPrice: b.monthlyPriceSnapshot || 0,
     timeline: timeline.length > 0 ? timeline : [{ at: b.createdAt, stage: "diajukan" }],
     payments: [],
+    checkedInAt: b.checkedInAt || null,
+    checkInNotes: b.checkInNotes || null,
+    checkOutRequestedAt: b.checkOutRequestedAt || null,
+    checkOutDate: b.checkOutDate || null,
+    checkOutNotes: b.checkOutNotes || null,
+    refundBankInfo: b.refundBankInfo || null,
+    checkedOutAt: b.checkedOutAt || null,
+    inspectionNotes: b.inspectionNotes || null,
+    depositRefundAmount: b.depositRefundAmount ? Number(b.depositRefundAmount) : null,
   };
 }
 
@@ -67,7 +76,16 @@ function statusBadge(b: Booking, tr: Record<string, string>) {
     case "approved-awaiting-payment":
       return <StatusBadge color="blue">{tr.awaitPay}</StatusBadge>;
     case "active":
-      return <StatusBadge color="green">{tr.active}</StatusBadge>;
+      if (b.checkedOutAt) {
+        return <StatusBadge color="gray">Selesai Check-out</StatusBadge>;
+      }
+      if (b.checkOutRequestedAt) {
+        return <StatusBadge color="yellow">Pengajuan Check-out</StatusBadge>;
+      }
+      if (b.checkedInAt) {
+        return <StatusBadge color="green">Sudah Check-in</StatusBadge>;
+      }
+      return <StatusBadge color="blue">Menunggu Check-in</StatusBadge>;
     case "expired":
       return <StatusBadge color="red">{tr.expired}</StatusBadge>;
     case "rejected":
@@ -207,6 +225,101 @@ export default function OwnerBookingsPage() {
       });
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const [checkoutTarget, setCheckoutTarget] = useState<Booking | null>(null);
+  const [inspectionNotes, setInspectionNotes] = useState("");
+  const [depositRefundAmount, setDepositRefundAmount] = useState<string>("");
+  const [roomStatusAfterCheckout, setRoomStatusAfterCheckout] = useState<"AVAILABLE" | "MAINTENANCE">("AVAILABLE");
+  const [isSubmittingCheckout, setIsSubmittingCheckout] = useState(false);
+
+  const handleOwnerCheckIn = async (b: Booking) => {
+    setActionLoading(b.id);
+    setBanner(null);
+    try {
+      const res = await fetch(`/api/bookings/${b.id}/owner-check-in`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checkInNotes: "Dikonfirmasi langsung oleh pemilik kos." }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error?.message || data?.message || "Gagal mengonfirmasi check-in");
+      }
+      const nowIso = new Date().toISOString();
+      setBookingsList((prev) =>
+        prev.map((item) => (item.id === b.id ? { ...item, checkedInAt: nowIso } : item))
+      );
+      if (detail && detail.id === b.id) {
+        setDetail({ ...detail, checkedInAt: nowIso });
+      }
+      setBanner({ type: "success", message: `Check-in untuk ${b.applicantName} berhasil dikonfirmasi!` });
+    } catch (err: unknown) {
+      setBanner({
+        type: "error",
+        message: err instanceof Error ? err.message : "Terjadi kesalahan saat mengonfirmasi check-in.",
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleOwnerConfirmCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkoutTarget) return;
+    setIsSubmittingCheckout(true);
+    setBanner(null);
+    try {
+      const res = await fetch(`/api/bookings/${checkoutTarget.id}/confirm-checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inspectionNotes: inspectionNotes.trim() || undefined,
+          depositRefundAmount: depositRefundAmount ? Number(depositRefundAmount) : undefined,
+          roomStatus: roomStatusAfterCheckout,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error?.message || data?.message || "Gagal menyelesaikan check-out");
+      }
+      const nowIso = new Date().toISOString();
+      setBookingsList((prev) =>
+        prev.map((item) =>
+          item.id === checkoutTarget.id
+            ? {
+                ...item,
+                status: "active",
+                checkedOutAt: nowIso,
+                inspectionNotes: inspectionNotes.trim() || null,
+                depositRefundAmount: depositRefundAmount ? Number(depositRefundAmount) : null,
+              }
+            : item
+        )
+      );
+      if (detail && detail.id === checkoutTarget.id) {
+        setDetail({
+          ...detail,
+          checkedOutAt: nowIso,
+          inspectionNotes: inspectionNotes.trim() || null,
+          depositRefundAmount: depositRefundAmount ? Number(depositRefundAmount) : null,
+        });
+      }
+      setBanner({
+        type: "success",
+        message: `Check-out untuk ${checkoutTarget.applicantName} selesai dan unit kamar disetel ke ${roomStatusAfterCheckout}!`,
+      });
+      setCheckoutTarget(null);
+      setInspectionNotes("");
+      setDepositRefundAmount("");
+    } catch (err: unknown) {
+      setBanner({
+        type: "error",
+        message: err instanceof Error ? err.message : "Terjadi kesalahan saat menyelesaikan check-out.",
+      });
+    } finally {
+      setIsSubmittingCheckout(false);
     }
   };
 
@@ -468,9 +581,180 @@ export default function OwnerBookingsPage() {
             ) : (
               <p className="text-sm text-nk-text-muted">{t("noPayments")}</p>
             )}
+
+            {/* Check-In / Check-Out Management in Detail */}
+            {detail.status === "active" && (
+              <div className="mt-6 border-t border-nk-border pt-4">
+                <h3 className="mb-2 text-sm font-medium text-nk-text">Status Check-in & Check-out</h3>
+                <div className="rounded-lg border border-nk-border bg-nk-section/40 p-3 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-nk-text-muted">Status Kedatangan:</span>
+                    {detail.checkedOutAt ? (
+                      <span className="font-medium text-nk-text-muted">
+                        Sudah Check-out ({new Date(detail.checkedOutAt).toLocaleDateString("id-ID")})
+                      </span>
+                    ) : detail.checkOutRequestedAt ? (
+                      <span className="font-medium text-amber-700">
+                        Pengajuan Check-out ({detail.checkOutDate ? new Date(detail.checkOutDate).toLocaleDateString("id-ID") : "-"})
+                      </span>
+                    ) : detail.checkedInAt ? (
+                      <span className="font-medium text-emerald-700">
+                        Sudah Check-in ({new Date(detail.checkedInAt).toLocaleDateString("id-ID")})
+                      </span>
+                    ) : (
+                      <span className="font-medium text-blue-700">Belum Check-in</span>
+                    )}
+                  </div>
+
+                  {detail.checkInNotes && (
+                    <p className="text-nk-text-muted">
+                      <span className="font-semibold text-nk-text">Catatan Check-in:</span> {detail.checkInNotes}
+                    </p>
+                  )}
+
+                  {detail.checkOutNotes && (
+                    <p className="text-nk-text-muted">
+                      <span className="font-semibold text-nk-text">Catatan Check-out:</span> {detail.checkOutNotes}
+                    </p>
+                  )}
+
+                  {detail.refundBankInfo && (
+                    <div className="border-t border-nk-border pt-2 text-nk-text-muted">
+                      <span className="font-semibold text-nk-text">Rekening Refund:</span>{" "}
+                      {detail.refundBankInfo.bankName || "-"} {detail.refundBankInfo.accountNumber || "-"} (a/n {detail.refundBankInfo.accountHolder || "-"})
+                    </div>
+                  )}
+
+                  {detail.inspectionNotes && (
+                    <div className="border-t border-nk-border pt-2 text-nk-text-muted">
+                      <span className="font-semibold text-nk-text">Hasil Inspeksi:</span> {detail.inspectionNotes}
+                    </div>
+                  )}
+
+                  {detail.depositRefundAmount != null && (
+                    <div className="text-nk-text-muted">
+                      <span className="font-semibold text-nk-text">Deposit Dikembalikan:</span> {formatIDR(detail.depositRefundAmount)}
+                    </div>
+                  )}
+                </div>
+
+                {/* Action buttons inside detail */}
+                <div className="mt-3 flex flex-col gap-2">
+                  {!detail.checkedInAt && (
+                    <button
+                      type="button"
+                      disabled={actionLoading === detail.id}
+                      onClick={() => handleOwnerCheckIn(detail)}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-emerald-700 transition disabled:opacity-50"
+                    >
+                      {actionLoading === detail.id && <Loader2 className="size-3.5 animate-spin" />}
+                      Konfirmasi Check-In Penyewa
+                    </button>
+                  )}
+
+                  {detail.checkedInAt && !detail.checkedOutAt && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDetail(null);
+                        setCheckoutTarget(detail);
+                      }}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-nk-accent px-4 py-2.5 text-xs font-semibold text-nk-text-inverse hover:opacity-90 transition"
+                    >
+                      Inspeksi & Selesai Check-Out
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </>
         )}
       </DialogContent>
+      </Dialog>
+
+      {/* modal confirm checkout */}
+      <Dialog open={checkoutTarget !== null} onOpenChange={(o) => !o && setCheckoutTarget(null)}>
+        <DialogContent className="max-w-md">
+          {checkoutTarget && (
+            <>
+              <h2 className="pr-8 text-lg font-medium text-nk-text">Inspeksi Kamar & Konfirmasi Check-Out</h2>
+              <p className="mt-1 text-xs text-nk-text-muted">
+                {checkoutTarget.applicantName} · {checkoutTarget.propertyName} ({checkoutTarget.roomNumber})
+              </p>
+
+              {checkoutTarget.refundBankInfo && (
+                <div className="mt-3 rounded-md border border-nk-border bg-nk-section/40 p-2.5 text-xs text-nk-text-muted space-y-1">
+                  <p className="font-semibold text-nk-text">Rekening Tujuan Pengembalian Deposit:</p>
+                  <p>Bank: {checkoutTarget.refundBankInfo.bankName || "-"}</p>
+                  <p>No. Rek: {checkoutTarget.refundBankInfo.accountNumber || "-"}</p>
+                  <p>Atas Nama: {checkoutTarget.refundBankInfo.accountHolder || "-"}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleOwnerConfirmCheckout} className="mt-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-nk-text mb-1">
+                    Catatan Hasil Inspeksi Kamar
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={inspectionNotes}
+                    onChange={(e) => setInspectionNotes(e.target.value)}
+                    placeholder="Contoh: Kamar dalam kondisi baik, kunci dan remote AC lengkap."
+                    className="w-full rounded-md border border-nk-border bg-nk-surface px-3 py-2 text-xs text-nk-text focus:outline-none focus:ring-1 focus:ring-nk-accent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-nk-text mb-1">
+                    Nominal Deposit yang Dikembalikan (Rp)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={depositRefundAmount}
+                    onChange={(e) => setDepositRefundAmount(e.target.value)}
+                    placeholder="Contoh: 500000"
+                    className="w-full rounded-md border border-nk-border bg-nk-surface px-3 py-1.5 text-xs text-nk-text focus:outline-none focus:ring-1 focus:ring-nk-accent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-nk-text mb-1">
+                    Status Unit Kamar Setelah Check-Out
+                  </label>
+                  <select
+                    value={roomStatusAfterCheckout}
+                    onChange={(e) => setRoomStatusAfterCheckout(e.target.value as "AVAILABLE" | "MAINTENANCE")}
+                    className="w-full rounded-md border border-nk-border bg-nk-surface px-3 py-1.5 text-xs text-nk-text focus:outline-none focus:ring-1 focus:ring-nk-accent"
+                  >
+                    <option value="AVAILABLE">AVAILABLE (Langsung Siap Disewa)</option>
+                    <option value="MAINTENANCE">MAINTENANCE (Perlu Pembersihan / Perbaikan)</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setCheckoutTarget(null)}
+                    disabled={isSubmittingCheckout}
+                    className="rounded-md border border-nk-border px-3 py-1.5 text-xs font-medium text-nk-text hover:bg-nk-warm transition"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingCheckout}
+                    className="flex items-center gap-1.5 rounded-md bg-nk-accent px-4 py-1.5 text-xs font-semibold text-nk-text-inverse hover:opacity-90 transition disabled:opacity-50"
+                  >
+                    {isSubmittingCheckout && <Loader2 className="size-3 animate-spin" />}
+                    Selesaikan Check-Out
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+        </DialogContent>
       </Dialog>
 
       {/* modal reject */}

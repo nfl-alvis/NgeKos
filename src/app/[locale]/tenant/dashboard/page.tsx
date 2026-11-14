@@ -52,6 +52,9 @@ type ApiBooking = {
   endDate: string;
   monthlyPriceSnapshot: number;
   depositSnapshot?: number | null;
+  checkedInAt?: string | null;
+  checkOutRequestedAt?: string | null;
+  checkedOutAt?: string | null;
   property: {
     id: string;
     slug: string;
@@ -438,7 +441,18 @@ export default function TenantDashboardPage() {
           <section className="mb-6 flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#E9F4EC]">
             <div className="flex items-center justify-between px-4 pb-1 pt-3">
               <h2 className="text-sm font-semibold text-nk-text">{t("myRoom")}</h2>
-              <StatusBadge color="green">{t("activeLease")}</StatusBadge>
+              <div className="flex items-center gap-2">
+                {activeBooking.checkedOutAt ? (
+                  <StatusBadge color="gray">{locale === "id" ? "Sudah Check-out" : "Checked Out"}</StatusBadge>
+                ) : activeBooking.checkOutRequestedAt ? (
+                  <StatusBadge color="yellow">{locale === "id" ? "Proses Check-out" : "Checkout Pending"}</StatusBadge>
+                ) : activeBooking.checkedInAt ? (
+                  <StatusBadge color="green">{locale === "id" ? "Sudah Check-in" : "Checked In"}</StatusBadge>
+                ) : (
+                  <StatusBadge color="blue">{locale === "id" ? "Belum Check-in" : "Awaiting Check-in"}</StatusBadge>
+                )}
+                <StatusBadge color="green">{t("activeLease")}</StatusBadge>
+              </div>
             </div>
             <div className="flex flex-1 flex-col gap-4 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10 sm:flex-row sm:items-center">
               <Image

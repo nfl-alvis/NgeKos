@@ -103,12 +103,22 @@ export interface Booking {
   /** status timeline: Diajukan -> Disetujui -> Menunggu Bayar -> Lunas */
   timeline: { at: string; stage: "diajukan" | "disetujui" | "menunggu-bayar" | "lunas" }[];
   payments?: { id: string; at: string; amount: number; status: "berhasil" | "gagal" | "pending" }[];
+  checkedInAt?: string | null;
+  checkInNotes?: string | null;
+  checkOutRequestedAt?: string | null;
+  checkOutDate?: string | null;
+  checkOutNotes?: string | null;
+  refundBankInfo?: { bankName?: string; accountNumber?: string; accountHolder?: string } | null;
+  checkedOutAt?: string | null;
+  inspectionNotes?: string | null;
+  depositRefundAmount?: number | null;
 }
 
 export type TenantPaymentStatus = "lunas" | "belum-bayar" | "menunggak";
 
 export interface Tenant {
   id: string;
+  bookingId?: string;
   name: string;
   phone: string;
   email: string;
@@ -120,6 +130,9 @@ export interface Tenant {
   joinedAt: string;
   /** monthly rent (IDR) */
   monthlyRent: number;
+  checkedInAt?: string | null;
+  checkOutRequestedAt?: string | null;
+  checkedOutAt?: string | null;
 }
 
 export interface RentalAgreement {

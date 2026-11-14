@@ -4,6 +4,9 @@ import {
   paginationSchema,
   propertyCreateSchema,
   propertyUpdateSchema,
+  checkInSchema,
+  checkOutRequestSchema,
+  checkOutConfirmSchema,
 } from "./validation";
 import { canTransitionBooking } from "./booking-policy";
 
@@ -92,5 +95,38 @@ describe("booking transitions", () => {
   it("does not let clients activate a booking", () => {
     expect(canTransitionBooking("APPROVED_AWAITING_PAYMENT", "ACTIVE", "OWNER")).toBe(false);
     expect(canTransitionBooking("APPROVED_AWAITING_PAYMENT", "ACTIVE", "SEEKER")).toBe(false);
+  });
+});
+
+describe("check-in and check-out validation", () => {
+  it("validates checkInSchema with optional notes", () => {
+    expect(checkInSchema.parse({})).toEqual({});
+    expect(checkInSchema.parse({ checkInNotes: "Kunci sudah diterima" })).toEqual({
+      checkInNotes: "Kunci sudah diterima",
+    });
+  });
+
+  it("validates checkOutRequestSchema with date, notes, and bank info", () => {
+    const valid = {
+      checkOutDate: "2026-12-01",
+      checkOutNotes: "Pindah kerja ke Jakarta",
+      bankName: "BCA",
+      accountNumber: "1234567890",
+      accountHolder: "Budi Santoso",
+    };
+    const parsed = checkOutRequestSchema.parse(valid);
+    expect(parsed.bankName).toBe("BCA");
+    expect(parsed.accountHolder).toBe("Budi Santoso");
+  });
+
+  it("validates checkOutConfirmSchema for owner inspection and room status", () => {
+    const valid = {
+      inspectionNotes: "Kamar bersih, kunci lengkap",
+      depositRefundAmount: 500000,
+      roomStatus: "AVAILABLE",
+    };
+    const parsed = checkOutConfirmSchema.parse(valid);
+    expect(parsed.depositRefundAmount).toBe(500000);
+    expect(parsed.roomStatus).toBe("AVAILABLE");
   });
 });
