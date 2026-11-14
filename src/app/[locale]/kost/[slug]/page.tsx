@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { getPropertyBySlug, getVerifiedProperties, getMinAvailablePrice, getTotalAvailableRooms } from "@/lib/data/properties";
+import { getPropertyBySlug, getVerifiedProperties, getMinAvailablePrice, getTotalAvailableRooms, ensureRoomTypeFacilities } from "@/lib/data/properties";
 import { FACILITY_META, ROOM_FACILITY_KEYS } from "@/lib/data/facilities";
 import { getNearbyPlaces, type NearbyPlace } from "@/lib/data/nearbyPlaces";
 import { formatIDR, formatDistance, cn } from "@/lib/utils";
@@ -361,12 +361,13 @@ export async function generateMetadata({
   let p: Property | null = null;
   try {
     const dbProp = await getProperty(slug);
-    if (dbProp) p = toUiProperty(dbProp);
+    if (dbProp) p = ensureRoomTypeFacilities(toUiProperty(dbProp));
   } catch {
     p = null;
   }
   if (!p) {
-    p = getPropertyBySlug(slug) ?? null;
+    const staticSeed = getPropertyBySlug(slug);
+    p = staticSeed ? ensureRoomTypeFacilities(staticSeed) : null;
   }
   if (!p) return { title: "Kost Tidak Ditemukan" };
 
@@ -456,18 +457,18 @@ export default async function DetailPage({
   let p: Property | null = null;
   try {
     const dbProp = await getProperty(slug);
-    if (dbProp) p = toUiProperty(dbProp);
+    if (dbProp) p = ensureRoomTypeFacilities(toUiProperty(dbProp));
   } catch {
     p = null;
   }
   if (!p) {
-    p = getPropertyBySlug(slug) ?? null;
+    const staticSeed = getPropertyBySlug(slug);
+    p = staticSeed ? ensureRoomTypeFacilities(staticSeed) : null;
   }
 
   if (!p) notFound();
 
   const rulesData = parsePropertyRules(p);
-  const roomFacilities = p.facilities.filter((f) => ROOM_FACILITY_KEYS.includes(f));
   const sharedFacilities = p.facilities.filter((f) => !ROOM_FACILITY_KEYS.includes(f));
   const nearbyPlaces = getNearbyPlaces({
     city: p.city,
@@ -623,6 +624,25 @@ export default async function DetailPage({
                           {t("detail.perMonth")}
                         </span>
                       </div>
+
+                      {/* Fasilitas Kamar Spesifik Tipe Ini */}
+                      {rt.facilities && rt.facilities.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-3 border-t border-nk-border/60">
+                          {rt.facilities.map((f) => {
+                            const meta = FACILITY_META[f];
+                            const label = isEn ? (meta?.labelEn || f) : (meta?.labelId || f);
+                            return (
+                              <span
+                                key={f}
+                                className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium border border-nk-border/80 bg-stone-50 text-nk-text"
+                              >
+                                <FacilityIcon facility={f} className="size-3.5 opacity-80" />
+                                <span>{label}</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-4 mt-4 border-t border-nk-border/60">
@@ -652,33 +672,7 @@ export default async function DetailPage({
               </div>
             </section>
 
-            {/* 3. Fasilitas Kamar (Pribadi) */}
-            <section className="py-8 space-y-4">
-              <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
-                {t("detail.roomFacilities")}
-              </h2>
-
-              {roomFacilities.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 pt-1">
-                  {roomFacilities.map((f) => {
-                    const meta = FACILITY_META[f];
-                    const label = isEn ? (meta?.labelEn || f) : (meta?.labelId || f);
-                    return (
-                      <div key={f} className="flex items-center gap-3">
-                        <FacilityIcon facility={f} className="size-6 shrink-0 opacity-90" />
-                        <span className="text-sm sm:text-[15px] font-medium text-nk-text leading-tight">{label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-xs text-nk-text-muted italic py-1">
-                  {t("detail.noRoomFacilities")}
-                </p>
-              )}
-            </section>
-
-            {/* 4. Fasilitas Bersama (Umum) */}
+            {/* 3. Fasilitas Bersama (Umum) */}
             <section className="py-8 space-y-4">
               <h2 className="text-2xl font-semibold tracking-tight text-nk-text">
                 {t("detail.sharedFacilities")}

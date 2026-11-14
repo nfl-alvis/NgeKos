@@ -6,6 +6,8 @@ import { ApiError } from "@/server/http";
 import { slugifyPropertyName, type propertyListQuerySchema } from "@/server/properties";
 import type { PropertyCreateInput } from "@/server/validation";
 import type { z } from "zod";
+import { isRoomFacility } from "@/lib/data/facilities";
+import type { Facility } from "@/lib/data/types";
 import {
   getPropertyRepository,
   type PropertyRecord,
@@ -57,6 +59,9 @@ export function propertyDto(property: PropertyRecord) {
       pricePerMonth: Number(roomType.pricePerMonth),
       sizeM2: roomType.sizeM2 === null ? null : Number(roomType.sizeM2),
       capacity: roomType.capacity,
+      facilities: property.facilities
+        .filter(({ facility }) => isRoomFacility(facility.key))
+        .map(({ facility }) => facility.key as Facility),
       total: roomType.units.length,
       available: roomType.units.filter((unit) => unit.status === "AVAILABLE").length,
       units: roomType.units.map((unit) => ({

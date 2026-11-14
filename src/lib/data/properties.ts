@@ -1,4 +1,5 @@
 import type { Property } from "./types";
+import { separateFacilities } from "./facilities";
 
 export const properties: Property[] = [
   {
@@ -401,7 +402,8 @@ export function getVerifiedProperties(): Property[] {
 }
 
 export function getPropertyBySlug(slug: string): Property | undefined {
-  return properties.find((p) => p.slug === slug);
+  const found = properties.find((p) => p.slug === slug);
+  return found ? ensureRoomTypeFacilities(found) : undefined;
 }
 
 export const SUPPORTED_CITIES = [
@@ -435,6 +437,18 @@ export function getMinAvailablePrice(
     return Math.min(...available.map((r) => r.pricePerMonth));
   }
   return p.minPrice;
+}
+
+export function ensureRoomTypeFacilities(property: Property): Property {
+  const { roomFacilities } = separateFacilities(property.facilities || []);
+  const roomTypes = property.roomTypes.map((rt) => ({
+    ...rt,
+    facilities: rt.facilities && rt.facilities.length > 0 ? rt.facilities : roomFacilities,
+  }));
+  return {
+    ...property,
+    roomTypes,
+  };
 }
 
 export function getTotalAvailableRooms(

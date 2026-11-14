@@ -23,6 +23,9 @@ export interface RoomType {
   available: number;
   total: number;
   sizeM2: number;
+  capacity?: number;
+  description?: string | null;
+  facilities?: Facility[];
 }
 
 export interface Property {

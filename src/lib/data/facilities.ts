@@ -37,3 +37,20 @@ export const SHARED_FACILITY_KEYS: Facility[] = [
   "cctv",
   "access-24h",
 ];
+
+export function isRoomFacility(facility: string): facility is Facility {
+  return (ROOM_FACILITY_KEYS as string[]).includes(facility);
+}
+
+export function isSharedFacility(facility: string): facility is Facility {
+  return (SHARED_FACILITY_KEYS as string[]).includes(facility);
+}
+
+export function separateFacilities(facilities: Facility[]): {
+  roomFacilities: Facility[];
+  sharedFacilities: Facility[];
+} {
+  const roomFacilities = facilities.filter(isRoomFacility);
+  const sharedFacilities = facilities.filter(isSharedFacility);
+  return { roomFacilities, sharedFacilities };
+}
