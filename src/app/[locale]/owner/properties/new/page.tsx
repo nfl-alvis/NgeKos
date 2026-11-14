@@ -2025,13 +2025,13 @@ export default function NewPropertyPage() {
                                 }
                                 className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
                                   checked
-                                    ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
-                                    : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                                    ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
+                                    : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
                                 }`}
                               >
                                 <Icon
                                   className={`size-4 shrink-0 transition-colors ${
-                                    checked ? "text-white" : "text-nk-text-muted"
+                                    checked ? "text-nk-accent" : "text-nk-text-muted"
                                   }`}
                                 />
                                 <span className="truncate">{item.label}</span>
@@ -2103,13 +2103,13 @@ export default function NewPropertyPage() {
                                 }
                                 className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
                                   checked
-                                    ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
-                                    : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                                    ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
+                                    : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
                                 }`}
                               >
                                 <Icon
                                   className={`size-4 shrink-0 transition-colors ${
-                                    checked ? "text-white" : "text-nk-text-muted"
+                                    checked ? "text-nk-accent" : "text-nk-text-muted"
                                   }`}
                                 />
                                 <span className="truncate">{item.label}</span>
@@ -2181,13 +2181,13 @@ export default function NewPropertyPage() {
                                 }
                                 className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all cursor-pointer ${
                                   checked
-                                    ? "border-nk-accent bg-nk-accent text-white shadow-sm ring-1 ring-nk-accent"
-                                    : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm"
+                                    ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
+                                    : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
                                 }`}
                               >
                                 <Icon
                                   className={`size-4 shrink-0 transition-colors ${
-                                    checked ? "text-white" : "text-nk-text-muted"
+                                    checked ? "text-nk-accent" : "text-nk-text-muted"
                                   }`}
                                 />
                                 <span className="truncate">{item.label}</span>

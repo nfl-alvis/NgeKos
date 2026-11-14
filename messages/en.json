@@ -152,6 +152,8 @@
     "neighborhoodTitle": "Location & Neighborhood",
     "landmark": "Location Landmark",
     "depositTerms": "Deposit & Payment Terms",
+    "nearbyTitle": "Nearby Places",
+    "nearbySubtitle": "Essential spots and landmarks around this property",
     "noRoomFacilities": "Standard room amenities (contact owner for furniture specifics).",
     "noSharedFacilities": "Standard common facilities."
   },

@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getPropertyBySlug, getVerifiedProperties } from "@/lib/data/properties";
 import { FACILITY_META, ROOM_FACILITY_KEYS } from "@/lib/data/facilities";
+import { getNearbyPlaces, type NearbyPlace } from "@/lib/data/nearbyPlaces";
 import { formatIDR, formatDistance, cn } from "@/lib/utils";
 import BookingCta from "@/components/BookingCta";
 import FacilityIcon from "@/components/FacilityIcon";
@@ -31,7 +32,24 @@ import {
   ShieldCheck,
   CreditCard,
   Sparkles,
+  Utensils,
+  ShoppingCart,
+  Landmark,
+  GraduationCap,
+  Hospital,
+  Store,
 } from "lucide-react";
+
+import PropertyLocationMap from "@/components/PropertyLocationMap";
+
+const POI_ICONS: Record<NearbyPlace["iconType"], React.ComponentType<{ className?: string }>> = {
+  utensils: Utensils,
+  "shopping-cart": ShoppingCart,
+  worship: Landmark,
+  "graduation-cap": GraduationCap,
+  hospital: Hospital,
+  mall: Store,
+};
 
 function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
   return {
@@ -55,6 +73,8 @@ function toUiProperty(dto: ReturnType<typeof propertyDto>): Property {
     depositAmount: dto.depositAmount,
     dpAmount: dto.depositAmount ?? undefined,
     depositInfo: dto.depositAmount ? `DP Rp ${dto.depositAmount.toLocaleString("id-ID")}` : "Tanpa deposit",
+    latitude: dto.latitude ?? undefined,
+    longitude: dto.longitude ?? undefined,
     verificationStatus: dto.status === "VERIFIED" ? "verified" : dto.status === "REJECTED" ? "rejected" : "pending",
     roomTypes: dto.roomTypes.map((rt) => ({
       id: rt.id,
@@ -453,6 +473,12 @@ export default async function DetailPage({
   const rulesData = parsePropertyRules(p);
   const roomFacilities = p.facilities.filter((f) => ROOM_FACILITY_KEYS.includes(f));
   const sharedFacilities = p.facilities.filter((f) => !ROOM_FACILITY_KEYS.includes(f));
+  const nearbyPlaces = getNearbyPlaces({
+    city: p.city,
+    district: p.district,
+    address: p.address,
+    distanceToCampusM: p.distanceToCampusM,
+  });
 
   const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.ngekos.biz.id";
   const kosImages = getKosGalleryItems(p.slug, p.name);
@@ -496,9 +522,9 @@ export default async function DetailPage({
 
         {/* Body */}
         <div className="mt-12 grid grid-cols-1 gap-12 lg:grid-cols-[1fr_380px]">
-          <div className="space-y-8">
+          <div className="divide-y divide-nk-border">
             {/* Header */}
-            <div className="space-y-4">
+            <div className="pb-8 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-3">
                   <span className={cn(
@@ -547,9 +573,19 @@ export default async function DetailPage({
               </div>
             </div>
 
-            {/* 1. Spesifikasi Tipe Kamar & Pilihan Kamar */}
-            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-nk-border pb-4">
+            {/* 1. Deskripsi Kos (Catatan dari Pemilik Kos) */}
+            <section className="py-8 space-y-3">
+              <h2 className="text-xl font-semibold tracking-tight text-nk-text">
+                {t("detail.description")}
+              </h2>
+              <p className="text-sm leading-relaxed text-nk-text/80 whitespace-pre-line max-w-3xl">
+                {rulesData.cleanDescription}
+              </p>
+            </section>
+
+            {/* 2. Spesifikasi Tipe Kamar & Pilihan Kamar */}
+            <section className="py-8 space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">
                     <BedDouble className="size-5 text-nk-text-muted" />
@@ -633,9 +669,9 @@ export default async function DetailPage({
               </div>
             </section>
 
-            {/* 2. Fasilitas Kamar (Pribadi) */}
-            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-nk-border pb-4">
+            {/* 3. Fasilitas Kamar (Pribadi) */}
+            <section className="py-8 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">
                     <Sparkles className="size-5 text-nk-text-muted" />
@@ -678,9 +714,9 @@ export default async function DetailPage({
               )}
             </section>
 
-            {/* 3. Fasilitas Bersama (Umum) */}
-            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-nk-border pb-4">
+            {/* 4. Fasilitas Bersama (Umum) */}
+            <section className="py-8 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">
                     <Building2 className="size-5 text-nk-text-muted" />
@@ -723,9 +759,9 @@ export default async function DetailPage({
               )}
             </section>
 
-            {/* 4. Peraturan & Ketentuan Menginap (Mamikos Pattern) */}
-            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-nk-border pb-4">
+            {/* 5. Peraturan & Ketentuan Menginap */}
+            <section className="py-8 space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="size-5 text-nk-text-muted" />
@@ -743,7 +779,7 @@ export default async function DetailPage({
               </div>
 
               {/* Quick scanning highlight badges */}
-              <div className="flex flex-wrap gap-2 pb-2">
+              <div className="flex flex-wrap gap-2">
                 {rulesData.highlights.map((h, idx) => (
                   <span
                     key={idx}
@@ -761,8 +797,8 @@ export default async function DetailPage({
                 ))}
               </div>
 
-              {/* Modular 5-Category Sub-Cards */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              {/* Categorized Rules Grid */}
+              <div className="grid gap-6 sm:grid-cols-2 pt-2">
                 {rulesData.categories.map((category) => {
                   const icon =
                     category.key === "occupancy" ? (
@@ -783,12 +819,12 @@ export default async function DetailPage({
                     <div
                       key={category.key}
                       className={cn(
-                        "border border-nk-border bg-stone-50/40 p-4 space-y-3",
+                        "space-y-2.5",
                         category.key === "conduct" && "sm:col-span-2"
                       )}
                     >
-                      <div className="flex items-center gap-2 border-b border-nk-border/70 pb-2.5">
-                        <div className="flex size-7 items-center justify-center bg-white border border-nk-border/80 text-nk-text">
+                      <div className="flex items-center gap-2 border-b border-nk-border/70 pb-2">
+                        <div className="flex size-6 items-center justify-center rounded-full bg-stone-100 text-stone-700">
                           {icon}
                         </div>
                         <h3 className="text-sm font-semibold text-nk-text">{title}</h3>
@@ -823,24 +859,9 @@ export default async function DetailPage({
               </div>
             </section>
 
-            {/* 5. Catatan dari Pemilik Kos */}
-            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-4">
-              <div className="border-b border-nk-border pb-4">
-                <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-                  {t("detail.ownerNotes")}
-                </h2>
-                <p className="text-xs text-nk-text-muted mt-1">
-                  {isEn ? "Overview and personal message directly from the property owner" : "Informasi gambaran umum kos dan pesan langsung dari pemilik kos"}
-                </p>
-              </div>
-              <p className="text-sm leading-relaxed text-nk-text-muted whitespace-pre-line max-w-3xl">
-                {rulesData.cleanDescription}
-              </p>
-            </section>
-
-            {/* 6. Lokasi & Lingkungan Sekitar */}
-            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-5">
-              <div className="border-b border-nk-border pb-4">
+            {/* 6. Lokasi & Lingkungan Sekitar (Maps + Automated Nearby POIs) */}
+            <section className="py-8 space-y-5">
+              <div>
                 <div className="flex items-center gap-2">
                   <MapPin className="size-5 text-nk-text-muted" />
                   <h2 className="text-xl font-semibold tracking-tight text-nk-text">
@@ -848,7 +869,7 @@ export default async function DetailPage({
                   </h2>
                 </div>
                 <p className="text-xs text-nk-text-muted mt-1">
-                  {isEn ? "Property address, surrounding landmarks, and transit access" : "Alamat lengkap kos, patokan lokasi, serta kemudahan akses sekitar"}
+                  {isEn ? "Property address, interactive map, and surrounding essential spots" : "Alamat lengkap kos, peta lokasi interaktif, dan tempat penting di sekitar"}
                 </p>
               </div>
 
@@ -878,11 +899,52 @@ export default async function DetailPage({
                   </div>
                 )}
               </div>
+
+              {/* Interactive Location Map */}
+              <div className="pt-2">
+                <PropertyLocationMap
+                  lat={p.latitude}
+                  lng={p.longitude}
+                  propertyName={p.name}
+                  address={p.address}
+                  city={p.city}
+                  district={p.district}
+                />
+              </div>
+
+              {/* Tempat Terdekat Sekitar Kos (Automated POIs matching reference image) */}
+              <div className="pt-4 border-t border-nk-border/70">
+                <div className="mb-4">
+                  <h3 className="text-base font-semibold tracking-tight text-nk-text">
+                    {t("detail.nearbyTitle")}
+                  </h3>
+                  <p className="text-xs text-nk-text-muted mt-0.5">
+                    {t("detail.nearbySubtitle")}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
+                  {nearbyPlaces.map((poi, idx) => {
+                    const IconComponent = POI_ICONS[poi.iconType] || MapPin;
+                    return (
+                      <div key={idx} className="flex items-center gap-3.5">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm">
+                          <IconComponent className="size-5 text-stone-700" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm text-nk-text truncate">{poi.name}</p>
+                          <p className="text-xs text-nk-text-muted mt-0.5">{poi.distanceFormatted}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </section>
 
             {/* 7. Ketentuan Deposit & Pembayaran */}
-            <section className="border border-nk-border bg-white p-6 md:p-8 space-y-4">
-              <div className="border-b border-nk-border pb-4">
+            <section className="py-8 space-y-4">
+              <div>
                 <div className="flex items-center gap-2">
                   <CreditCard className="size-5 text-nk-text-muted" />
                   <h2 className="text-xl font-semibold tracking-tight text-nk-text">
@@ -907,7 +969,7 @@ export default async function DetailPage({
             </section>
 
             {/* 8. Ulasan & Penilaian Penghuni */}
-            <section className="border border-nk-border bg-white p-6 md:p-8">
+            <section className="py-8">
               <PropertyReviewsSection
                 propertyId={p.id}
                 propertySlug={p.slug}

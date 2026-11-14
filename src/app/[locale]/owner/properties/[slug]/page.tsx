@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FACILITY_META } from "@/lib/data/facilities";
+import FacilityIcon from "@/components/FacilityIcon";
 import type { Property, Facility, Gender } from "@/lib/data/types";
 import { formatIDR, cn } from "@/lib/utils";
 import PropertyPhotoManager from "@/components/owner/PropertyPhotoManager";
@@ -1588,11 +1589,12 @@ export default function OwnerPropertyDetailPage() {
                       className={cn(
                         "flex items-center gap-2 rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer",
                         active
-                          ? "border-nk-accent bg-nk-accent text-nk-text-inverse font-medium"
-                          : "border-nk-border bg-stone-50 text-nk-text hover:bg-nk-warm"
+                          ? "border-nk-accent bg-white text-nk-text font-medium ring-1 ring-nk-accent/40"
+                          : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
                       )}
                     >
-                      <span className="truncate">{FACILITY_META[f].labelId}</span>
+                      <FacilityIcon facility={f as any} />
+                      <span className="truncate">{FACILITY_META[f]?.labelId || f}</span>
                     </button>
                   );
                 })}
