@@ -148,7 +148,14 @@ export default function OwnerWalletPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, type?: string) => {
+    if (type === "EARNING_HOLD" && status === "PENDING") {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+          <Clock className="w-3 h-3" /> Tertahan (Cair H+1)
+        </span>
+      );
+    }
     switch (status) {
       case "COMPLETED":
         return (
@@ -379,7 +386,7 @@ export default function OwnerWalletPage() {
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell className="whitespace-nowrap">{getStatusBadge(tx.status)}</TableCell>
+                            <TableCell className="whitespace-nowrap">{getStatusBadge(tx.status, tx.type)}</TableCell>
                             <TableCell className="text-right whitespace-nowrap font-semibold text-sm">
                               {isHold ? (
                                 <span className="text-amber-600 flex items-center justify-end gap-1">

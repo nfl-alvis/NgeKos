@@ -40,6 +40,9 @@ export async function settleBookingPayment(
         propertyId: true,
         roomTypeId: true,
         applicantId: true,
+        depositSnapshot: true,
+        checkedInAt: true,
+        property: { select: { ownerId: true, name: true } },
       },
     });
     if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking not found");
@@ -128,6 +131,47 @@ export async function settleBookingPayment(
       }
     } catch (payErr) {
       console.warn("[settleBookingPayment] payment table update skipped due to pending migration:", payErr);
+    }
+
+    // Escrow: Record rental amount in owner's wallet as heldBalance
+    if (booking.property?.ownerId) {
+      try {
+        const ownerId = booking.property.ownerId;
+        let ownerWallet = await tx.wallet.findUnique({ where: { profileId: ownerId } });
+        if (!ownerWallet) {
+          ownerWallet = await tx.wallet.create({
+            data: { profileId: ownerId, balance: 0, heldBalance: 0 },
+          });
+        }
+
+        const depositAmount = Number(booking.depositSnapshot || 0);
+        const rentAmount = Math.max(0, input.amount - depositAmount);
+
+        if (rentAmount > 0) {
+          const payoutEligibleAt = booking.checkedInAt
+            ? new Date(new Date(booking.checkedInAt).getTime() + 24 * 60 * 60 * 1000)
+            : null;
+
+          await tx.wallet.update({
+            where: { id: ownerWallet.id },
+            data: { heldBalance: { increment: rentAmount } },
+          });
+
+          await tx.walletTransaction.create({
+            data: {
+              walletId: ownerWallet.id,
+              amount: rentAmount,
+              type: "EARNING_HOLD",
+              status: "PENDING",
+              referenceId: booking.id,
+              description: `Uang sewa termin 1 (${booking.property.name}) - Menunggu Check-in`,
+              payoutEligibleAt,
+            },
+          });
+        }
+      } catch (escrowErr) {
+        console.warn("[settleBookingPayment] escrow recording error:", escrowErr);
+      }
     }
 
     // Catat audit log atomik

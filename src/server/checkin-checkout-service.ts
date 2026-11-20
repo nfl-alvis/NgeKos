@@ -113,6 +113,20 @@ export async function tenantCheckIn({
       });
     }
 
+    // Escrow H+1: Schedule release for 24 hours after check-in
+    const escrowReleaseTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    await tx.walletTransaction.updateMany({
+      where: {
+        referenceId: booking.id,
+        type: "EARNING_HOLD",
+        status: "PENDING",
+        payoutEligibleAt: null,
+      },
+      data: {
+        payoutEligibleAt: escrowReleaseTime,
+      },
+    });
+
     await recordAuditLog({
       tx,
       actor: profile,
@@ -205,6 +219,20 @@ export async function ownerCheckIn({
         data: { status: "ACTIVE" },
       });
     }
+
+    // Escrow H+1: Schedule release for 24 hours after check-in
+    const escrowReleaseTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    await tx.walletTransaction.updateMany({
+      where: {
+        referenceId: booking.id,
+        type: "EARNING_HOLD",
+        status: "PENDING",
+        payoutEligibleAt: null,
+      },
+      data: {
+        payoutEligibleAt: escrowReleaseTime,
+      },
+    });
 
     await recordAuditLog({
       tx,
