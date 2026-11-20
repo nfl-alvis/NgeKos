@@ -112,6 +112,10 @@ export interface Booking {
   checkedOutAt?: string | null;
   inspectionNotes?: string | null;
   depositRefundAmount?: number | null;
+  terminationStatus?: string | null;
+  terminationRequestedBy?: string | null;
+  terminationReason?: string | null;
+  terminationRefundAmount?: number | null;
 }
 
 export type TenantPaymentStatus = "lunas" | "belum-bayar" | "menunggak";

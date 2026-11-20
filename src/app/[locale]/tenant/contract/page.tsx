@@ -48,6 +48,10 @@ type ApiBooking = {
   checkedOutAt?: string | null;
   inspectionNotes?: string | null;
   depositRefundAmount?: number | null;
+  terminationStatus?: string | null;
+  terminationRequestedBy?: string | null;
+  terminationReason?: string | null;
+  terminationRefundAmount?: number | null;
   property?: {
     id: string;
     slug: string;
@@ -135,6 +139,12 @@ export default function TenantContractPage() {
   const [accountHolder, setAccountHolder] = useState("");
   const [isSubmittingCheckOut, setIsSubmittingCheckOut] = useState(false);
 
+  // Mutual Early Termination state
+  const [terminationOpen, setTerminationOpen] = useState(false);
+  const [terminationReason, setTerminationReason] = useState("");
+  const [isSubmittingTermination, setIsSubmittingTermination] = useState(false);
+  const [isConfirmingTermination, setIsConfirmingTermination] = useState(false);
+
   const handleRefresh = useCallback(() => {
     setIsFetching(true);
     setErrorMessage(null);
@@ -212,6 +222,69 @@ export default function TenantContractPage() {
       setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat mengajukan check-out.");
     } finally {
       setIsSubmittingCheckOut(false);
+    }
+  };
+
+  const handleTerminationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeBooking) return;
+    setIsSubmittingTermination(true);
+    setActionErrorMsg(null);
+    setActionSuccessMsg(null);
+    try {
+      const res = await fetch(`/api/bookings/${activeBooking.id}/terminate-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: terminationReason.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error?.message || data?.message || "Gagal mengajukan berhenti sewa");
+      }
+      setTerminationOpen(false);
+      setTerminationReason("");
+      setActionSuccessMsg(
+        locale === "id"
+          ? "Permohonan berhenti sewa berhasil diajukan. Menunggu konfirmasi pemilik kos."
+          : "Termination request submitted successfully. Awaiting owner confirmation."
+      );
+      handleRefresh();
+    } catch (err) {
+      setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat mengajukan berhenti sewa.");
+    } finally {
+      setIsSubmittingTermination(false);
+    }
+  };
+
+  const handleTerminationConfirm = async (action: "APPROVE" | "REJECT") => {
+    if (!activeBooking) return;
+    setIsConfirmingTermination(true);
+    setActionErrorMsg(null);
+    setActionSuccessMsg(null);
+    try {
+      const res = await fetch(`/api/bookings/${activeBooking.id}/terminate-confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error?.message || data?.message || "Gagal memproses permohonan");
+      }
+      setActionSuccessMsg(
+        action === "APPROVE"
+          ? (locale === "id"
+              ? "Penghentian sewa disetujui! Dana refund telah dikreditkan ke saldo dompet Anda."
+              : "Termination approved! Refund has been credited to your wallet balance.")
+          : (locale === "id"
+              ? "Permohonan penghentian sewa ditolak."
+              : "Termination request rejected.")
+      );
+      handleRefresh();
+    } catch (err) {
+      setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat memproses permohonan.");
+    } finally {
+      setIsConfirmingTermination(false);
     }
   };
 
@@ -550,6 +623,60 @@ export default function TenantContractPage() {
                             {activeBooking.checkOutNotes}
                           </p>
                         )}
+
+                        {/* Mutual Termination Status Banner */}
+                        {activeBooking.terminationStatus === "REQUESTED" && (
+                          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 text-xs">
+                            {activeBooking.terminationRequestedBy === "TENANT" ? (
+                              <div>
+                                <div className="font-semibold text-amber-900 flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                  Permohonan Berhenti Sewa Menunggu Konfirmasi Pemilik
+                                </div>
+                                <p className="text-neutral-600 mt-1">Alasan: {activeBooking.terminationReason}</p>
+                                <p className="text-neutral-700 font-medium mt-1">
+                                  Estimasi refund sisa sewa & deposit:{" "}
+                                  <span className="font-bold text-emerald-700">
+                                    {formatIDR(activeBooking.terminationRefundAmount || 0)}
+                                  </span>{" "}
+                                  (otomatis masuk ke dompet Anda jika disetujui).
+                                </p>
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="font-semibold text-amber-900">
+                                  Pemilik Kos Mengajukan Penghentian Sewa Lebih Awal
+                                </div>
+                                <p className="text-neutral-600 mt-1">Alasan: {activeBooking.terminationReason}</p>
+                                <p className="text-neutral-700 font-medium mt-1">
+                                  Sisa sewa dihitung prorata harian bersih + deposit sebesar{" "}
+                                  <span className="font-bold text-emerald-700">
+                                    {formatIDR(activeBooking.terminationRefundAmount || 0)}
+                                  </span>{" "}
+                                  akan langsung cair ke Saldo Dompet Anda.
+                                </p>
+                                <div className="mt-3 flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleTerminationConfirm("APPROVE")}
+                                    disabled={isConfirmingTermination}
+                                    className="px-3 py-1 bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 disabled:opacity-50"
+                                  >
+                                    Setujui & Terima Refund
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleTerminationConfirm("REJECT")}
+                                    disabled={isConfirmingTermination}
+                                    className="px-3 py-1 border border-neutral-300 bg-white text-xs font-semibold hover:bg-neutral-50 disabled:opacity-50"
+                                  >
+                                    Tolak Penghentian
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -576,6 +703,23 @@ export default function TenantContractPage() {
                             >
                               <LogOut className="size-3.5 text-nk-text-muted" />
                               {locale === "id" ? "Ajukan Check-Out" : "Request Checkout"}
+                            </button>
+                          )}
+
+                        {/* Mutual Termination Button */}
+                        {activeBooking.checkedInAt &&
+                          !activeBooking.checkedOutAt &&
+                          !activeBooking.checkOutRequestedAt &&
+                          (!activeBooking.terminationStatus ||
+                            activeBooking.terminationStatus === "NONE" ||
+                            activeBooking.terminationStatus === "REJECTED") && (
+                            <button
+                              type="button"
+                              onClick={() => setTerminationOpen(true)}
+                              className="inline-flex items-center gap-1.5 rounded-none border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 transition cursor-pointer"
+                            >
+                              <LogOut className="size-3.5 text-rose-500" />
+                              {locale === "id" ? "Berhenti Sewa Dini" : "Early Termination"}
                             </button>
                           )}
                       </div>
@@ -932,6 +1076,76 @@ export default function TenantContractPage() {
                   : locale === "id"
                   ? "Kirim Pengajuan"
                   : "Submit Request"}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Early Termination Dialog */}
+      <Dialog open={terminationOpen} onOpenChange={setTerminationOpen}>
+        <DialogContent className="sm:max-w-md p-6 bg-white border border-neutral-200">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-neutral-900 flex items-center gap-2">
+              <LogOut className="size-4 text-rose-600" />
+              {locale === "id" ? "Ajukan Berhenti Sewa Lebih Awal" : "Request Early Lease Termination"}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-neutral-500">
+              {locale === "id"
+                ? "Penghentian sewa sebelum masa kontrak habis membutuhkan persetujuan pemilik kos. Sisa hari sewa yang belum terpakai akan dihitung secara prorata harian bersih dan dikembalikan ke Dompet Anda bersama uang deposit."
+                : "Early termination requires owner mutual consent. Unused days will be refunded prorata to your tenant wallet along with deposit."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleTerminationSubmit} className="space-y-4 mt-2">
+            <div className="p-3 bg-neutral-50 border border-neutral-200 text-xs text-neutral-600 space-y-1">
+              <div className="flex justify-between">
+                <span>Harga Sewa Bulanan:</span>
+                <span className="font-semibold text-neutral-900">{formatIDR(Number(activeBooking?.monthlyPriceSnapshot || 0))}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Uang Jaminan (Deposit):</span>
+                <span className="font-semibold text-neutral-900">{formatIDR(Number(activeBooking?.depositSnapshot || 0))}</span>
+              </div>
+              <p className="text-[11px] text-emerald-700 pt-1 font-medium">
+                • Formula refund: (Sisa Hari Belum Terpakai / Total Hari) × Sewa Periode + Deposit utuh.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                {locale === "id" ? "Alasan Berhenti Sewa *" : "Reason for Termination *"}
+              </label>
+              <textarea
+                required
+                rows={3}
+                value={terminationReason}
+                onChange={(e) => setTerminationReason(e.target.value)}
+                placeholder={
+                  locale === "id"
+                    ? "Contoh: Pindah tugas kantor ke luar kota, kendala keluarga, dll..."
+                    : "e.g. Relocating to another city, family emergency..."
+                }
+                className="w-full px-3 py-2 text-xs border border-neutral-300 focus:outline-none focus:border-neutral-900"
+              />
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setTerminationOpen(false)}
+                className="px-4 py-2 border border-neutral-300 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+              >
+                {locale === "id" ? "Batal" : "Cancel"}
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingTermination || terminationReason.trim().length < 5}
+                className="px-5 py-2 bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 transition disabled:opacity-50"
+              >
+                {isSubmittingTermination
+                  ? (locale === "id" ? "Mengirim..." : "Submitting...")
+                  : (locale === "id" ? "Kirim Pengajuan" : "Submit Request")}
               </button>
             </div>
           </form>

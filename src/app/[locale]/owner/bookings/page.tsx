@@ -66,6 +66,10 @@ function mapDbBooking(b: any): Booking {
     checkedOutAt: b.checkedOutAt || null,
     inspectionNotes: b.inspectionNotes || null,
     depositRefundAmount: b.depositRefundAmount ? Number(b.depositRefundAmount) : null,
+    terminationStatus: b.terminationStatus || "NONE",
+    terminationRequestedBy: b.terminationRequestedBy || null,
+    terminationReason: b.terminationReason || null,
+    terminationRefundAmount: b.terminationRefundAmount ? Number(b.terminationRefundAmount) : null,
   };
 }
 
@@ -320,6 +324,38 @@ export default function OwnerBookingsPage() {
       });
     } finally {
       setIsSubmittingCheckout(false);
+    }
+  };
+
+  const handleConfirmTermination = async (bookingId: string, action: "APPROVE" | "REJECT") => {
+    setActionLoading(bookingId);
+    setBanner(null);
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/terminate-confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error?.message || data?.message || "Gagal memproses permohonan");
+      }
+      setBanner({
+        type: "success",
+        message:
+          action === "APPROVE"
+            ? "Penghentian sewa disetujui! Kamar telah tersedia kembali dan refund dikembalikan ke dompet penyewa."
+            : "Permohonan penghentian sewa ditolak.",
+      });
+      setDetail(null);
+      fetchBookings();
+    } catch (err: unknown) {
+      setBanner({
+        type: "error",
+        message: err instanceof Error ? err.message : "Terjadi kesalahan",
+      });
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -665,6 +701,52 @@ export default function OwnerBookingsPage() {
                     </button>
                   )}
                 </div>
+
+                {/* Mutual Termination Status Card */}
+                {detail.terminationStatus === "REQUESTED" && (
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs">
+                    {detail.terminationRequestedBy === "TENANT" ? (
+                      <div>
+                        <div className="font-semibold text-amber-900">
+                          Penyewa Mengajukan Penghentian Sewa Lebih Awal
+                        </div>
+                        <p className="text-neutral-600 mt-1">Alasan: {detail.terminationReason}</p>
+                        <p className="text-neutral-700 font-medium mt-1">
+                          Estimasi refund prorata sisa sewa + deposit:{" "}
+                          <span className="font-bold text-emerald-700">
+                            {formatIDR(detail.terminationRefundAmount || 0)}
+                          </span>{" "}
+                          akan dikembalikan ke Dompet Penyewa.
+                        </p>
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            type="button"
+                            disabled={actionLoading === detail.id}
+                            onClick={() => handleConfirmTermination(detail.id, "APPROVE")}
+                            className="px-3 py-1.5 bg-emerald-600 text-white font-semibold rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                          >
+                            Setujui Berhenti Sewa
+                          </button>
+                          <button
+                            type="button"
+                            disabled={actionLoading === detail.id}
+                            onClick={() => handleConfirmTermination(detail.id, "REJECT")}
+                            className="px-3 py-1.5 border border-neutral-300 bg-white font-semibold rounded-md hover:bg-neutral-50 disabled:opacity-50"
+                          >
+                            Tolak
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="font-semibold text-amber-900">
+                          Permohonan Berhenti Sewa Menunggu Persetujuan Penyewa
+                        </div>
+                        <p className="text-neutral-600 mt-1">Alasan: {detail.terminationReason}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </>

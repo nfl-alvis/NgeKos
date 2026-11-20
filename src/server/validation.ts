@@ -295,3 +295,21 @@ export const processPayoutSchema = z
 export type PayoutRequestInput = z.infer<typeof payoutRequestSchema>;
 export type ProcessPayoutInput = z.infer<typeof processPayoutSchema>;
 
+export const terminationRequestSchema = z
+  .object({
+    reason: trimmedText(5, 1_000),
+    damageDeduction: z.coerce.number().min(0).max(100_000_000).optional(),
+    requestedTerminationDate: isoDate.optional(),
+  })
+  .strict();
+
+export const terminationConfirmSchema = z
+  .object({
+    action: z.enum(["APPROVE", "REJECT"]),
+    rejectionReason: optionalText(1_000),
+  })
+  .strict();
+
+export type TerminationRequestInput = z.infer<typeof terminationRequestSchema>;
+export type TerminationConfirmInput = z.infer<typeof terminationConfirmSchema>;
+
