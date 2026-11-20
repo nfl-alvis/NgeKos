@@ -102,6 +102,7 @@ export async function createBooking(profile: Profile, input: BookingCreateInput)
         roomUnitId: input.roomUnitId && z.uuid().safeParse(input.roomUnitId).success ? input.roomUnitId : undefined,
         startDate,
         durationMonths: input.durationMonths,
+        billingCycle: input.billingCycle || "MONTHLY",
         note: input.note,
         monthlyPriceSnapshot: roomType.pricePerMonth,
         depositSnapshot: roomType.property.depositAmount,
@@ -232,7 +233,13 @@ export async function transitionBooking(
         status: input.status,
         roomUnitId,
         statusNote: input.note,
-        ...(input.status === "APPROVED_AWAITING_PAYMENT" ? { approvedAt: new Date(), paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000) } : {}),
+        ...(input.status === "APPROVED_AWAITING_PAYMENT"
+          ? {
+              approvedAt: new Date(),
+              paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+              paymentDueAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            }
+          : {}),
         ...(input.status === "REJECTED" ? { rejectedAt: new Date() } : {}),
         ...(input.status === "CANCELLED" ? { cancelledAt: new Date() } : {}),
         history: { create: { status: input.status, note: input.note, actorId: profile.id } },

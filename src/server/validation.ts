@@ -92,6 +92,7 @@ export const bookingCreateSchema = z
     roomUnitId: z.string().trim().optional(),
     startDate: isoDate,
     durationMonths: z.coerce.number().pipe(z.union([z.literal(1), z.literal(3), z.literal(6), z.literal(12)])),
+    billingCycle: z.enum(["WEEKLY", "MONTHLY", "QUARTERLY", "SEMI_ANNUALLY", "ANNUALLY"]).default("MONTHLY").optional(),
     note: optionalText(2_000),
   });
 

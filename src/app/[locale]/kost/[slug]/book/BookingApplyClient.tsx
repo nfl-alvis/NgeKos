@@ -13,6 +13,7 @@ import { AlertCircle } from "lucide-react";
 import { useSession } from "@/components/SessionProvider";
 import { getKosImage } from "@/lib/kosImages";
 import StartDateField from "@/components/StartDateField";
+import { calculateFirstInvoice, type BillingCycle } from "@/server/billing-cycle-service";
 
 /**
  * Halaman "Ajukan Booking" bergaya Mamikos (/room/.../booking):
@@ -145,6 +146,7 @@ function BookingForm({
   const [selectedMonths, setSelectedMonths] = useState<number>(
     [1, 3, 6, 12].includes(monthsParam) ? monthsParam : 1
   );
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("MONTHLY");
 
   const [name, setName] = useState(userName);
   const [phone, setPhone] = useState("");
@@ -166,7 +168,13 @@ function BookingForm({
         )
       : "-";
   const totalPeriod = room.pricePerMonth * selectedMonths;
-  const firstPay = room.pricePerMonth + dp;
+  const invoiceCalc = calculateFirstInvoice({
+    monthlyPrice: room.pricePerMonth,
+    deposit: dp,
+    billingCycle,
+    durationMonths: selectedMonths,
+  });
+  const firstPay = invoiceCalc.totalFirstPayment;
   const formOk = name.trim().length >= 3 && phone.replace(/\D/g, "").length >= 9 && validDate && agree;
   const fallbackBookingCode = `BK-${(startDate || "00000000").replace(/-/g, "").slice(4)}${selectedMonths}`;
   const displayCode = actualBookingCode || fallbackBookingCode;
@@ -217,6 +225,7 @@ function BookingForm({
           roomTypeId: finalRoomId,
           startDate,
           durationMonths: selectedMonths,
+          billingCycle,
           note: note.trim() || undefined,
         }),
       });
@@ -437,30 +446,48 @@ function BookingForm({
                 <span className="font-medium text-nk-text">{t("monthsN", { count: selectedMonths })}</span>
               </div>
 
+              <div className="flex flex-col gap-1.5 pt-1">
+                <span className="text-xs font-semibold text-nk-text">Termin Pembayaran</span>
+                <select
+                  value={billingCycle}
+                  onChange={(e) => setBillingCycle(e.target.value as BillingCycle)}
+                  className="w-full bg-white border border-nk-border px-2.5 py-1.5 text-xs text-nk-text focus:outline-none focus:border-nk-accent"
+                >
+                  <option value="WEEKLY">Mingguan (per 7 hari)</option>
+                  <option value="MONTHLY">Bulanan (setiap bulan)</option>
+                  {selectedMonths >= 3 && <option value="QUARTERLY">3 Bulanan (per kuartal)</option>}
+                  {selectedMonths >= 6 && <option value="SEMI_ANNUALLY">6 Bulanan (per semester)</option>}
+                  {selectedMonths >= 12 && <option value="ANNUALLY">Tahunan (1 tahun penuh)</option>}
+                </select>
+              </div>
+
               <div className="my-1 h-px bg-nk-border" aria-hidden="true" />
 
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-nk-text-muted">{t("sewaBulan")}</span>
-                <span className="text-nk-text">{formatIDR(room.pricePerMonth)}</span>
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <span className="text-nk-text-muted">Biaya Sewa Termin 1</span>
+                <span className="text-nk-text font-medium">{formatIDR(invoiceCalc.termRentAmount)}</span>
               </div>
               {dp > 0 && (
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-nk-text-muted">{t("dpLabel")}</span>
-                  <span className="text-nk-text">{formatIDR(dp)}</span>
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="text-nk-text-muted">Uang Jaminan (Deposit)</span>
+                  <span className="text-nk-text font-medium">{formatIDR(dp)}</span>
                 </div>
               )}
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-nk-text-muted">{t("totalPeriod", { count: selectedMonths })}</span>
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <span className="text-nk-text-muted">Total Seluruh Periode ({selectedMonths} Bulan)</span>
                 <span className="text-nk-text">{formatIDR(totalPeriod)}</span>
               </div>
               <div className="flex items-center justify-between gap-3 border-t border-nk-border pt-3">
-                <span className="font-medium text-nk-text">{t("firstTotal")}</span>
-                <span className="font-semibold text-nk-text">{formatIDR(firstPay)}</span>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-nk-text">Tagihan Pertama</span>
+                  <span className="text-[10px] text-nk-text-muted">Deposit + Sewa Termin 1 (Batas 1x24 Jam)</span>
+                </div>
+                <span className="font-bold text-base text-nk-accent">{formatIDR(firstPay)}</span>
               </div>
 
               <div className="flex items-start gap-2 rounded-lg bg-nk-warm p-3 text-xs leading-relaxed text-nk-text-muted">
                 <InfoIcon className="mt-0.5 shrink-0 text-nk-accent" />
-                <span>{t("payAfterApproval")}</span>
+                <span>Tagihan pertama wajib dilunasi dalam 1x24 jam setelah pengajuan disetujui pemilik kos untuk mengaktifkan izin Check-in saat tiba di lokasi.</span>
               </div>
 
               <Link

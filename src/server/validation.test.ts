@@ -50,15 +50,17 @@ describe("property validation", () => {
 });
 
 describe("booking validation", () => {
-  it("accepts supported rental durations", () => {
+  it("accepts supported rental durations and billing cycles", () => {
     const parsed = bookingCreateSchema.parse({
       propertyId: "2bd74c54-b971-43aa-b689-8de0e59cf9ac",
       roomTypeId: "302697c3-d409-42bb-9cf6-7d40b6cae4dc",
       startDate: "2026-10-01",
       durationMonths: 12,
+      billingCycle: "QUARTERLY",
       note: "Saya berencana tinggal satu tahun.",
     });
     expect(parsed.durationMonths).toBe(12);
+    expect(parsed.billingCycle).toBe("QUARTERLY");
   });
 
   it("rejects unsupported durations", () => {

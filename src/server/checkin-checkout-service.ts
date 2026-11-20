@@ -67,6 +67,13 @@ export async function tenantCheckIn({
     if (check.reason === "ALREADY_CHECKED_IN") {
       throw new ApiError(400, "ALREADY_CHECKED_IN", "Sewa ini sudah berstatus check-in");
     }
+    if (check.reason === "PAYMENT_REQUIRED") {
+      throw new ApiError(
+        400,
+        "PAYMENT_REQUIRED",
+        "Pembayaran sewa termin pertama belum lunas. Selesaikan pembayaran sebelum check-in"
+      );
+    }
     throw new ApiError(400, "INVALID_STATUS", "Hanya sewa yang berstatus aktif yang dapat melakukan check-in");
   }
 
@@ -152,6 +159,13 @@ export async function ownerCheckIn({
   if (!check.allowed) {
     if (check.reason === "ALREADY_CHECKED_IN") {
       throw new ApiError(400, "ALREADY_CHECKED_IN", "Sewa ini sudah berstatus check-in");
+    }
+    if (check.reason === "PAYMENT_REQUIRED") {
+      throw new ApiError(
+        400,
+        "PAYMENT_REQUIRED",
+        "Pembayaran sewa termin pertama belum lunas. Selesaikan pembayaran sebelum konfirmasi check-in"
+      );
     }
     throw new ApiError(400, "INVALID_STATUS", "Hanya sewa yang berstatus aktif yang dapat melakukan check-in");
   }

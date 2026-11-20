@@ -35,6 +35,12 @@ describe("Check-in & Check-out Policy Rules", () => {
       expect(res.allowed).toBe(false);
       expect(res.reason).toBe("ALREADY_CHECKED_IN");
     });
+
+    it("rejects check-in if initial payment is not completed", () => {
+      const res = canTenantCheckIn({ ...baseActiveBooking, isPaid: false });
+      expect(res.allowed).toBe(false);
+      expect(res.reason).toBe("PAYMENT_REQUIRED");
+    });
   });
 
   describe("canOwnerCheckIn", () => {
@@ -50,6 +56,12 @@ describe("Check-in & Check-out Policy Rules", () => {
       });
       expect(res.allowed).toBe(false);
       expect(res.reason).toBe("ALREADY_CHECKED_IN");
+    });
+
+    it("rejects owner check-in if initial payment is not completed", () => {
+      const res = canOwnerCheckIn({ ...baseActiveBooking, isPaid: false });
+      expect(res.allowed).toBe(false);
+      expect(res.reason).toBe("PAYMENT_REQUIRED");
     });
   });
 

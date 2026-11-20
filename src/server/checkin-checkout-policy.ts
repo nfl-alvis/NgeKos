@@ -5,6 +5,7 @@ export interface BookingCheckState {
   checkedInAt?: Date | string | null;
   checkedOutAt?: Date | string | null;
   checkOutRequestedAt?: Date | string | null;
+  isPaid?: boolean;
 }
 
 export type PolicyResult =
@@ -13,6 +14,7 @@ export type PolicyResult =
       allowed: false;
       reason:
         | "INVALID_STATUS"
+        | "PAYMENT_REQUIRED"
         | "NOT_CHECKED_IN"
         | "ALREADY_CHECKED_IN"
         | "CHECKOUT_ALREADY_REQUESTED"
@@ -20,6 +22,9 @@ export type PolicyResult =
     };
 
 export function canTenantCheckIn(booking: BookingCheckState): PolicyResult {
+  if (booking.status === "APPROVED_AWAITING_PAYMENT" || booking.isPaid === false) {
+    return { allowed: false, reason: "PAYMENT_REQUIRED" };
+  }
   if (booking.status !== "ACTIVE") {
     return { allowed: false, reason: "INVALID_STATUS" };
   }
@@ -30,6 +35,9 @@ export function canTenantCheckIn(booking: BookingCheckState): PolicyResult {
 }
 
 export function canOwnerCheckIn(booking: BookingCheckState): PolicyResult {
+  if (booking.status === "APPROVED_AWAITING_PAYMENT" || booking.isPaid === false) {
+    return { allowed: false, reason: "PAYMENT_REQUIRED" };
+  }
   if (booking.status !== "ACTIVE") {
     return { allowed: false, reason: "INVALID_STATUS" };
   }
