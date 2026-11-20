@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogPortal,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import StartDateField from "@/components/StartDateField";
@@ -73,6 +74,15 @@ export default function BookingCta({
           popup Select/Popover (portal Base UI) tidak bisa diklik saat
           dialog terbuka */}
       <Dialog open={open} onOpenChange={setOpen} modal={false}>
+        {open && (
+          <DialogPortal>
+            <div
+              aria-hidden="true"
+              onClick={() => setOpen(false)}
+              className="fixed inset-0 z-[99] bg-black/40 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in-0"
+            />
+          </DialogPortal>
+        )}
         <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("title")}</DialogTitle>
