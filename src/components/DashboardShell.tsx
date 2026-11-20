@@ -29,6 +29,7 @@ import {
   User,
   UserCog,
   Users,
+  Wallet,
 } from "lucide-react";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import {
@@ -112,6 +113,7 @@ const OWNER_ITEMS: Item[] = [
   { href: "/owner/bookings", label: "bookings", icon: CalendarCheck },
   { href: "/owner/tenants", label: "tenants", icon: Users },
   { href: "/owner/invoices", label: "invoices", icon: Receipt },
+  { href: "/owner/wallet", label: "wallet", icon: Wallet },
   { href: "/owner/messages", label: "messages", icon: MessageSquare },
   { href: "/owner/notifications", label: "notifications", icon: Bell },
   { href: "/owner/subscription", label: "subscription", icon: CreditCard },

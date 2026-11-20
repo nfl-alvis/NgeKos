@@ -211,6 +211,8 @@ model Profile {
   subscriptions          Subscription[]         @relation("OwnerSubscriptions")
   applicantRefunds       RefundRequest[]        @relation("ApplicantRefunds")
   decidedRefunds         RefundRequest[]        @relation("DecidedRefunds")
+  wallet                 Wallet?
+  processedPayouts       PayoutRequest[]        @relation("ProcessedPayouts")
 
   @@index([role, status])
   @@map("profiles")
@@ -391,6 +393,12 @@ model Booking {
   checkedOutAt         DateTime?     @map("checked_out_at") @db.Timestamptz(3)
   inspectionNotes      String?       @map("inspection_notes")
   depositRefundAmount  Decimal?      @map("deposit_refund_amount") @db.Decimal(14, 0)
+  billingCycle         String?       @default("MONTHLY") @map("billing_cycle") @db.VarChar(30)
+  paymentDueAt         DateTime?     @map("payment_due_at") @db.Timestamptz(3)
+  terminationStatus    String?       @default("NONE") @map("termination_status") @db.VarChar(30)
+  terminationRequestedBy String?     @map("termination_requested_by") @db.VarChar(30)
+  terminationReason    String?       @map("termination_reason")
+  terminationRefundAmount Decimal?   @map("termination_refund_amount") @db.Decimal(14, 0)
 
   applicant Profile                @relation("ApplicantBookings", fields: [applicantId], references: [id], onDelete: Restrict)
   property  Property               @relation(fields: [propertyId], references: [id], onDelete: Restrict)
@@ -858,3 +866,86 @@ model RefundRequest {
   @@index([status, createdAt])
   @@map("refund_requests")
 }
+
+enum WalletTransactionType {
+  EARNING_HOLD
+  ESCROW_RELEASE
+  RENT_REFUND
+  DEPOSIT_REFUND
+  DAMAGE_COMPENSATION
+  WITHDRAWAL
+  PAYMENT
+}
+
+enum WalletTransactionStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum PayoutStatus {
+  PENDING
+  COMPLETED
+  REJECTED
+}
+
+model Wallet {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId    String              @unique @map("profile_id") @db.Uuid
+  balance      Decimal             @default(0) @db.Decimal(14, 0)
+  heldBalance  Decimal             @default(0) @map("held_balance") @db.Decimal(14, 0)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  profile      Profile             @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+  payouts      PayoutRequest[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id                String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  walletId          String                  @map("wallet_id") @db.Uuid
+  amount            Decimal                 @db.Decimal(14, 0)
+  type              WalletTransactionType
+  status            WalletTransactionStatus @default(COMPLETED)
+  referenceId       String?                 @map("reference_id")
+  description       String
+  payoutEligibleAt  DateTime?               @map("payout_eligible_at") @db.Timestamptz(3)
+  releasedAt        DateTime?               @map("released_at") @db.Timestamptz(3)
+  createdAt         DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  wallet            Wallet                  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, createdAt])
+  @@index([walletId, type, status])
+  @@index([status, payoutEligibleAt])
+  @@map("wallet_transactions")
+}
+
+model PayoutRequest {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  walletId        String       @map("wallet_id") @db.Uuid
+  amount          Decimal      @db.Decimal(14, 0)
+  bankName        String       @map("bank_name")
+  accountNumber   String       @map("account_number")
+  accountHolder   String       @map("account_holder")
+  status          PayoutStatus @default(PENDING)
+  referenceNumber String?      @map("reference_number")
+  proofUrl        String?      @map("proof_url")
+  adminNote       String?      @map("admin_note")
+  processedById   String?      @map("processed_by_id") @db.Uuid
+  processedAt     DateTime?    @map("processed_at") @db.Timestamptz(3)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  wallet          Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  processedBy     Profile?     @relation("ProcessedPayouts", fields: [processedById], references: [id], onDelete: SetNull)
+
+  @@index([walletId, status])
+  @@index([status, createdAt])
+  @@map("payout_requests")
+}
+

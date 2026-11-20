@@ -272,3 +272,25 @@ export const refundListQuerySchema = z
 export type RefundRequestCreateInput = z.infer<typeof refundRequestCreateSchema>;
 export type RefundDecisionInput = z.infer<typeof refundDecisionSchema>;
 export type RefundListQueryInput = z.infer<typeof refundListQuerySchema>;
+
+export const payoutRequestSchema = z
+  .object({
+    amount: z.coerce.number().positive("Nominal penarikan harus lebih dari 0"),
+    bankName: z.string().trim().min(2, "Nama bank wajib diisi"),
+    accountNumber: z.string().trim().min(3, "Nomor rekening wajib diisi"),
+    accountHolder: z.string().trim().min(2, "Nama pemilik rekening wajib diisi"),
+  })
+  .strict();
+
+export const processPayoutSchema = z
+  .object({
+    action: z.enum(["APPROVE", "REJECT"]),
+    referenceNumber: z.string().trim().max(100).optional(),
+    proofUrl: z.string().trim().url().optional().or(z.literal("")),
+    adminNote: z.string().trim().max(1000).optional(),
+  })
+  .strict();
+
+export type PayoutRequestInput = z.infer<typeof payoutRequestSchema>;
+export type ProcessPayoutInput = z.infer<typeof processPayoutSchema>;
+

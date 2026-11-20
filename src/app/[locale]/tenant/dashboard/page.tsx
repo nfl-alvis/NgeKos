@@ -7,6 +7,7 @@ import {
   AlertCircle,
   CalendarClock,
   CheckCircle2,
+  Coins,
   LogIn,
   MessageSquare,
   Receipt,
@@ -132,6 +133,7 @@ export default function TenantDashboardPage() {
   const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
   const [conversations, setConversations] = useState<ApiConversation[]>([]);
   const [propertyDetail, setPropertyDetail] = useState<ApiPropertyDetail | null>(null);
+  const [walletData, setWalletData] = useState<{ balance: number; heldBalance: number } | null>(null);
 
   const handleRefresh = useCallback(() => {
     setIsFetching(true);
@@ -147,9 +149,14 @@ export default function TenantDashboardPage() {
       fetch("/api/bookings").then((r) => (r.ok ? r.json() : null)),
       fetch("/api/invoices").then((r) => (r.ok ? r.json() : null)),
       fetch("/api/conversations").then((r) => (r.ok ? r.json() : null)),
+      fetch("/api/wallet").then((r) => (r.ok ? r.json() : null)),
     ])
-      .then(async ([bookingsRes, invoicesRes, convsRes]) => {
+      .then(async ([bookingsRes, invoicesRes, convsRes, walletRes]) => {
         if (ignore) return;
+
+        if (walletRes.status === "fulfilled" && walletRes.value?.data) {
+          setWalletData(walletRes.value.data);
+        }
 
         let loadedBookings: ApiBooking[] = [];
         if (bookingsRes.status === "fulfilled" && bookingsRes.value?.data) {
@@ -282,6 +289,13 @@ export default function TenantDashboardPage() {
   } satisfies ChartConfig;
 
   const stats = [
+    {
+      label: "Saldo Dompet",
+      value: formatIDR(walletData?.balance || 0),
+      note: "Saldo refund sewa & deposit",
+      icon: Coins,
+      tint: { card: "bg-[#F3E8FF]", icon: "bg-[#E9D5FF] text-[#6B21A8]" },
+    },
     {
       label: t("statRent"),
       value: formatIDR(monthlyRent),
