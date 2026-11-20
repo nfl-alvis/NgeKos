@@ -137,6 +137,10 @@ export interface Tenant {
   checkedInAt?: string | null;
   checkOutRequestedAt?: string | null;
   checkedOutAt?: string | null;
+  endDate?: string | null;
+  durationMonths?: number;
+  leaseExpiringStatus?: "ACTIVE_NORMAL" | "EXPIRING_H30" | "EXPIRING_H7" | "EXPIRED" | "NOT_ACTIVE";
+  leaseDaysRemaining?: number;
 }
 
 export interface RentalAgreement {

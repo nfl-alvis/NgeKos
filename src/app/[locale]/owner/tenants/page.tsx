@@ -7,9 +7,10 @@ import DashboardShell from "@/components/DashboardShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Loader2 } from "lucide-react";
+import { Loader2, CalendarClock, AlertTriangle, Clock } from "lucide-react";
 import type { Tenant } from "@/lib/data/types";
 import { formatIDR } from "@/lib/utils";
+import { getLeaseExpirationInfo } from "@/server/lease-extension-policy";
 
 export default function OwnerTenantsPage() {
   const t = useTranslations("owner.tenants");
@@ -22,6 +23,7 @@ export default function OwnerTenantsPage() {
   const [allBookings, setAllBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [leaseFilter, setLeaseFilter] = useState<"all" | "h30" | "h7">("all");
   const [detail, setDetail] = useState<Tenant | null>(null);
 
   useEffect(() => {
@@ -59,6 +61,14 @@ export default function OwnerTenantsPage() {
             );
             const hasPending = tenantInvs.some((i: any) => i.status !== "PAID");
 
+            const durationMonths = Number(b.durationMonths || 1);
+            const expiration = getLeaseExpirationInfo({
+              startDate: b.startDate,
+              durationMonths,
+              status: b.status,
+              checkedOutAt: b.checkedOutAt,
+            });
+
             return {
               id: b.applicantId || b.id,
               name: b.applicant?.fullName || b.applicantName || "Penyewa",
@@ -70,6 +80,10 @@ export default function OwnerTenantsPage() {
               monthlyRent: Number(b.monthlyPriceSnapshot || 0),
               startDate: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "-",
               joinedAt: typeof b.startDate === "string" ? b.startDate.slice(0, 10) : "-",
+              endDate: expiration.endDate.toISOString().slice(0, 10),
+              durationMonths,
+              leaseExpiringStatus: expiration.expiringStatus,
+              leaseDaysRemaining: expiration.daysRemaining,
               paymentStatus: hasOverdue ? "menunggak" : hasPending ? "belum-bayar" : "lunas",
               bookingId: b.id,
               checkedInAt: b.checkedInAt || null,
@@ -89,10 +103,31 @@ export default function OwnerTenantsPage() {
       });
   }, []);
 
-  const filtered = useMemo(
-    () => (filter === "all" ? tenantsList : tenantsList.filter((tn) => tn.propertySlug === filter)),
-    [filter, tenantsList]
+  const expiringH30Count = useMemo(
+    () => tenantsList.filter((tn) => tn.leaseExpiringStatus === "EXPIRING_H30").length,
+    [tenantsList]
   );
+  const expiringH7Count = useMemo(
+    () =>
+      tenantsList.filter(
+        (tn) => tn.leaseExpiringStatus === "EXPIRING_H7" || tn.leaseExpiringStatus === "EXPIRED"
+      ).length,
+    [tenantsList]
+  );
+
+  const filtered = useMemo(() => {
+    return tenantsList.filter((tn) => {
+      const matchProp = filter === "all" || tn.propertySlug === filter;
+      if (!matchProp) return false;
+      if (leaseFilter === "h7") {
+        return tn.leaseExpiringStatus === "EXPIRING_H7" || tn.leaseExpiringStatus === "EXPIRED";
+      }
+      if (leaseFilter === "h30") {
+        return tn.leaseExpiringStatus === "EXPIRING_H30";
+      }
+      return true;
+    });
+  }, [filter, leaseFilter, tenantsList]);
 
   const payBadge = (status: Tenant["paymentStatus"]) => {
     switch (status) {
@@ -138,7 +173,12 @@ export default function OwnerTenantsPage() {
   return (
     <DashboardShell role="owner">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-medium tracking-tight text-nk-text">{t("title")}</h1>
+        <div>
+          <h1 className="text-2xl font-medium tracking-tight text-nk-text">{t("title")}</h1>
+          <p className="text-xs text-nk-text-muted mt-0.5">
+            Monitoring masa sewa, status hunian, dan penagihan penyewa kost aktif.
+          </p>
+        </div>
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -154,6 +194,66 @@ export default function OwnerTenantsPage() {
         </select>
       </div>
 
+      {/* Summary Cards: Active, H-30, H-7 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <button
+          type="button"
+          onClick={() => setLeaseFilter("all")}
+          className={`flex items-center justify-between p-4 rounded-lg border text-left transition cursor-pointer ${
+            leaseFilter === "all"
+              ? "border-nk-accent bg-nk-surface ring-2 ring-nk-accent/20"
+              : "border-nk-border bg-nk-surface hover:bg-nk-warm"
+          }`}
+        >
+          <div>
+            <div className="text-xs font-medium text-nk-text-muted">Total Penyewa Aktif</div>
+            <div className="text-2xl font-bold text-nk-text mt-1">{tenantsList.length}</div>
+            <div className="text-[11px] text-nk-text-muted mt-0.5">Semua sewa berjalan</div>
+          </div>
+          <div className="p-2.5 rounded-full bg-emerald-50 text-emerald-600">
+            <Clock className="w-5 h-5" />
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setLeaseFilter((prev) => (prev === "h30" ? "all" : "h30"))}
+          className={`flex items-center justify-between p-4 rounded-lg border text-left transition cursor-pointer ${
+            leaseFilter === "h30"
+              ? "border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/20"
+              : "border-nk-border bg-nk-surface hover:bg-amber-50/30"
+          }`}
+        >
+          <div>
+            <div className="text-xs font-medium text-amber-800">Jatuh Tempo H-30</div>
+            <div className="text-2xl font-bold text-amber-900 mt-1">{expiringH30Count}</div>
+            <div className="text-[11px] text-amber-700 mt-0.5">Masa sewa habis ≤ 30 hari</div>
+          </div>
+          <div className="p-2.5 rounded-full bg-amber-100 text-amber-700">
+            <CalendarClock className="w-5 h-5" />
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setLeaseFilter((prev) => (prev === "h7" ? "all" : "h7"))}
+          className={`flex items-center justify-between p-4 rounded-lg border text-left transition cursor-pointer ${
+            leaseFilter === "h7"
+              ? "border-rose-500 bg-rose-50/50 ring-2 ring-rose-500/20"
+              : "border-nk-border bg-nk-surface hover:bg-rose-50/30"
+          }`}
+        >
+          <div>
+            <div className="text-xs font-medium text-rose-800">Kritis H-7 / Jatuh Tempo</div>
+            <div className="text-2xl font-bold text-rose-900 mt-1">{expiringH7Count}</div>
+            <div className="text-[11px] text-rose-700 mt-0.5">Perlu perpanjangan / checkout</div>
+          </div>
+          <div className="p-2.5 rounded-full bg-rose-100 text-rose-700">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+        </button>
+      </div>
+
       {/* desktop tabel */}
       <div className="hidden overflow-hidden rounded-lg border border-nk-border bg-nk-surface lg:block">
         <Table className="w-full text-sm">
@@ -161,6 +261,7 @@ export default function OwnerTenantsPage() {
             <TableRow className="border-b border-nk-border text-left text-xs text-nk-text-muted">
               <TableHead className="px-4 py-3 font-medium">{t("colTenant")}</TableHead>
               <TableHead className="px-4 py-3 font-medium">{t("colProperty")}</TableHead>
+              <TableHead className="px-4 py-3 font-medium">Masa Sewa</TableHead>
               <TableHead className="px-4 py-3 font-medium">Status Hunian</TableHead>
               <TableHead className="px-4 py-3 font-medium">{t("colPayment")}</TableHead>
               <TableHead className="px-4 py-3 font-medium">{t("colAction")}</TableHead>
@@ -169,15 +270,17 @@ export default function OwnerTenantsPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="py-12 text-center text-xs text-nk-text-muted">
+                <TableCell colSpan={6} className="py-12 text-center text-xs text-nk-text-muted">
                   <Loader2 className="mx-auto size-5 animate-spin text-nk-accent" />
                   <span className="mt-2 block">Memuat data penyewa...</span>
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-xs text-nk-text-muted">
-                  Belum ada tenant aktif.
+                <TableCell colSpan={6} className="py-8 text-center text-xs text-nk-text-muted">
+                  {leaseFilter !== "all"
+                    ? "Tidak ada penyewa pada kategori status masa sewa ini."
+                    : "Belum ada tenant aktif."}
                 </TableCell>
               </TableRow>
             ) : (
@@ -197,6 +300,30 @@ export default function OwnerTenantsPage() {
                   <TableCell className="px-4 py-3 text-nk-text">
                     {tn.propertyName}
                     <span className="block text-xs text-nk-text-muted">Kamar {tn.roomNumber}</span>
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
+                    {tn.leaseExpiringStatus === "EXPIRING_H7" || tn.leaseExpiringStatus === "EXPIRED" ? (
+                      <div className="flex flex-col gap-0.5">
+                        <StatusBadge color="red">
+                          {tn.leaseDaysRemaining !== undefined && tn.leaseDaysRemaining <= 0
+                            ? "Jatuh Tempo"
+                            : `Kritis H-${tn.leaseDaysRemaining}`}
+                        </StatusBadge>
+                        <span className="text-[11px] text-nk-text-muted">{tn.endDate}</span>
+                      </div>
+                    ) : tn.leaseExpiringStatus === "EXPIRING_H30" ? (
+                      <div className="flex flex-col gap-0.5">
+                        <StatusBadge color="yellow">H-{tn.leaseDaysRemaining}</StatusBadge>
+                        <span className="text-[11px] text-nk-text-muted">{tn.endDate}</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-nk-text">{tn.endDate || "-"}</span>
+                        <span className="text-[11px] text-nk-text-muted">
+                          {tn.leaseDaysRemaining !== undefined ? `${tn.leaseDaysRemaining} hari lagi` : ""}
+                        </span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="px-4 py-3">
                     {tn.checkedOutAt ? (
@@ -235,7 +362,9 @@ export default function OwnerTenantsPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="rounded-lg border border-nk-border bg-nk-surface p-8 text-center text-xs text-nk-text-muted">
-            Belum ada tenant aktif.
+            {leaseFilter !== "all"
+              ? "Tidak ada penyewa pada kategori status masa sewa ini."
+              : "Belum ada tenant aktif."}
           </div>
         ) : (
           filtered.map((tn) => (
@@ -252,7 +381,18 @@ export default function OwnerTenantsPage() {
                     </span>
                   </span>
                 </div>
-                {payBadge(tn.paymentStatus)}
+                <div className="flex flex-col items-end gap-1">
+                  {payBadge(tn.paymentStatus)}
+                  {tn.leaseExpiringStatus === "EXPIRING_H7" || tn.leaseExpiringStatus === "EXPIRED" ? (
+                    <StatusBadge color="red">
+                      {tn.leaseDaysRemaining !== undefined && tn.leaseDaysRemaining <= 0
+                        ? "Jatuh Tempo"
+                        : `H-${tn.leaseDaysRemaining}`}
+                    </StatusBadge>
+                  ) : tn.leaseExpiringStatus === "EXPIRING_H30" ? (
+                    <StatusBadge color="yellow">H-{tn.leaseDaysRemaining}</StatusBadge>
+                  ) : null}
+                </div>
               </div>
               <button
                 type="button"
@@ -283,6 +423,33 @@ export default function OwnerTenantsPage() {
               <dt className="text-nk-text-muted">{t("joined")}</dt>
               <dd className="text-right text-nk-text">{detail.joinedAt}</dd>
             </dl>
+
+            <h3 className="mb-2 mt-5 text-sm font-medium text-nk-text">Masa Sewa & Rollover Deposit</h3>
+            <div className="rounded-md border border-nk-border bg-nk-section/40 p-3 text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-nk-text-muted">Jatuh Tempo Masa Sewa:</span>
+                <span className="font-semibold text-nk-text">{detail.endDate || "-"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-nk-text-muted">Sisa Durasi:</span>
+                <span className="font-semibold text-nk-text">
+                  {detail.leaseDaysRemaining !== undefined ? `${detail.leaseDaysRemaining} hari` : "-"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-nk-text-muted">Status Kontrak:</span>
+                {detail.leaseExpiringStatus === "EXPIRING_H7" || detail.leaseExpiringStatus === "EXPIRED" ? (
+                  <span className="font-bold text-rose-600">Kritis (H-7 / Jatuh Tempo)</span>
+                ) : detail.leaseExpiringStatus === "EXPIRING_H30" ? (
+                  <span className="font-semibold text-amber-600">Mendekati Berakhir (H-30)</span>
+                ) : (
+                  <span className="font-medium text-emerald-600">Aktif Normal</span>
+                )}
+              </div>
+              <div className="pt-1.5 border-t border-nk-border text-[11px] text-neutral-500">
+                Uang jaminan (deposit) otomatis bergulir tanpa biaya baru saat penyewa memperpanjang sewa.
+              </div>
+            </div>
 
             <h3 className="mb-2 mt-5 text-sm font-medium text-nk-text">{t("agreements")}</h3>
             <ul className="flex flex-col gap-2">

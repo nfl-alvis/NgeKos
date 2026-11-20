@@ -22,6 +22,7 @@ import { formatIDR, cn } from "@/lib/utils";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
 import { useSession } from "@/components/SessionProvider";
+import { getLeaseExpirationInfo } from "@/server/lease-extension-policy";
 import {
   Dialog,
   DialogContent,
@@ -144,6 +145,23 @@ export default function TenantContractPage() {
   const [terminationReason, setTerminationReason] = useState("");
   const [isSubmittingTermination, setIsSubmittingTermination] = useState(false);
   const [isConfirmingTermination, setIsConfirmingTermination] = useState(false);
+
+  // Lease Extension state
+  const [extendOpen, setExtendOpen] = useState(false);
+  const [additionalMonths, setAdditionalMonths] = useState(3);
+  const [billingCycle, setBillingCycle] = useState("MONTHLY");
+  const [isSubmittingExtend, setIsSubmittingExtend] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("action") === "extend") {
+        setExtendOpen(true);
+      } else if (params.get("action") === "checkout") {
+        setCheckOutOpen(true);
+      }
+    }
+  }, []);
 
   const handleRefresh = useCallback(() => {
     setIsFetching(true);
@@ -288,6 +306,39 @@ export default function TenantContractPage() {
     }
   };
 
+  const handleExtendSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeBooking) return;
+    setIsSubmittingExtend(true);
+    setActionErrorMsg(null);
+    setActionSuccessMsg(null);
+    try {
+      const res = await fetch(`/api/bookings/${activeBooking.id}/extend-lease`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          additionalMonths,
+          billingCycle,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error?.message || data?.message || "Gagal memperpanjang sewa");
+      }
+      setExtendOpen(false);
+      setActionSuccessMsg(
+        locale === "id"
+          ? `Masa sewa berhasil diperpanjang ${additionalMonths} bulan! Tagihan termin baru telah diterbitkan dengan deposit otomatis bergulir.`
+          : `Lease extended by ${additionalMonths} months! New invoice created with rollover deposit.`
+      );
+      handleRefresh();
+    } catch (err) {
+      setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat memperpanjang sewa.");
+    } finally {
+      setIsSubmittingExtend(false);
+    }
+  };
+
   useEffect(() => {
     if (!ready || !user) return;
     let ignore = false;
@@ -410,6 +461,15 @@ export default function TenantContractPage() {
     ? activeBooking.endDate || calculateEndDate(activeBooking.startDate, activeBooking.durationMonths)
     : "";
 
+  const leaseExpiration = activeBooking
+    ? getLeaseExpirationInfo({
+        startDate: activeBooking.startDate,
+        durationMonths: activeBooking.durationMonths,
+        status: activeBooking.status,
+        checkedOutAt: activeBooking.checkedOutAt,
+      })
+    : null;
+
   const activePeriodString = activeBooking
     ? `${fmt(activeBooking.startDate)} - ${fmt(activeEndIso)}`
     : "";
@@ -428,6 +488,20 @@ export default function TenantContractPage() {
         },
         { k: t("fStart"), v: fmt(activeBooking.startDate) },
         { k: t("fEnd"), v: fmt(activeEndIso) },
+        {
+          k: "Sisa Masa Sewa",
+          v: leaseExpiration ? `${leaseExpiration.daysRemaining} hari` : "-",
+        },
+        {
+          k: "Status Kontrak",
+          v:
+            leaseExpiration?.expiringStatus === "EXPIRING_H7" ||
+            leaseExpiration?.expiringStatus === "EXPIRED"
+              ? "Kritis (H-7 / Jatuh Tempo)"
+              : leaseExpiration?.expiringStatus === "EXPIRING_H30"
+              ? "Mendekati Berakhir (H-30)"
+              : "Aktif Normal",
+        },
         {
           k: t("fDuration"),
           v: t("monthsValue", { count: activeBooking.durationMonths || 1 }),
@@ -624,6 +698,83 @@ export default function TenantContractPage() {
                           </p>
                         )}
 
+                        {/* Lease Expiration Interactive Notice (H-30 & H-7) */}
+                        {leaseExpiration?.isExpiringNotice &&
+                          activeBooking.status === "ACTIVE" &&
+                          !activeBooking.checkedOutAt &&
+                          activeBooking.terminationStatus !== "REQUESTED" && (
+                            <div
+                              className={`mt-3 p-3.5 border text-xs ${
+                                leaseExpiration.expiringStatus === "EXPIRING_H7" ||
+                                leaseExpiration.expiringStatus === "EXPIRED"
+                                  ? "bg-rose-50 border-rose-200"
+                                  : "bg-amber-50 border-amber-200"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div
+                                    className={`font-bold flex items-center gap-1.5 text-sm ${
+                                      leaseExpiration.expiringStatus === "EXPIRING_H7" ||
+                                      leaseExpiration.expiringStatus === "EXPIRED"
+                                        ? "text-rose-900"
+                                        : "text-amber-900"
+                                    }`}
+                                  >
+                                    <Clock className="w-4 h-4 shrink-0" />
+                                    {leaseExpiration.daysRemaining <= 0
+                                      ? locale === "id"
+                                        ? "Perhatian: Masa Sewa Telah Jatuh Tempo / Berakhir"
+                                        : "Notice: Lease Has Reached Expiration"
+                                      : leaseExpiration.expiringStatus === "EXPIRING_H7"
+                                      ? locale === "id"
+                                        ? `Perhatian: Masa Sewa Berakhir dalam ${leaseExpiration.daysRemaining} Hari!`
+                                        : `Critical: Lease Ending in ${leaseExpiration.daysRemaining} Days!`
+                                      : locale === "id"
+                                      ? `Pemberitahuan: Masa Sewa Berakhir dalam ${leaseExpiration.daysRemaining} Hari`
+                                      : `Notice: Lease Ending in ${leaseExpiration.daysRemaining} Days`}
+                                  </div>
+                                  <p className="text-neutral-700 mt-1">
+                                    {locale === "id"
+                                      ? `Kontrak sewa kamar Anda berakhir pada ${fmt(
+                                          leaseExpiration.endDate.toISOString()
+                                        )}. Anda dapat memperpanjang masa sewa sekarang (uang deposit otomatis bergulir tanpa biaya baru), atau bersiap untuk proses check-out.`
+                                      : `Your room lease ends on ${fmt(
+                                          leaseExpiration.endDate.toISOString()
+                                        )}. You can renew with rollover deposit, or request checkout.`}
+                                  </p>
+                                </div>
+                              </div>
+                              <div
+                                className={`mt-3 flex flex-wrap gap-2 pt-2 border-t ${
+                                  leaseExpiration.expiringStatus === "EXPIRING_H7" ||
+                                  leaseExpiration.expiringStatus === "EXPIRED"
+                                    ? "border-rose-200"
+                                    : "border-amber-200"
+                                }`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setExtendOpen(true)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition cursor-pointer"
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                  {locale === "id" ? "Perpanjang Sewa (Deposit Bergulir)" : "Extend Lease (Rollover Deposit)"}
+                                </button>
+                                {!activeBooking.checkOutRequestedAt && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setCheckOutOpen(true)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-neutral-300 bg-white text-neutral-800 font-semibold text-xs hover:bg-neutral-50 transition cursor-pointer"
+                                  >
+                                    <LogOut className="w-3.5 h-3.5 text-neutral-600" />
+                                    {locale === "id" ? "Akhiri Sewa & Check-Out" : "End Lease & Checkout"}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
                         {/* Mutual Termination Status Banner */}
                         {activeBooking.terminationStatus === "REQUESTED" && (
                           <div className="mt-3 p-3 bg-amber-50 border border-amber-200 text-xs">
@@ -680,6 +831,20 @@ export default function TenantContractPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {/* Extend Lease Button */}
+                        {activeBooking.status === "ACTIVE" &&
+                          !activeBooking.checkedOutAt &&
+                          activeBooking.terminationStatus !== "REQUESTED" && (
+                            <button
+                              type="button"
+                              onClick={() => setExtendOpen(true)}
+                              className="inline-flex items-center gap-1.5 rounded-none border border-emerald-300 bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition cursor-pointer"
+                            >
+                              <RefreshCw className="size-3.5 text-emerald-600" />
+                              {locale === "id" ? "Perpanjang Sewa" : "Extend Lease"}
+                            </button>
+                          )}
+
                         {/* Check-In Button */}
                         {!activeBooking.checkedInAt && activeBooking.status === "ACTIVE" && (
                           <button
@@ -1146,6 +1311,135 @@ export default function TenantContractPage() {
                 {isSubmittingTermination
                   ? (locale === "id" ? "Mengirim..." : "Submitting...")
                   : (locale === "id" ? "Kirim Pengajuan" : "Submit Request")}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Extend Lease Dialog with Rollover Deposit */}
+      <Dialog open={extendOpen} onOpenChange={setExtendOpen}>
+        <DialogContent className="sm:max-w-md p-6 bg-white border border-neutral-200">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-neutral-900 flex items-center gap-2">
+              <RefreshCw className="size-4 text-emerald-600" />
+              {locale === "id" ? "Perpanjang Masa Sewa Kost" : "Extend Room Lease"}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-neutral-500">
+              {locale === "id"
+                ? "Perpanjang masa sewa Anda di kamar ini. Uang jaminan (deposit) otomatis bergulir tanpa perlu dibayar ulang."
+                : "Extend your lease for this room. Existing security deposit automatically rolls over with zero new deposit charges."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleExtendSubmit} className="space-y-4 mt-2">
+            {/* Rollover Deposit Notice */}
+            <div className="p-3 bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2">
+              <CheckCircle2 className="size-4 shrink-0 text-emerald-600 mt-0.5" />
+              <div>
+                <span className="font-semibold">Deposit Otomatis Bergulir: </span>
+                <span>
+                  Uang jaminan sebesar{" "}
+                  <strong>{formatIDR(Number(activeBooking?.depositSnapshot || 0))}</strong> akan
+                  langsung dipakai untuk periode sewa baru (Rp 0 biaya deposit tambahan).
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                Pilih Tambahan Durasi Sewa
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[1, 3, 6, 12].map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setAdditionalMonths(m)}
+                    className={`py-2 text-xs font-medium border text-center transition cursor-pointer ${
+                      additionalMonths === m
+                        ? "border-emerald-600 bg-emerald-600 text-white font-bold"
+                        : "border-neutral-200 bg-neutral-50 text-neutral-800 hover:bg-neutral-100"
+                    }`}
+                  >
+                    {m} Bulan
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                Skema Termin Pembayaran
+              </label>
+              <select
+                value={billingCycle}
+                onChange={(e) => setBillingCycle(e.target.value)}
+                className="w-full border border-neutral-300 p-2 text-xs bg-white focus:outline-none focus:border-emerald-600"
+              >
+                <option value="MONTHLY">Bulanan (Bayar per 1 bulan)</option>
+                <option value="QUARTERLY">3 Bulanan (Bayar per 3 bulan)</option>
+                <option value="SEMI_ANNUALLY">6 Bulanan (Bayar per 6 bulan)</option>
+                <option value="ANNUALLY">Tahunan (Bayar per 1 tahun)</option>
+                <option value="WEEKLY">Mingguan (Bayar per minggu)</option>
+              </select>
+            </div>
+
+            {/* Price Preview */}
+            <div className="p-3 bg-neutral-50 border border-neutral-200 text-xs text-neutral-600 space-y-1.5">
+              <div className="flex justify-between">
+                <span>Harga Sewa Bulanan:</span>
+                <span className="font-semibold text-neutral-900">
+                  {formatIDR(Number(activeBooking?.monthlyPriceSnapshot || 0))}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tambahan Durasi:</span>
+                <span className="font-semibold text-neutral-900">{additionalMonths} Bulan</span>
+              </div>
+              <div className="flex justify-between text-emerald-700 font-medium">
+                <span>Deposit Baru:</span>
+                <span>Rp 0 (Rollover)</span>
+              </div>
+              <div className="flex justify-between pt-1.5 border-t border-neutral-200 text-xs font-bold text-neutral-900">
+                <span>Tagihan Termin Pertama:</span>
+                <span className="text-emerald-700">
+                  {formatIDR(
+                    billingCycle === "WEEKLY"
+                      ? Math.round(Number(activeBooking?.monthlyPriceSnapshot || 0) / 4)
+                      : billingCycle === "QUARTERLY"
+                      ? Number(activeBooking?.monthlyPriceSnapshot || 0) * 3
+                      : billingCycle === "SEMI_ANNUALLY"
+                      ? Number(activeBooking?.monthlyPriceSnapshot || 0) * 6
+                      : billingCycle === "ANNUALLY"
+                      ? Number(activeBooking?.monthlyPriceSnapshot || 0) * 12
+                      : Number(activeBooking?.monthlyPriceSnapshot || 0)
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setExtendOpen(false)}
+                disabled={isSubmittingExtend}
+                className="px-4 py-2 border border-neutral-300 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+              >
+                {locale === "id" ? "Batal" : "Cancel"}
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingExtend}
+                className="px-5 py-2 bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition disabled:opacity-50"
+              >
+                {isSubmittingExtend
+                  ? locale === "id"
+                    ? "Memproses..."
+                    : "Processing..."
+                  : locale === "id"
+                  ? "Konfirmasi Perpanjang Sewa"
+                  : "Confirm Extension"}
               </button>
             </div>
           </form>

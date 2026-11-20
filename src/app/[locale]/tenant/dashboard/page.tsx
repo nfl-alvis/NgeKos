@@ -7,8 +7,10 @@ import {
   AlertCircle,
   CalendarClock,
   CheckCircle2,
+  Clock,
   Coins,
   LogIn,
+  LogOut,
   MessageSquare,
   Receipt,
   RefreshCw,
@@ -451,6 +453,66 @@ export default function TenantDashboardPage() {
       ) : (
         /* Authenticated & Active Lease View */
         <>
+          {/* Lease Expiration Notice Banner (H-30 & H-7) */}
+          {daysLeft <= 30 && !activeBooking.checkedOutAt && (
+            <div
+              className={`mb-6 p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                daysLeft <= 7
+                  ? "bg-rose-50 border-rose-200 text-rose-950"
+                  : "bg-amber-50 border-amber-200 text-amber-950"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className={`p-2 rounded-lg shrink-0 mt-0.5 ${
+                    daysLeft <= 7 ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
+                  }`}
+                >
+                  <CalendarClock className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold flex items-center gap-1.5">
+                    {daysLeft <= 0
+                      ? locale === "id"
+                        ? "Masa Sewa Telah Jatuh Tempo / Berakhir"
+                        : "Lease Reached Expiration"
+                      : daysLeft <= 7
+                      ? locale === "id"
+                        ? `Masa Sewa Berakhir dalam ${daysLeft} Hari (Kritis H-7)`
+                        : `Lease Ending in ${daysLeft} Days (Critical H-7)`
+                      : locale === "id"
+                      ? `Pemberitahuan: Masa Sewa Berakhir dalam ${daysLeft} Hari (H-30)`
+                      : `Notice: Lease Ending in ${daysLeft} Days (H-30)`}
+                  </h3>
+                  <p className="text-xs text-neutral-600 mt-0.5">
+                    {locale === "id"
+                      ? "Perpanjang sewa sekarang (uang deposit otomatis bergulir tanpa biaya baru) atau ajukan check-out."
+                      : "Renew your lease now with rollover deposit, or prepare for checkout."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                <Link
+                  href="/tenant/contract?action=extend"
+                  className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 text-white font-semibold text-xs rounded-lg hover:bg-emerald-700 transition"
+                >
+                  <RefreshCw className="size-3.5" />
+                  {locale === "id" ? "Perpanjang Sewa" : "Extend Lease"}
+                </Link>
+                {!activeBooking.checkOutRequestedAt && (
+                  <Link
+                    href="/tenant/contract?action=checkout"
+                    className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 px-3 py-2 border border-neutral-300 bg-white text-neutral-800 font-semibold text-xs rounded-lg hover:bg-neutral-50 transition"
+                  >
+                    <LogOut className="size-3.5 text-neutral-600" />
+                    {locale === "id" ? "Akhiri Sewa" : "End Lease"}
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Active room card */}
           <section className="mb-6 flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#E9F4EC]">
             <div className="flex items-center justify-between px-4 pb-1 pt-3">

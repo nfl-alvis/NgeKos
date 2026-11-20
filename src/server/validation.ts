@@ -313,3 +313,12 @@ export const terminationConfirmSchema = z
 export type TerminationRequestInput = z.infer<typeof terminationRequestSchema>;
 export type TerminationConfirmInput = z.infer<typeof terminationConfirmSchema>;
 
+export const extendLeaseSchema = z
+  .object({
+    additionalMonths: z.coerce.number().int().min(1).max(24),
+    billingCycle: z.enum(["WEEKLY", "MONTHLY", "QUARTERLY", "SEMI_ANNUALLY", "ANNUALLY"]).optional(),
+  })
+  .strict();
+
+export type ExtendLeaseInput = z.infer<typeof extendLeaseSchema>;
+

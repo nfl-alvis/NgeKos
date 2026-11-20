@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/server/http";
 import { recordAuditLog } from "@/server/audit-service";
 import { bookingIdentifierWhere } from "@/server/booking-identifier";
+import { creditWallet } from "@/server/wallet-service";
 import {
   canTenantCheckIn,
   canOwnerCheckIn,
@@ -438,6 +439,16 @@ export async function ownerConfirmCheckOut({
 
     return updatedBooking;
   });
+
+  if (depositRefundAmount && depositRefundAmount > 0) {
+    await creditWallet({
+      profileId: booking.applicantId,
+      amount: Math.round(depositRefundAmount),
+      type: "DEPOSIT_REFUND",
+      description: `Pengembalian uang jaminan (deposit) checkout kos ${booking.property.name} (#${booking.code})`,
+      referenceId: booking.id,
+    });
+  }
 
   return updated;
 }
