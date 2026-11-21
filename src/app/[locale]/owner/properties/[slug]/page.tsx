@@ -23,6 +23,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { DashSection } from "@/components/dashboard/DashSection";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FACILITY_META, ROOM_FACILITY_KEYS } from "@/lib/data/facilities";
 import FacilityIcon from "@/components/FacilityIcon";
@@ -36,20 +39,28 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
+  Cigarette,
   Clock,
   CreditCard,
   DoorOpen,
   Edit2,
   ExternalLink,
+  FileCheck,
+  Heart,
+  IdCard,
   Image as ImageIcon,
   Layers,
   Loader2,
   MapPin,
+  PawPrint,
   Plus,
   Save,
   Settings,
   ShieldCheck,
+  Sparkles,
   Trash2,
+  User,
   Users,
   Wrench,
 } from "lucide-react";
@@ -97,8 +108,8 @@ const roomStatusMeta: Record<
 
 const genderMap: Record<Gender, { label: string; cls: string }> = {
   mixed: { label: "Campuran", cls: "border-nk-border bg-nk-section text-nk-text" },
-  male: { label: "Khusus Putra", cls: "border-blue-200 bg-blue-50 text-blue-800" },
-  female: { label: "Khusus Putri", cls: "border-pink-200 bg-pink-50 text-pink-800" },
+  male: { label: "Khusus Putra", cls: "border-nk-dark-border bg-nk-warm text-nk-text" },
+  female: { label: "Khusus Putri", cls: "border-nk-dark-border bg-nk-warm text-nk-text" },
 };
 
 export default function OwnerPropertyDetailPage() {
@@ -361,6 +372,21 @@ export default function OwnerPropertyDetailPage() {
   useEffect(() => {
     refreshProperty();
   }, [params.slug]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const reqTab = sp.get("tab");
+      const isEdit = sp.get("edit");
+      if (reqTab === "settings" || isEdit === "true" || isEdit === "1") {
+        setTab("settings");
+      } else if (reqTab === "photos") {
+        setTab("photos");
+      } else if (reqTab === "rooms") {
+        setTab("rooms");
+      }
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -742,7 +768,7 @@ export default function OwnerPropertyDetailPage() {
       {/* Breadcrumb Modern */}
       <nav
         aria-label="Breadcrumb"
-        className="mb-5 flex items-center gap-2 text-xs text-nk-text-muted"
+        className="mb-5 flex items-center gap-1.5 text-xs text-nk-text-muted"
       >
         <Link
           href="/owner"
@@ -750,24 +776,24 @@ export default function OwnerPropertyDetailPage() {
         >
           Dashboard
         </Link>
-        <span aria-hidden="true">/</span>
+        <ChevronRight className="size-3 text-nk-text-muted/60" aria-hidden="true" />
         <Link
           href="/owner/properties"
           className="transition-colors hover:text-nk-text"
         >
           {t("breadcrumb")}
         </Link>
-        <span aria-hidden="true">/</span>
+        <ChevronRight className="size-3 text-nk-text-muted/60" aria-hidden="true" />
         <span className="font-medium text-nk-text truncate max-w-[200px] sm:max-w-none">
           {property.name}
         </span>
       </nav>
 
       {/* Header Info Properti Card */}
-      <section className="mb-6 rounded-2xl border border-nk-border bg-nk-surface p-5 sm:p-6 shadow-sm">
+      <section className="mb-6 rounded-xl border border-nk-border bg-nk-surface p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center min-w-0">
-            <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-nk-border shadow-inner">
+            <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-nk-border bg-nk-warm">
               <img
                 src={getKosImage(property.slug || property.imageSeed, "main")}
                 alt={property.name}
@@ -776,7 +802,7 @@ export default function OwnerPropertyDetailPage() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-nk-text sm:text-2xl">
+                <h1 className="text-xl font-medium tracking-tight text-nk-text sm:text-2xl">
                   {property.name}
                 </h1>
                 {property.verificationStatus === "verified" && (
@@ -799,7 +825,7 @@ export default function OwnerPropertyDetailPage() {
                 )}
                 <span
                   className={cn(
-                    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium",
+                    "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-medium",
                     genderMap[property.gender]?.cls ?? genderMap.mixed.cls
                   )}
                 >
@@ -813,7 +839,7 @@ export default function OwnerPropertyDetailPage() {
                 </span>
               </p>
               {property.tagline && (
-                <p className="mt-1 text-xs italic text-nk-text-muted/90">
+                <p className="mt-1 text-xs italic text-nk-text-muted">
                   &ldquo;{property.tagline}&rdquo;
                 </p>
               )}
@@ -829,20 +855,25 @@ export default function OwnerPropertyDetailPage() {
               className="inline-flex items-center gap-1.5 rounded-lg border border-nk-border bg-nk-surface px-3.5 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99]"
             >
               <ExternalLink className="size-3.5 text-nk-text-muted" />
-              <span>Lihat Listing Publik</span>
+              <span>Lihat Listing</span>
             </Link>
             <button
               type="button"
               onClick={() => setTab("settings")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-nk-border bg-nk-surface px-3.5 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm active:scale-[0.99]"
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-colors active:scale-[0.99] cursor-pointer",
+                tab === "settings"
+                  ? "bg-nk-accent text-nk-text-inverse"
+                  : "border border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm"
+              )}
             >
-              <Settings className="size-3.5 text-nk-text-muted" />
+              <Settings className="size-3.5" />
               <span>{t("edit")}</span>
             </button>
             <button
               type="button"
               onClick={() => setAddTypeOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99] cursor-pointer"
             >
               <Plus className="size-3.5" />
               <span>{t("addRoomType")}</span>
@@ -852,7 +883,7 @@ export default function OwnerPropertyDetailPage() {
 
         {/* Quick KPI Stat Cards */}
         <div className="mt-6 grid grid-cols-2 gap-3 border-t border-nk-border pt-5 sm:grid-cols-4">
-          <div className="rounded-xl border border-nk-border bg-nk-section/50 p-3.5 transition-colors hover:bg-nk-section">
+          <div className="rounded-xl border border-nk-border bg-nk-section/40 p-3.5 transition-colors hover:bg-nk-section/70">
             <div className="flex items-center justify-between text-xs text-nk-text-muted">
               <span>Total Kamar</span>
               <DoorOpen className="size-4 text-nk-text-muted" />
@@ -878,7 +909,7 @@ export default function OwnerPropertyDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-nk-border bg-nk-section/50 p-3.5 transition-colors hover:bg-nk-section">
+          <div className="rounded-xl border border-nk-border bg-nk-section/40 p-3.5 transition-colors hover:bg-nk-section/70">
             <div className="flex items-center justify-between text-xs text-nk-text-muted">
               <span>Kamar Terisi</span>
               <Users className="size-4 text-nk-text-muted" />
@@ -891,7 +922,7 @@ export default function OwnerPropertyDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-nk-border bg-nk-section/50 p-3.5 transition-colors hover:bg-nk-section">
+          <div className="rounded-xl border border-nk-border bg-nk-section/40 p-3.5 transition-colors hover:bg-nk-section/70">
             <div className="flex items-center justify-between text-xs text-nk-text-muted">
               <span>Tingkat Okupansi</span>
               <span className="text-xs font-semibold text-nk-text">
@@ -915,21 +946,21 @@ export default function OwnerPropertyDetailPage() {
         </div>
       </section>
 
-      {/* Tabs Modern Navigation */}
+      {/* Tabs Navigation */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList className="mb-6 flex h-auto w-full max-w-lg gap-2 rounded-xl border border-nk-border bg-nk-surface p-1.5 shadow-sm">
+        <TabsList className="no-scrollbar mb-6 flex h-auto w-fit gap-1 overflow-x-auto rounded-lg border border-nk-border bg-nk-surface p-1 shadow-xs">
           {tabs.map((tabItem) => {
             const Icon = tabItem.icon;
             return (
               <TabsTrigger
                 key={tabItem.id}
                 value={tabItem.id}
-                className="flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium text-nk-text-muted transition-all data-[state=active]:bg-nk-accent data-[state=active]:text-nk-text-inverse data-[state=active]:shadow"
+                className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors data-[state=active]:bg-nk-accent data-[state=active]:font-medium data-[state=active]:text-nk-text-inverse data-[state=inactive]:text-nk-text-muted hover:data-[state=inactive]:text-nk-text cursor-pointer"
               >
                 <Icon className="size-3.5" />
                 <span>{tabItem.label}</span>
                 {tabItem.count !== undefined && (
-                  <span className="rounded-full bg-nk-section px-1.5 py-0.2 text-[10px] data-[state=active]:bg-white/20">
+                  <span className="ml-1 rounded-full bg-nk-section px-1.5 py-0.2 text-[10px] font-medium text-nk-text data-[state=active]:bg-white/20 data-[state=active]:text-nk-text-inverse">
                     {tabItem.count}
                   </span>
                 )}
@@ -1291,22 +1322,42 @@ export default function OwnerPropertyDetailPage() {
         <PropertyPhotoManager slug={property.slug} propertyId={property.id} />
       )}
 
-      {/* TAB: Pengaturan Properti */}
+      {/* TAB: Pengaturan & Edit Kos */}
       {tab === "settings" && (
         <div className="max-w-4xl space-y-6">
-          <div className="flex flex-col gap-1 border-b border-nk-border pb-4">
-            <h2 className="text-xl font-semibold tracking-tight text-nk-text">
-              Pengaturan & Rincian Lengkap Properti
-            </h2>
-            <p className="text-xs text-nk-text-muted">
-              Perbarui identitas kos, titik lokasi, aturan & kebijakan sewa, fasilitas, serta informasi rekening pencairan hasil sewa.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-nk-border pb-4">
+            <div>
+              <h2 className="text-xl font-medium tracking-tight text-nk-text">
+                Edit Informasi & Pengaturan Kos
+              </h2>
+              <p className="mt-0.5 text-xs text-nk-text-muted">
+                Perbarui identitas properti, lokasi, aturan sewa, fasilitas, serta informasi rekening pencairan hasil sewa.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveSettings}
+              disabled={savingSettings}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-nk-accent px-5 py-2.5 text-xs font-medium text-nk-text-inverse transition-opacity hover:opacity-90 disabled:opacity-50 active:scale-[0.99] cursor-pointer"
+            >
+              {savingSettings ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Menyimpan...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="size-3.5" />
+                  <span>Simpan Perubahan</span>
+                </>
+              )}
+            </button>
           </div>
 
           {settingsSuccess && (
             <Alert className="border-[#BFDCC5] bg-[#E9F4EC] text-[#2F6B3C]">
-              <Check className="size-4 text-[#2F6B3C]" />
-              <AlertTitle>Berhasil Disimpan</AlertTitle>
+              <CheckCircle2 className="size-4 text-[#2F6B3C]" />
+              <AlertTitle className="text-sm font-semibold">Berhasil Disimpan</AlertTitle>
               <AlertDescription className="text-xs">
                 Perubahan data dan kebijakan properti Anda telah berhasil diperbarui dan tersinkronisasi.
               </AlertDescription>
@@ -1315,12 +1366,16 @@ export default function OwnerPropertyDetailPage() {
 
           <form onSubmit={handleSaveSettings} className="space-y-6">
             {/* 1. INFORMASI & IDENTITAS KOS */}
-            <div className="rounded-xl border border-nk-border bg-white p-6 space-y-5">
-              <div className="flex items-center gap-2 border-b border-nk-border/70 pb-3">
-                <Building2 className="size-4 text-nk-accent" />
-                <h3 className="text-sm font-semibold text-nk-text">1. Informasi & Identitas Kos</h3>
-              </div>
-
+            <DashSection
+              title={
+                <div className="flex items-center gap-2">
+                  <Building2 className="size-4 text-nk-accent" />
+                  <span>1. Informasi & Identitas Kos</span>
+                </div>
+              }
+              tint="bg-nk-section"
+              bodyClass="p-5 sm:p-6 space-y-5"
+            >
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="prop-name" className="text-xs font-medium text-nk-text">
@@ -1332,9 +1387,10 @@ export default function OwnerPropertyDetailPage() {
                     onChange={(e) => setSettingsName(e.target.value)}
                     required
                     className="mt-1.5"
+                    placeholder="Contoh: Kos Griya Melati Asri"
                   />
                   <p className="mt-1 text-[11px] text-nk-text-muted">
-                    Contoh: Kos Griya Melati Asri
+                    Nama kos yang akan ditampilkan pada listing pencarian.
                   </p>
                 </div>
                 <div>
@@ -1348,6 +1404,9 @@ export default function OwnerPropertyDetailPage() {
                     placeholder="Contoh: Nyaman, Dekat Kampus, Akses 24 Jam"
                     className="mt-1.5"
                   />
+                  <p className="mt-1 text-[11px] text-nk-text-muted">
+                    Slogan ringkas yang menarik perhatian calon penyewa.
+                  </p>
                 </div>
               </div>
 
@@ -1355,14 +1414,14 @@ export default function OwnerPropertyDetailPage() {
                 <Label htmlFor="prop-desc" className="text-xs font-medium text-nk-text">
                   Deskripsi Kos <span className="text-rose-500">*</span>
                 </Label>
-                <textarea
+                <Textarea
                   id="prop-desc"
                   rows={4}
                   value={settingsDesc}
                   onChange={(e) => setSettingsDesc(e.target.value)}
                   required
-                  placeholder="Ceritakan keunggulan kos, suasana, sirkulasi udara, atau fasilitas utama..."
-                  className="mt-1.5 w-full rounded-md border border-nk-border bg-transparent px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
+                  placeholder="Ceritakan keunggulan kos, suasana lingkungan, sirkulasi udara, atau fasilitas utama..."
+                  className="mt-1.5 bg-nk-surface"
                 />
               </div>
 
@@ -1378,15 +1437,19 @@ export default function OwnerPropertyDetailPage() {
                   className="mt-1.5"
                 />
               </div>
-            </div>
+            </DashSection>
 
             {/* 2. LOKASI & TITIK AKSES */}
-            <div className="rounded-xl border border-nk-border bg-white p-6 space-y-5">
-              <div className="flex items-center gap-2 border-b border-nk-border/70 pb-3">
-                <MapPin className="size-4 text-nk-accent" />
-                <h3 className="text-sm font-semibold text-nk-text">2. Lokasi & Akses Kampus</h3>
-              </div>
-
+            <DashSection
+              title={
+                <div className="flex items-center gap-2">
+                  <MapPin className="size-4 text-nk-accent" />
+                  <span>2. Lokasi & Akses Kampus</span>
+                </div>
+              }
+              tint="bg-nk-section"
+              bodyClass="p-5 sm:p-6 space-y-5"
+            >
               <div>
                 <Label htmlFor="prop-addr" className="text-xs font-medium text-nk-text">
                   Alamat Lengkap Kos <span className="text-rose-500">*</span>
@@ -1397,6 +1460,7 @@ export default function OwnerPropertyDetailPage() {
                   onChange={(e) => setSettingsAddress(e.target.value)}
                   required
                   className="mt-1.5"
+                  placeholder="Nama jalan, nomor rumah, RT/RW"
                 />
               </div>
 
@@ -1411,6 +1475,7 @@ export default function OwnerPropertyDetailPage() {
                     onChange={(e) => setSettingsCity(e.target.value)}
                     required
                     className="mt-1.5"
+                    placeholder="Contoh: Malang"
                   />
                 </div>
                 <div>
@@ -1423,6 +1488,7 @@ export default function OwnerPropertyDetailPage() {
                     onChange={(e) => setSettingsDistrict(e.target.value)}
                     required
                     className="mt-1.5"
+                    placeholder="Contoh: Lowokwaru"
                   />
                 </div>
                 <div>
@@ -1433,7 +1499,7 @@ export default function OwnerPropertyDetailPage() {
                     id="prop-postal"
                     value={settingsPostal}
                     onChange={(e) => setSettingsPostal(e.target.value)}
-                    placeholder="5 digit"
+                    placeholder="Contoh: 65141"
                     className="mt-1.5"
                   />
                 </div>
@@ -1442,7 +1508,7 @@ export default function OwnerPropertyDetailPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="prop-distance" className="text-xs font-medium text-nk-text">
-                    Jarak ke Kampus / Pusat Kegiatan Terdekat (Meter)
+                    Jarak ke Kampus / Pusat Kegiatan (Meter)
                   </Label>
                   <Input
                     id="prop-distance"
@@ -1467,159 +1533,241 @@ export default function OwnerPropertyDetailPage() {
                   />
                 </div>
               </div>
-            </div>
+            </DashSection>
 
             {/* 3. KETENTUAN & KEBIJAKAN SEWA */}
-            <div className="rounded-xl border border-nk-border bg-white p-6 space-y-5">
-              <div className="flex items-center gap-2 border-b border-nk-border/70 pb-3">
-                <ShieldCheck className="size-4 text-nk-accent" />
-                <h3 className="text-sm font-semibold text-nk-text">3. Kebijakan & Persyaratan Sewa</h3>
+            <DashSection
+              title={
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="size-4 text-nk-accent" />
+                  <span>3. Kebijakan & Persyaratan Sewa</span>
+                </div>
+              }
+              tint="bg-nk-section"
+              bodyClass="p-5 sm:p-6 space-y-6"
+            >
+              {/* Tipe Penghuni (Gender) - Segmented Control */}
+              <div>
+                <Label className="text-xs font-medium text-nk-text mb-2 block">
+                  Tipe Penghuni (Gender) <span className="text-rose-500">*</span>
+                </Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { val: "mixed" as Gender, label: "Campuran", sub: "Putra & Putri", icon: Users },
+                    { val: "male" as Gender, label: "Khusus Putra", sub: "Pria Saja", icon: User },
+                    { val: "female" as Gender, label: "Khusus Putri", sub: "Wanita Saja", icon: User },
+                  ].map((g) => {
+                    const GIcon = g.icon;
+                    const active = settingsGender === g.val;
+                    return (
+                      <button
+                        key={g.val}
+                        type="button"
+                        onClick={() => setSettingsGender(g.val)}
+                        className={cn(
+                          "flex flex-col items-center justify-center gap-1 rounded-xl border p-3 text-center transition-all cursor-pointer active:scale-[0.98]",
+                          active
+                            ? "border-nk-accent bg-nk-accent text-nk-text-inverse font-medium shadow-xs"
+                            : "border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm"
+                        )}
+                      >
+                        <GIcon className={cn("size-4", active ? "text-nk-text-inverse" : "text-nk-text-muted")} />
+                        <span className="text-xs font-medium">{g.label}</span>
+                        <span className={cn("text-[10px]", active ? "text-nk-text-inverse/80" : "text-nk-text-muted")}>
+                          {g.sub}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
+              {/* Kriteria Profesi & Akses Jam Malam */}
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="prop-gender" className="text-xs font-medium text-nk-text">
-                    Tipe Penghuni (Gender) <span className="text-rose-500">*</span>
-                  </Label>
-                  <select
-                    id="prop-gender"
-                    value={settingsGender}
-                    onChange={(e) => setSettingsGender(e.target.value as Gender)}
-                    className="mt-1.5 w-full rounded-md border border-nk-border bg-nk-surface px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
-                  >
-                    <option value="mixed">Campuran (Putra & Putri)</option>
-                    <option value="male">Khusus Putra</option>
-                    <option value="female">Khusus Putri</option>
-                  </select>
-                </div>
-
                 <div>
                   <Label htmlFor="prop-kriteria" className="text-xs font-medium text-nk-text">
                     Kriteria Profesi Penyewa
                   </Label>
-                  <select
-                    id="prop-kriteria"
-                    value={settingsKriteriaPenyewa}
-                    onChange={(e) => setSettingsKriteriaPenyewa(e.target.value)}
-                    className="mt-1.5 w-full rounded-md border border-nk-border bg-nk-surface px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
-                  >
-                    <option value="Bisa untuk Semua">Bisa untuk Semua</option>
-                    <option value="Khusus Mahasiswa">Khusus Mahasiswa</option>
-                    <option value="Khusus Karyawan">Khusus Karyawan</option>
-                    <option value="Mahasiswa & Karyawan">Mahasiswa & Karyawan</option>
-                  </select>
+                  <div className="relative mt-1.5">
+                    <select
+                      id="prop-kriteria"
+                      value={settingsKriteriaPenyewa}
+                      onChange={(e) => setSettingsKriteriaPenyewa(e.target.value)}
+                      className="w-full appearance-none rounded-lg border border-nk-border bg-nk-surface px-3 py-2 text-xs sm:text-sm text-nk-text outline-none focus:border-nk-accent focus:ring-1 focus:ring-nk-accent cursor-pointer pr-8"
+                    >
+                      <option value="Bisa untuk Semua">Bisa untuk Semua (Umum)</option>
+                      <option value="Khusus Mahasiswa">Khusus Mahasiswa</option>
+                      <option value="Khusus Karyawan">Khusus Karyawan</option>
+                      <option value="Mahasiswa & Karyawan">Mahasiswa & Karyawan</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-nk-text-muted" />
+                  </div>
                 </div>
-              </div>
 
-              {/* Akses Jam Malam */}
-              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="prop-jam-malam" className="text-xs font-medium text-nk-text">
+                  <Label className="text-xs font-medium text-nk-text block mb-1.5">
                     Akses Gerbang & Jam Malam
                   </Label>
-                  <select
-                    id="prop-jam-malam"
-                    value={settingsAksesJamMalam}
-                    onChange={(e) => setSettingsAksesJamMalam(e.target.value)}
-                    className="mt-1.5 w-full rounded-md border border-nk-border bg-nk-surface px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
-                  >
-                    <option value="Akses 24 jam">Akses 24 Jam Bebas</option>
-                    <option value="Ada jam malam">Ada Batas Jam Malam</option>
-                  </select>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSettingsAksesJamMalam("Akses 24 jam")}
+                      className={cn(
+                        "flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors cursor-pointer",
+                        settingsAksesJamMalam === "Akses 24 jam"
+                          ? "border-nk-accent bg-nk-accent text-nk-text-inverse"
+                          : "border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm"
+                      )}
+                    >
+                      Akses 24 Jam
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSettingsAksesJamMalam("Ada jam malam")}
+                      className={cn(
+                        "flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors cursor-pointer",
+                        settingsAksesJamMalam === "Ada jam malam"
+                          ? "border-nk-accent bg-nk-accent text-nk-text-inverse"
+                          : "border-nk-border bg-nk-surface text-nk-text hover:bg-nk-warm"
+                      )}
+                    >
+                      Ada Jam Malam
+                    </button>
+                  </div>
+                  {settingsAksesJamMalam === "Ada jam malam" && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <Clock className="size-4 text-nk-text-muted shrink-0" />
+                      <Input
+                        id="prop-jam-text"
+                        value={settingsJamMalamText}
+                        onChange={(e) => setSettingsJamMalamText(e.target.value)}
+                        placeholder="Contoh: 23:00"
+                        className="h-8 text-xs max-w-[140px]"
+                      />
+                      <span className="text-xs text-nk-text-muted">Batas pulang</span>
+                    </div>
+                  )}
                 </div>
+              </div>
 
-                {settingsAksesJamMalam === "Ada jam malam" && (
-                  <div>
-                    <Label htmlFor="prop-jam-text" className="text-xs font-medium text-nk-text">
-                      Batas Jam Malam
-                    </Label>
-                    <Input
-                      id="prop-jam-text"
-                      value={settingsJamMalamText}
-                      onChange={(e) => setSettingsJamMalamText(e.target.value)}
-                      placeholder="Contoh: 23:00"
-                      className="mt-1.5"
+              {/* Toggles Kebijakan Kos (Aturan) */}
+              <div className="space-y-3 pt-2 border-t border-nk-border/70">
+                <span className="text-xs font-medium text-nk-text block">Aturan & Ketentuan Kos:</span>
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  {/* Wajib KTP */}
+                  <div className="flex items-center justify-between rounded-xl border border-nk-border bg-nk-surface p-3 transition-colors hover:bg-nk-warm/40">
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                      <IdCard className="size-4 shrink-0 text-nk-accent" />
+                      <div>
+                        <p className="text-xs font-medium text-nk-text">Wajib KTP saat Pengajuan</p>
+                        <p className="text-[11px] text-nk-text-muted">Calon penyewa wajib melampirkan foto KTP</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={settingsWajibKtp}
+                      onCheckedChange={setSettingsWajibKtp}
                     />
                   </div>
-                )}
-              </div>
 
-              {/* Checkboxes / Toggles Kebijakan */}
-              <div className="grid gap-3 sm:grid-cols-2 pt-2 border-t border-nk-border/60">
-                <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
-                  <input
-                    type="checkbox"
-                    checked={settingsWajibKtp}
-                    onChange={(e) => setSettingsWajibKtp(e.target.checked)}
-                    className="size-4 rounded text-nk-accent accent-nk-accent"
-                  />
-                  <span>Wajib Sertakan KTP saat Pengajuan Sewa</span>
-                </label>
-
-                <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
-                  <input
-                    type="checkbox"
-                    checked={settingsBolehTerimaTamu}
-                    onChange={(e) => setSettingsBolehTerimaTamu(e.target.checked)}
-                    className="size-4 rounded text-nk-accent accent-nk-accent"
-                  />
-                  <span>Boleh Terima Tamu di Area Bersama</span>
-                </label>
-
-                <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
-                  <input
-                    type="checkbox"
-                    checked={settingsBolehPasutri}
-                    onChange={(e) => setSettingsBolehPasutri(e.target.checked)}
-                    className="size-4 rounded text-nk-accent accent-nk-accent"
-                  />
-                  <span>Boleh untuk Pasutri (Pasangan Suami Istri)</span>
-                </label>
-
-                {settingsBolehPasutri && (
-                  <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
-                    <input
-                      type="checkbox"
-                      checked={settingsWajibBukuNikah}
-                      onChange={(e) => setSettingsWajibBukuNikah(e.target.checked)}
-                      className="size-4 rounded text-nk-accent accent-nk-accent"
+                  {/* Boleh Terima Tamu */}
+                  <div className="flex items-center justify-between rounded-xl border border-nk-border bg-nk-surface p-3 transition-colors hover:bg-nk-warm/40">
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                      <Users className="size-4 shrink-0 text-nk-accent" />
+                      <div>
+                        <p className="text-xs font-medium text-nk-text">Boleh Terima Tamu</p>
+                        <p className="text-[11px] text-nk-text-muted">Di area bersama / ruang tamu kos</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={settingsBolehTerimaTamu}
+                      onCheckedChange={setSettingsBolehTerimaTamu}
                     />
-                    <span>Wajib Sertakan Buku Nikah untuk Pasutri</span>
-                  </label>
-                )}
+                  </div>
 
-                <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
-                  <input
-                    type="checkbox"
-                    checked={settingsBolehBawaHewan}
-                    onChange={(e) => setSettingsBolehBawaHewan(e.target.checked)}
-                    className="size-4 rounded text-nk-accent accent-nk-accent"
-                  />
-                  <span>Boleh Membawa Hewan Peliharaan</span>
-                </label>
+                  {/* Boleh Pasutri */}
+                  <div className="flex items-center justify-between rounded-xl border border-nk-border bg-nk-surface p-3 transition-colors hover:bg-nk-warm/40">
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                      <Heart className="size-4 shrink-0 text-nk-accent" />
+                      <div>
+                        <p className="text-xs font-medium text-nk-text">Boleh untuk Pasutri</p>
+                        <p className="text-[11px] text-nk-text-muted">Menerima pasangan suami istri yang sah</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={settingsBolehPasutri}
+                      onCheckedChange={setSettingsBolehPasutri}
+                    />
+                  </div>
 
-                <label className="flex items-center gap-3 rounded-lg border border-nk-border/70 p-3 text-xs text-nk-text cursor-pointer hover:bg-stone-50">
-                  <input
-                    type="checkbox"
-                    checked={settingsDilarangMerokok}
-                    onChange={(e) => setSettingsDilarangMerokok(e.target.checked)}
-                    className="size-4 rounded text-nk-accent accent-nk-accent"
-                  />
-                  <span>Dilarang Merokok di Dalam Kamar</span>
-                </label>
-              </div>
-            </div>
+                  {/* Wajib Buku Nikah jika Pasutri */}
+                  {settingsBolehPasutri && (
+                    <div className="flex items-center justify-between rounded-xl border border-nk-border bg-nk-surface p-3 transition-colors hover:bg-nk-warm/40">
+                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                        <FileCheck className="size-4 shrink-0 text-nk-accent" />
+                        <div>
+                          <p className="text-xs font-medium text-nk-text">Wajib Buku Nikah</p>
+                          <p className="text-[11px] text-nk-text-muted">Melampirkan bukti nikah resmi</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={settingsWajibBukuNikah}
+                        onCheckedChange={setSettingsWajibBukuNikah}
+                      />
+                    </div>
+                  )}
 
-            {/* 4. FASILITAS PROPERTI */}
-            <div className="rounded-xl border border-nk-border bg-white p-6 space-y-4">
-              <div className="flex items-center gap-2 border-b border-nk-border/70 pb-3">
-                <DoorOpen className="size-4 text-nk-accent" />
-                <div>
-                  <h3 className="text-sm font-semibold text-nk-text">4. Fasilitas Kos</h3>
-                  <p className="text-xs text-nk-text-muted">Klik untuk mengaktifkan atau menonaktifkan fasilitas:</p>
+                  {/* Boleh Hewan */}
+                  <div className="flex items-center justify-between rounded-xl border border-nk-border bg-nk-surface p-3 transition-colors hover:bg-nk-warm/40">
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                      <PawPrint className="size-4 shrink-0 text-nk-accent" />
+                      <div>
+                        <p className="text-xs font-medium text-nk-text">Boleh Bawa Hewan</p>
+                        <p className="text-[11px] text-nk-text-muted">Mengizinkan hewan peliharaan tertentu</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={settingsBolehBawaHewan}
+                      onCheckedChange={setSettingsBolehBawaHewan}
+                    />
+                  </div>
+
+                  {/* Dilarang Merokok */}
+                  <div className="flex items-center justify-between rounded-xl border border-nk-border bg-nk-surface p-3 transition-colors hover:bg-nk-warm/40">
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                      <Cigarette className="size-4 shrink-0 text-nk-accent" />
+                      <div>
+                        <p className="text-xs font-medium text-nk-text">Dilarang Merokok di Kamar</p>
+                        <p className="text-[11px] text-nk-text-muted">Kamar bebas asap rokok dan bau</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={settingsDilarangMerokok}
+                      onCheckedChange={setSettingsDilarangMerokok}
+                    />
+                  </div>
                 </div>
               </div>
+            </DashSection>
 
+            {/* 4. FASILITAS KOS */}
+            <DashSection
+              title={
+                <div className="flex items-center gap-2">
+                  <DoorOpen className="size-4 text-nk-accent" />
+                  <span>4. Fasilitas Kos</span>
+                </div>
+              }
+              right={
+                <span className="text-xs font-medium text-nk-accent">
+                  {settingsFacilities.length} fasilitas aktif
+                </span>
+              }
+              tint="bg-nk-section"
+              bodyClass="p-5 sm:p-6 space-y-3"
+            >
+              <p className="text-xs text-nk-text-muted">
+                Pilih seluruh fasilitas yang tersedia di kos Anda untuk menarik calon penyewa:
+              </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                 {(Object.keys(FACILITY_META) as Facility[]).map((f) => {
                   const active = settingsFacilities.includes(f);
@@ -1633,28 +1781,42 @@ export default function OwnerPropertyDetailPage() {
                         );
                       }}
                       className={cn(
-                        "flex items-center gap-2 rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer",
+                        "flex items-center justify-between gap-2 rounded-xl border p-2.5 text-left text-xs transition-all cursor-pointer active:scale-[0.98]",
                         active
-                          ? "border-nk-accent bg-white text-nk-text font-medium ring-1 ring-nk-accent/40"
-                          : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
+                          ? "border-nk-accent bg-nk-accent/10 text-nk-text font-medium ring-1 ring-nk-accent/30"
+                          : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/30 hover:bg-nk-warm/50"
                       )}
                     >
-                      <FacilityIcon facility={f as any} />
-                      <span className="truncate">{FACILITY_META[f]?.labelId || f}</span>
+                      <div className="flex items-center gap-2 truncate">
+                        <FacilityIcon facility={f as any} className="size-4 shrink-0 text-nk-accent" />
+                        <span className="truncate">{FACILITY_META[f]?.labelId || f}</span>
+                      </div>
+                      {active && <Check className="size-3.5 shrink-0 text-nk-accent" />}
                     </button>
                   );
                 })}
               </div>
-            </div>
+            </DashSection>
 
             {/* 5. REKENING BANK PENCAIRAN (PAYOUT) */}
-            <div className="rounded-xl border border-nk-border bg-white p-6 space-y-4">
-              <div className="flex items-center gap-2 border-b border-nk-border/70 pb-3">
-                <CreditCard className="size-4 text-nk-accent" />
-                <div>
-                  <h3 className="text-sm font-semibold text-nk-text">5. Rekening Bank Pencairan Hasil Sewa</h3>
-                  <p className="text-xs text-nk-text-muted">Rekening tujuan transfer hasil sewa penyewa dari NgeKos:</p>
+            <DashSection
+              title={
+                <div className="flex items-center gap-2">
+                  <CreditCard className="size-4 text-nk-accent" />
+                  <span>5. Rekening Bank Pencairan Hasil Sewa</span>
                 </div>
+              }
+              right={
+                <span className="flex items-center gap-1 text-xs text-[#2F6B3C] font-medium">
+                  <ShieldCheck className="size-3.5" />
+                  <span>Pencairan H+1 Check-in</span>
+                </span>
+              }
+              tint="bg-nk-section"
+              bodyClass="p-5 sm:p-6 space-y-4"
+            >
+              <div className="rounded-lg border border-nk-border bg-nk-section/40 p-3 text-xs text-nk-text-muted">
+                Rekening tujuan pengiriman saldo hasil sewa dari NgeKos Escrow Wallet. Dana akan otomatis ditransfer H+1 setelah penyewa check-in.
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
@@ -1662,21 +1824,24 @@ export default function OwnerPropertyDetailPage() {
                   <Label htmlFor="prop-bank" className="text-xs font-medium text-nk-text">
                     Nama Bank
                   </Label>
-                  <select
-                    id="prop-bank"
-                    value={settingsBank}
-                    onChange={(e) => setSettingsBank(e.target.value)}
-                    className="mt-1.5 w-full rounded-md border border-nk-border bg-nk-surface px-3 py-2 text-sm text-nk-text outline-none focus:border-nk-accent"
-                  >
-                    <option value="BCA">BCA (Bank Central Asia)</option>
-                    <option value="Mandiri">Bank Mandiri</option>
-                    <option value="BNI">BNI (Bank Negara Indonesia)</option>
-                    <option value="BRI">BRI (Bank Rakyat Indonesia)</option>
-                    <option value="CIMB Niaga">CIMB Niaga</option>
-                    <option value="Bank Syariah Indonesia (BSI)">Bank Syariah Indonesia (BSI)</option>
-                    <option value="Bank Jago">Bank Jago</option>
-                    <option value="Jenius (BTPN)">Jenius (BTPN)</option>
-                  </select>
+                  <div className="relative mt-1.5">
+                    <select
+                      id="prop-bank"
+                      value={settingsBank}
+                      onChange={(e) => setSettingsBank(e.target.value)}
+                      className="w-full appearance-none rounded-lg border border-nk-border bg-nk-surface px-3 py-2 text-xs sm:text-sm text-nk-text outline-none focus:border-nk-accent focus:ring-1 focus:ring-nk-accent cursor-pointer pr-8"
+                    >
+                      <option value="BCA">BCA (Bank Central Asia)</option>
+                      <option value="Mandiri">Bank Mandiri</option>
+                      <option value="BNI">BNI (Bank Negara Indonesia)</option>
+                      <option value="BRI">BRI (Bank Rakyat Indonesia)</option>
+                      <option value="CIMB Niaga">CIMB Niaga</option>
+                      <option value="Bank Syariah Indonesia (BSI)">Bank Syariah Indonesia (BSI)</option>
+                      <option value="Bank Jago">Bank Jago</option>
+                      <option value="Jenius (BTPN)">Jenius (BTPN)</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-nk-text-muted" />
+                  </div>
                 </div>
 
                 <div>
@@ -1705,14 +1870,17 @@ export default function OwnerPropertyDetailPage() {
                   />
                 </div>
               </div>
-            </div>
+            </DashSection>
 
-            {/* Tombol Simpan Pengaturan */}
-            <div className="pt-2 flex justify-end">
+            {/* Bottom Action Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-nk-border bg-nk-surface p-4 shadow-xs">
+              <span className="text-xs text-nk-text-muted text-center sm:text-left">
+                Pastikan seluruh data properti dan nomor rekening sudah benar sebelum menyimpan.
+              </span>
               <button
                 type="submit"
                 disabled={savingSettings}
-                className="inline-flex items-center gap-2 rounded-lg bg-nk-accent px-8 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 disabled:opacity-50 active:scale-[0.99] cursor-pointer"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-nk-accent px-6 py-2.5 text-xs sm:text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 disabled:opacity-50 active:scale-[0.99] cursor-pointer w-full sm:w-auto"
               >
                 {savingSettings ? (
                   <>
@@ -1800,8 +1968,8 @@ export default function OwnerPropertyDetailPage() {
                       onClick={() => toggleNewTypeFacility(key)}
                       className={`flex items-center gap-2 rounded-lg border p-2 text-left text-xs font-medium transition-all cursor-pointer ${
                         checked
-                          ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
-                          : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
+                          ? "border-nk-accent bg-nk-surface text-nk-text shadow-sm ring-1 ring-nk-accent/40"
+                          : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm/50"
                       }`}
                     >
                       <FacilityIcon
@@ -1820,14 +1988,14 @@ export default function OwnerPropertyDetailPage() {
               <button
                 type="button"
                 onClick={() => setAddTypeOpen(false)}
-                className="rounded-md border border-nk-border px-4 py-2 text-xs text-nk-text hover:bg-nk-warm"
+                className="rounded-lg border border-nk-border px-4 py-2 text-xs font-medium text-nk-text hover:bg-nk-warm cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={submittingType}
-                className="inline-flex items-center gap-1.5 rounded-md bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse hover:opacity-90 disabled:opacity-50 cursor-pointer"
               >
                 {submittingType && <Loader2 className="size-3.5 animate-spin" />}
                 <span>Tambah Tipe</span>
@@ -1900,8 +2068,8 @@ export default function OwnerPropertyDetailPage() {
                         onClick={() => toggleEditingTypeFacility(key)}
                         className={`flex items-center gap-2 rounded-lg border p-2 text-left text-xs font-medium transition-all cursor-pointer ${
                           checked
-                            ? "border-nk-accent bg-white text-nk-text shadow-sm ring-1 ring-nk-accent/40"
-                            : "border-nk-border bg-white text-nk-text hover:border-nk-accent/40 hover:bg-stone-50"
+                            ? "border-nk-accent bg-nk-surface text-nk-text shadow-sm ring-1 ring-nk-accent/40"
+                            : "border-nk-border bg-nk-surface text-nk-text hover:border-nk-accent/40 hover:bg-nk-warm/50"
                         }`}
                       >
                         <FacilityIcon
@@ -1921,7 +2089,7 @@ export default function OwnerPropertyDetailPage() {
                   type="button"
                   onClick={() => void handleDeleteRoomType()}
                   disabled={deletingType || submittingEditType}
-                  className="mr-auto inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                  className="mr-auto inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50 cursor-pointer"
                 >
                   {deletingType && <Loader2 className="size-3.5 animate-spin" />}
                   <Trash2 className="size-3.5" aria-hidden="true" />
@@ -1930,14 +2098,14 @@ export default function OwnerPropertyDetailPage() {
                 <button
                   type="button"
                   onClick={() => setEditTypeOpen(false)}
-                  className="rounded-md border border-nk-border px-4 py-2 text-xs text-nk-text hover:bg-nk-warm"
+                  className="rounded-lg border border-nk-border px-4 py-2 text-xs font-medium text-nk-text hover:bg-nk-warm cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submittingEditType}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse hover:opacity-90 disabled:opacity-50 cursor-pointer"
                 >
                   {submittingEditType && <Loader2 className="size-3.5 animate-spin" />}
                   <span>Simpan Perubahan</span>
@@ -1983,14 +2151,14 @@ export default function OwnerPropertyDetailPage() {
               <button
                 type="button"
                 onClick={() => setAddUnitOpen(false)}
-                className="rounded-md border border-nk-border px-4 py-2 text-xs text-nk-text hover:bg-nk-warm"
+                className="rounded-lg border border-nk-border px-4 py-2 text-xs font-medium text-nk-text hover:bg-nk-warm cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={submittingUnit}
-                className="inline-flex items-center gap-1.5 rounded-md bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-nk-accent px-4 py-2 text-xs font-medium text-nk-text-inverse hover:opacity-90 disabled:opacity-50 cursor-pointer"
               >
                 {submittingUnit && <Loader2 className="size-3.5 animate-spin" />}
                 <span>Tambah Kamar</span>
