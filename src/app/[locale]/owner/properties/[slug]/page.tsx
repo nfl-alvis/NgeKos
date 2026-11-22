@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
 import { FACILITY_META, ROOM_FACILITY_KEYS } from "@/lib/data/facilities";
 import FacilityIcon from "@/components/FacilityIcon";
 import type { Property, Facility, Gender } from "@/lib/data/types";
@@ -178,19 +179,12 @@ export default function OwnerPropertyDetailPage() {
   const [settingsSuccess, setSettingsSuccess] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // Floating Toast Notification
-  const [toast, setToast] = useState<{
-    id: number;
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-
   const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
-    const id = Date.now();
-    setToast({ id, type, message });
-    setTimeout(() => {
-      setToast((current) => (current?.id === id ? null : current));
-    }, 4000);
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
   }, []);
 
   const roomStatusMeta: Record<
@@ -854,43 +848,6 @@ export default function OwnerPropertyDetailPage() {
 
   return (
     <DashboardShell role="owner">
-      {/* Top Floating Toast Notification */}
-      {toast && (
-        <div
-          role="alert"
-          aria-live="assertive"
-          className={cn(
-            "fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 rounded-xl px-4 py-3 shadow-xl backdrop-blur-md transition-all duration-200 animate-in fade-in slide-in-from-top-4 max-w-md w-[calc(100vw-2rem)] sm:w-auto border",
-            toast.type === "success"
-              ? "bg-nk-surface/95 border-emerald-500/30 text-nk-text ring-1 ring-emerald-500/20"
-              : "bg-nk-surface/95 border-destructive/30 text-nk-text ring-1 ring-destructive/20"
-          )}
-        >
-          {toast.type === "success" ? (
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="size-4" />
-            </div>
-          ) : (
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-              <AlertCircle className="size-4" />
-            </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-xs sm:text-sm font-medium leading-snug text-nk-text">
-              {toast.message}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setToast(null)}
-            className="rounded-md p-1 text-nk-text-muted transition-colors hover:bg-nk-warm hover:text-nk-text cursor-pointer"
-            aria-label="Dismiss toast"
-          >
-            <X className="size-3.5" />
-          </button>
-        </div>
-      )}
-
       {/* Alert Error */}
       {actionError && (
         <Alert variant="destructive" className="mb-6 shadow-xs">

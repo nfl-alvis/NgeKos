@@ -9,6 +9,7 @@ import "@/app/globals.css";
 import ConditionalNavbar from "@/components/ConditionalNavbar";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import { SessionProvider } from "@/components/SessionProvider";
+import { Toaster } from "@/components/ui/sonner";
 import JsonLd from "@/components/seo/JsonLd";
 import { getWebSiteSchema, getOrganizationSchema } from "@/lib/seo/schema";
 
@@ -180,6 +181,7 @@ export default async function LocaleLayout({
             <ConditionalNavbar />
             <main id="main-content" className="flex-1">{children}</main>
             <ConditionalFooter />
+            <Toaster position="top-center" richColors closeButton />
           </SessionProvider>
         </NextIntlClientProvider>
       </body>
