@@ -2,6 +2,7 @@ import "server-only";
 import { Prisma, type Profile } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/server/http";
+import { propertyIdentifierWhere } from "@/server/properties";
 import type { z } from "zod";
 import type { roomTypeCreateSchema, roomUnitCreateSchema } from "@/server/validation";
 
@@ -9,15 +10,18 @@ type RoomTypeInput = z.infer<typeof roomTypeCreateSchema>;
 type RoomUnitInput = z.infer<typeof roomUnitCreateSchema>;
 
 async function ownedProperty(profile: Profile, propertyId: string) {
+  const whereIdentifier = propertyIdentifierWhere(propertyId);
   const property = await prisma.property.findFirst({
     where: {
-      OR: [{ id: propertyId }, { slug: propertyId }],
+      ...whereIdentifier,
       deletedAt: null,
     },
     select: { id: true, ownerId: true },
   });
   if (!property) throw new ApiError(404, "PROPERTY_NOT_FOUND", "Property not found");
-  if (profile.role !== "ADMIN" && property.ownerId !== profile.id) throw new ApiError(403, "FORBIDDEN", "You do not own this property");
+  if (profile.role !== "ADMIN" && property.ownerId !== profile.id) {
+    throw new ApiError(403, "FORBIDDEN", "You do not own this property");
+  }
   return property;
 }
 
@@ -40,7 +44,7 @@ async function refreshMinPrice(tx: Prisma.TransactionClient, propertyId: string)
 }
 
 export async function createRoomType(profile: Profile, propertyId: string, input: RoomTypeInput) {
-  await ownedProperty(profile, propertyId);
+  const prop = await ownedProperty(profile, propertyId);
   return prisma.$transaction(async (tx) => {
     const { facilities, ...rest } = input;
     const desc =
@@ -52,12 +56,12 @@ export async function createRoomType(profile: Profile, propertyId: string, input
       data: {
         ...rest,
         description: desc,
-        propertyId,
+        propertyId: prop.id,
         pricePerMonth: new Prisma.Decimal(input.pricePerMonth),
         sizeM2: input.sizeM2 ? new Prisma.Decimal(input.sizeM2) : undefined,
       },
     });
-    await refreshMinPrice(tx, propertyId);
+    await refreshMinPrice(tx, prop.id);
     return {
       ...roomType,
       pricePerMonth: Number(roomType.pricePerMonth),
@@ -68,23 +72,26 @@ export async function createRoomType(profile: Profile, propertyId: string, input
 }
 
 export async function createRoomUnit(profile: Profile, propertyId: string, input: RoomUnitInput) {
-  await ownedProperty(profile, propertyId);
-  const roomType = await prisma.roomType.findFirst({ where: { id: input.roomTypeId, propertyId, deletedAt: null }, select: { id: true } });
+  const prop = await ownedProperty(profile, propertyId);
+  const roomType = await prisma.roomType.findFirst({
+    where: { id: input.roomTypeId, propertyId: prop.id, deletedAt: null },
+    select: { id: true },
+  });
   if (!roomType) throw new ApiError(422, "ROOM_TYPE_MISMATCH", "This room type is not available on this property");
-  return prisma.roomUnit.create({ data: { ...input, propertyId } });
+  return prisma.roomUnit.create({ data: { ...input, propertyId: prop.id } });
 }
 
 export async function updateRoomUnitStatus(profile: Profile, propertyId: string, roomId: string, status: "AVAILABLE" | "MAINTENANCE" | "OCCUPIED") {
-  await ownedProperty(profile, propertyId);
-  const unit = await prisma.roomUnit.findFirst({ where: { id: roomId, propertyId, deletedAt: null } });
+  const prop = await ownedProperty(profile, propertyId);
+  const unit = await prisma.roomUnit.findFirst({ where: { id: roomId, propertyId: prop.id, deletedAt: null } });
   if (!unit) throw new ApiError(404, "ROOM_NOT_FOUND", "Room not found");
   if (unit.status === "RESERVED") throw new ApiError(409, "ROOM_IN_USE", "A reserved room's status cannot be changed manually");
   return prisma.roomUnit.update({ where: { id: roomId }, data: { status } });
 }
 
 export async function deleteRoomUnit(profile: Profile, propertyId: string, roomId: string) {
-  await ownedProperty(profile, propertyId);
-  const unit = await prisma.roomUnit.findFirst({ where: { id: roomId, propertyId, deletedAt: null } });
+  const prop = await ownedProperty(profile, propertyId);
+  const unit = await prisma.roomUnit.findFirst({ where: { id: roomId, propertyId: prop.id, deletedAt: null } });
   if (!unit) throw new ApiError(404, "ROOM_NOT_FOUND", "Room not found");
   if (unit.status === "RESERVED" || unit.status === "OCCUPIED") {
     throw new ApiError(409, "ROOM_IN_USE", "The room is reserved or occupied and cannot be deleted");
@@ -94,9 +101,9 @@ export async function deleteRoomUnit(profile: Profile, propertyId: string, roomI
 }
 
 export async function deleteRoomType(profile: Profile, propertyId: string, roomTypeId: string) {
-  await ownedProperty(profile, propertyId);
+  const prop = await ownedProperty(profile, propertyId);
   const existing = await prisma.roomType.findFirst({
-    where: { id: roomTypeId, propertyId, deletedAt: null },
+    where: { id: roomTypeId, propertyId: prop.id, deletedAt: null },
   });
   if (!existing) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Room type not found");
 
@@ -113,7 +120,7 @@ export async function deleteRoomType(profile: Profile, propertyId: string, roomT
 
   return prisma.$transaction(async (tx) => {
     await tx.roomType.update({ where: { id: roomTypeId }, data: { deletedAt: new Date() } });
-    await refreshMinPrice(tx, propertyId);
+    await refreshMinPrice(tx, prop.id);
     return { success: true, id: roomTypeId };
   });
 }
@@ -124,9 +131,9 @@ export async function updateRoomType(
   roomTypeId: string,
   input: Partial<RoomTypeInput>
 ) {
-  await ownedProperty(profile, propertyId);
+  const prop = await ownedProperty(profile, propertyId);
   const existing = await prisma.roomType.findFirst({
-    where: { id: roomTypeId, propertyId, deletedAt: null },
+    where: { id: roomTypeId, propertyId: prop.id, deletedAt: null },
   });
   if (!existing) throw new ApiError(404, "ROOM_TYPE_NOT_FOUND", "Room type not found");
 
@@ -160,7 +167,9 @@ export async function updateRoomType(
         ...(rest.capacity !== undefined ? { capacity: rest.capacity } : {}),
       },
     });
-    await refreshMinPrice(tx, propertyId);
+    if (input.pricePerMonth) {
+      await refreshMinPrice(tx, prop.id);
+    }
     return {
       ...updated,
       pricePerMonth: Number(updated.pricePerMonth),
@@ -169,4 +178,3 @@ export async function updateRoomType(
     };
   });
 }
-

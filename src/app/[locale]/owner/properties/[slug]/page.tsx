@@ -412,7 +412,7 @@ export default function OwnerPropertyDetailPage() {
     }));
     setMenuRoom(null);
 
-    if (roomItem.id && property.id) {
+    if (roomItem.id && property) {
       try {
         const dbStatus =
           status === "kosong"
@@ -421,7 +421,8 @@ export default function OwnerPropertyDetailPage() {
               ? "MAINTENANCE"
               : "OCCUPIED";
 
-        const res = await fetch(`/api/properties/${property.id}/rooms/${roomItem.id}`, {
+        const targetId = property.id || property.slug || params.slug;
+        const res = await fetch(`/api/properties/${targetId}/rooms/${roomItem.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: dbStatus }),
@@ -451,10 +452,11 @@ export default function OwnerPropertyDetailPage() {
     }));
     setMenuRoom(null);
 
-    if (roomItem.id && property.id) {
+    if (roomItem.id && property) {
       try {
+        const targetId = property.id || property.slug || params.slug;
         const res = await fetch(
-          `/api/properties/${property.id}/rooms/${roomItem.id}`,
+          `/api/properties/${targetId}/rooms/${roomItem.id}`,
           { method: "DELETE" }
         );
         if (!res.ok) {
@@ -473,12 +475,13 @@ export default function OwnerPropertyDetailPage() {
   /** Simpan Tipe Kamar Baru */
   const handleCreateRoomType = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTypeName.trim() || !newTypePrice) return;
+    if (!newTypeName.trim() || !newTypePrice || !property) return;
     setSubmittingType(true);
     setActionError(null);
 
     try {
-      const res = await fetch(`/api/properties/${property.id}/room-types`, {
+      const targetId = property.id || property.slug || params.slug;
+      const res = await fetch(`/api/properties/${targetId}/room-types`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -491,8 +494,8 @@ export default function OwnerPropertyDetailPage() {
         }),
       });
 
-      const json = await res.json();
-      if (!res.ok || !json.success) {
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
         throw new Error(json?.error?.message || (isEn ? "Failed to create room type." : "Gagal membuat tipe kamar."));
       }
 
@@ -515,13 +518,14 @@ export default function OwnerPropertyDetailPage() {
   /** Simpan Perubahan Tipe Kamar */
   const handleUpdateRoomType = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingType) return;
+    if (!editingType || !property) return;
     setSubmittingEditType(true);
     setActionError(null);
 
     try {
+      const targetId = property.id || property.slug || params.slug;
       const res = await fetch(
-        `/api/properties/${property.id}/room-types/${editingType.id}`,
+        `/api/properties/${targetId}/room-types/${editingType.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -534,8 +538,8 @@ export default function OwnerPropertyDetailPage() {
         }
       );
 
-      const json = await res.json();
-      if (!res.ok || !json.success) {
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
         throw new Error(json?.error?.message || (isEn ? "Failed to update room type." : "Gagal memperbarui tipe kamar."));
       }
 
@@ -553,7 +557,7 @@ export default function OwnerPropertyDetailPage() {
 
   /** Hapus Tipe Kamar */
   const handleDeleteRoomType = async () => {
-    if (!editingType) return;
+    if (!editingType || !property) return;
     const confirmDelete = window.confirm(
       isEn
         ? `Are you sure you want to delete room type "${editingType.name}"? All associated units will also be removed.`
@@ -565,12 +569,13 @@ export default function OwnerPropertyDetailPage() {
     setActionError(null);
 
     try {
+      const targetId = property.id || property.slug || params.slug;
       const res = await fetch(
-        `/api/properties/${property.id}/room-types/${editingType.id}`,
+        `/api/properties/${targetId}/room-types/${editingType.id}`,
         { method: "DELETE" }
       );
-      const json = await res.json();
-      if (!res.ok || !json.success) {
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
         throw new Error(json?.error?.message || (isEn ? "Failed to delete room type." : "Gagal menghapus tipe kamar."));
       }
 
@@ -589,26 +594,33 @@ export default function OwnerPropertyDetailPage() {
   /** Tambah Unit Kamar Baru */
   const handleCreateRoomUnit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!targetRoomTypeId || !newUnitNumber.trim()) return;
+    if (!targetRoomTypeId || !newUnitNumber.trim() || !property) return;
     setSubmittingUnit(true);
     setActionError(null);
 
     try {
+      const targetId = property.id || property.slug || params.slug;
       const res = await fetch(
-        `/api/properties/${property.id}/room-types/${targetRoomTypeId}/rooms`,
+        `/api/properties/${targetId}/rooms`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            roomTypeId: targetRoomTypeId,
             number: newUnitNumber.trim(),
-            floor: newUnitFloor ? Number(newUnitFloor) : 1,
+            floor: newUnitFloor ? String(newUnitFloor).trim() : "1",
           }),
         }
       );
 
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json?.error?.message || (isEn ? "Failed to add room unit." : "Gagal menambah unit kamar."));
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        throw new Error(
+          json?.error?.message ||
+            (isEn
+              ? `Failed to add room unit (${res.status}).`
+              : `Gagal menambah unit kamar (${res.status}).`)
+        );
       }
 
       setAddUnitOpen(false);
@@ -685,7 +697,8 @@ export default function OwnerPropertyDetailPage() {
         } catch {}
       }
 
-      const res = await fetch(`/api/properties/${property.id}`, {
+      const targetId = property?.id || property?.slug || params.slug;
+      const res = await fetch(`/api/properties/${targetId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -705,8 +718,8 @@ export default function OwnerPropertyDetailPage() {
         }),
       });
 
-      const json = await res.json();
-      if (!res.ok || !json.success) {
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
         throw new Error(
           json?.error?.message || (isEn ? "Failed to save property settings." : "Gagal menyimpan pengaturan properti.")
         );
