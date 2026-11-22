@@ -3,7 +3,7 @@ import { Prisma, type Profile } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/server/http";
 import { propertyIdentifierWhere } from "@/server/properties";
-import type { z } from "zod";
+import { z } from "zod";
 import type { roomTypeCreateSchema, roomUnitCreateSchema } from "@/server/validation";
 
 type RoomTypeInput = z.infer<typeof roomTypeCreateSchema>;
@@ -73,6 +73,10 @@ export async function createRoomType(profile: Profile, propertyId: string, input
 
 export async function createRoomUnit(profile: Profile, propertyId: string, input: RoomUnitInput) {
   const prop = await ownedProperty(profile, propertyId);
+  const isUuid = z.string().uuid().safeParse(input.roomTypeId).success;
+  if (!isUuid) {
+    throw new ApiError(422, "ROOM_TYPE_MISMATCH", "This room type is not available on this property");
+  }
   const roomType = await prisma.roomType.findFirst({
     where: { id: input.roomTypeId, propertyId: prop.id, deletedAt: null },
     select: { id: true },

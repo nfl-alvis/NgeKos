@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useParams, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
@@ -54,6 +54,7 @@ import {
   Trash2,
   User,
   Users,
+  X,
 } from "lucide-react";
 
 export interface RoomUnit {
@@ -176,6 +177,21 @@ export default function OwnerPropertyDetailPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Floating Toast Notification
+  const [toast, setToast] = useState<{
+    id: number;
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
+    const id = Date.now();
+    setToast({ id, type, message });
+    setTimeout(() => {
+      setToast((current) => (current?.id === id ? null : current));
+    }, 4000);
+  }, []);
 
   const roomStatusMeta: Record<
     RoomUnit["status"],
@@ -320,18 +336,21 @@ export default function OwnerPropertyDetailPage() {
       // Map Room Units
       const mappedUnits: ExtendedRoomUnit[] = [];
       (p.roomTypes || []).forEach((rt: any) => {
-        (rt.rooms || []).forEach((r: any) => {
+        const typeUnits = rt.units || rt.rooms || [];
+        typeUnits.forEach((r: any) => {
           mappedUnits.push({
             id: r.id,
             roomTypeId: rt.id,
-            number: r.unitNumber || r.number || "00",
+            number: r.number || r.unitNumber || "00",
             floor: r.floor ? String(r.floor) : "1",
             status:
-              r.status === "AVAILABLE"
+              r.status === "AVAILABLE" || r.status === "kosong"
                 ? "kosong"
-                : r.status === "MAINTENANCE"
+                : r.status === "MAINTENANCE" || r.status === "maintenance"
                   ? "maintenance"
-                  : "terisi",
+                  : r.status === "RESERVED" || r.status === "dipesan"
+                    ? "dipesan"
+                    : "terisi",
           });
         });
       });
@@ -339,6 +358,8 @@ export default function OwnerPropertyDetailPage() {
       setRooms((prev) => ({
         ...prev,
         [p.slug]: mappedUnits,
+        [params.slug]: mappedUnits,
+        ...(property?.slug ? { [property.slug]: mappedUnits } : {}),
       }));
 
       if (mappedProp.roomTypes.length > 0 && !openType) {
@@ -394,7 +415,7 @@ export default function OwnerPropertyDetailPage() {
     );
   }
 
-  const units = rooms[property.slug] ?? [];
+  const units = rooms[property.slug] ?? rooms[params.slug as string] ?? [];
   const totalUnitsCount = units.length;
   const vacantUnitsCount = units.filter((u) => u.status === "kosong").length;
   const occupiedUnitsCount = units.filter((u) => u.status === "terisi").length;
@@ -409,8 +430,13 @@ export default function OwnerPropertyDetailPage() {
       [property.slug]: (prev[property.slug] ?? []).map((r) =>
         r.number === roomItem.number ? { ...r, status } : r
       ),
+      [params.slug]: (prev[params.slug] ?? []).map((r) =>
+        r.number === roomItem.number ? { ...r, status } : r
+      ),
     }));
     setMenuRoom(null);
+
+    const statusLabel = roomStatusMeta[status]?.label || status;
 
     if (roomItem.id && property) {
       try {
@@ -419,7 +445,9 @@ export default function OwnerPropertyDetailPage() {
             ? "AVAILABLE"
             : status === "maintenance"
               ? "MAINTENANCE"
-              : "OCCUPIED";
+              : status === "dipesan"
+                ? "RESERVED"
+                : "OCCUPIED";
 
         const targetId = property.id || property.slug || params.slug;
         const res = await fetch(`/api/properties/${targetId}/rooms/${roomItem.id}`, {
@@ -432,11 +460,19 @@ export default function OwnerPropertyDetailPage() {
           const err = await res.json().catch(() => null);
           throw new Error(err?.error?.message || (isEn ? "Failed to update room status." : "Gagal memperbarui status unit."));
         }
-      } catch (err: unknown) {
-        setRooms((prev) => ({ ...prev, [property.slug]: prevUnits }));
-        setActionError(
-          err instanceof Error ? err.message : isEn ? "Failed to update unit." : "Gagal memperbarui status unit."
+
+        showToast(
+          isEn
+            ? `Room #${roomItem.number} status updated to ${statusLabel}`
+            : `Status kamar #${roomItem.number} berhasil diubah menjadi ${statusLabel}`,
+          "success"
         );
+      } catch (err: unknown) {
+        setRooms((prev) => ({ ...prev, [property.slug]: prevUnits, [params.slug]: prevUnits }));
+        const errMsg =
+          err instanceof Error ? err.message : isEn ? "Failed to update unit." : "Gagal memperbarui status unit.";
+        setActionError(errMsg);
+        showToast(errMsg, "error");
       }
     }
   };
@@ -447,6 +483,9 @@ export default function OwnerPropertyDetailPage() {
     setRooms((prev) => ({
       ...prev,
       [property.slug]: (prev[property.slug] ?? []).filter(
+        (r) => r.number !== roomItem.number
+      ),
+      [params.slug]: (prev[params.slug] ?? []).filter(
         (r) => r.number !== roomItem.number
       ),
     }));
@@ -463,11 +502,18 @@ export default function OwnerPropertyDetailPage() {
           const err = await res.json().catch(() => null);
           throw new Error(err?.error?.message || (isEn ? "Failed to delete room unit." : "Gagal menghapus unit kamar."));
         }
-      } catch (err: unknown) {
-        setRooms((prev) => ({ ...prev, [property.slug]: prevUnits }));
-        setActionError(
-          err instanceof Error ? err.message : isEn ? "Failed to delete room unit." : "Gagal menghapus unit kamar."
+        showToast(
+          isEn
+            ? `Room #${roomItem.number} deleted successfully`
+            : `Kamar #${roomItem.number} berhasil dihapus`,
+          "success"
         );
+      } catch (err: unknown) {
+        setRooms((prev) => ({ ...prev, [property.slug]: prevUnits, [params.slug]: prevUnits }));
+        const errMsg =
+          err instanceof Error ? err.message : isEn ? "Failed to delete room unit." : "Gagal menghapus unit kamar.";
+        setActionError(errMsg);
+        showToast(errMsg, "error");
       }
     }
   };
@@ -479,13 +525,15 @@ export default function OwnerPropertyDetailPage() {
     setSubmittingType(true);
     setActionError(null);
 
+    const typeName = newTypeName.trim();
+
     try {
       const targetId = property.id || property.slug || params.slug;
       const res = await fetch(`/api/properties/${targetId}/room-types`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newTypeName.trim(),
+          name: typeName,
           pricePerMonth: Number(newTypePrice),
           sizeM2: newTypeSize ? Number(newTypeSize) : undefined,
           description: newTypeDesc.trim() || undefined,
@@ -505,11 +553,18 @@ export default function OwnerPropertyDetailPage() {
       setNewTypeSize("");
       setNewTypeDesc("");
       setNewTypeFacilities(["bed", "wardrobe", "desk", "bathroom-in", "ac"]);
+      showToast(
+        isEn
+          ? `Room type "${typeName}" created successfully`
+          : `Tipe kamar "${typeName}" berhasil dibuat`,
+        "success"
+      );
       await refreshProperty();
     } catch (err: unknown) {
-      setActionError(
-        err instanceof Error ? err.message : isEn ? "Error adding room type." : "Terjadi kesalahan saat menambah tipe kamar."
-      );
+      const errMsg =
+        err instanceof Error ? err.message : isEn ? "Error adding room type." : "Terjadi kesalahan saat menambah tipe kamar.";
+      setActionError(errMsg);
+      showToast(errMsg, "error");
     } finally {
       setSubmittingType(false);
     }
@@ -522,6 +577,8 @@ export default function OwnerPropertyDetailPage() {
     setSubmittingEditType(true);
     setActionError(null);
 
+    const typeName = editingType.name.trim();
+
     try {
       const targetId = property.id || property.slug || params.slug;
       const res = await fetch(
@@ -530,7 +587,7 @@ export default function OwnerPropertyDetailPage() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: editingType.name.trim(),
+            name: typeName,
             pricePerMonth: editingType.pricePerMonth,
             sizeM2: editingType.sizeM2,
             facilities: editingType.facilities,
@@ -545,11 +602,18 @@ export default function OwnerPropertyDetailPage() {
 
       setEditTypeOpen(false);
       setEditingType(null);
+      showToast(
+        isEn
+          ? `Room type "${typeName}" updated successfully`
+          : `Tipe kamar "${typeName}" berhasil diperbarui`,
+        "success"
+      );
       await refreshProperty();
     } catch (err: unknown) {
-      setActionError(
-        err instanceof Error ? err.message : isEn ? "Error updating room type." : "Terjadi kesalahan saat mengubah tipe kamar."
-      );
+      const errMsg =
+        err instanceof Error ? err.message : isEn ? "Error updating room type." : "Terjadi kesalahan saat mengubah tipe kamar.";
+      setActionError(errMsg);
+      showToast(errMsg, "error");
     } finally {
       setSubmittingEditType(false);
     }
@@ -558,10 +622,11 @@ export default function OwnerPropertyDetailPage() {
   /** Hapus Tipe Kamar */
   const handleDeleteRoomType = async () => {
     if (!editingType || !property) return;
+    const typeName = editingType.name;
     const confirmDelete = window.confirm(
       isEn
-        ? `Are you sure you want to delete room type "${editingType.name}"? All associated units will also be removed.`
-        : `Apakah Anda yakin ingin menghapus tipe kamar "${editingType.name}"? Seluruh unit kamar di dalamnya juga akan terhapus.`
+        ? `Are you sure you want to delete room type "${typeName}"? All associated units will also be removed.`
+        : `Apakah Anda yakin ingin menghapus tipe kamar "${typeName}"? Seluruh unit kamar di dalamnya juga akan terhapus.`
     );
     if (!confirmDelete) return;
 
@@ -581,11 +646,18 @@ export default function OwnerPropertyDetailPage() {
 
       setEditTypeOpen(false);
       setEditingType(null);
+      showToast(
+        isEn
+          ? `Room type "${typeName}" deleted successfully`
+          : `Tipe kamar "${typeName}" berhasil dihapus`,
+        "success"
+      );
       await refreshProperty();
     } catch (err: unknown) {
-      setActionError(
-        err instanceof Error ? err.message : isEn ? "Error deleting room type." : "Terjadi kesalahan saat menghapus tipe kamar."
-      );
+      const errMsg =
+        err instanceof Error ? err.message : isEn ? "Error deleting room type." : "Terjadi kesalahan saat menghapus tipe kamar.";
+      setActionError(errMsg);
+      showToast(errMsg, "error");
     } finally {
       setDeletingType(false);
     }
@@ -594,9 +666,13 @@ export default function OwnerPropertyDetailPage() {
   /** Tambah Unit Kamar Baru */
   const handleCreateRoomUnit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!targetRoomTypeId || !newUnitNumber.trim() || !property) return;
+    const effectiveRoomTypeId = targetRoomTypeId || property?.roomTypes[0]?.id;
+    if (!effectiveRoomTypeId || !newUnitNumber.trim() || !property) return;
     setSubmittingUnit(true);
     setActionError(null);
+
+    const unitNum = newUnitNumber.trim();
+    const unitFlr = newUnitFloor ? String(newUnitFloor).trim() : "1";
 
     try {
       const targetId = property.id || property.slug || params.slug;
@@ -606,9 +682,9 @@ export default function OwnerPropertyDetailPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            roomTypeId: targetRoomTypeId,
-            number: newUnitNumber.trim(),
-            floor: newUnitFloor ? String(newUnitFloor).trim() : "1",
+            roomTypeId: effectiveRoomTypeId,
+            number: unitNum,
+            floor: unitFlr,
           }),
         }
       );
@@ -623,15 +699,41 @@ export default function OwnerPropertyDetailPage() {
         );
       }
 
+      const createdUnit = json.data;
+      const newRoom: ExtendedRoomUnit = {
+        id: createdUnit?.id || `room-${Date.now()}`,
+        roomTypeId: effectiveRoomTypeId,
+        number: unitNum,
+        floor: unitFlr,
+        status: "kosong",
+      };
+
+      // Optimistically add room
+      setRooms((prev) => ({
+        ...prev,
+        [property.slug]: [...(prev[property.slug] || []), newRoom],
+        [params.slug]: [...(prev[params.slug] || []), newRoom],
+      }));
+
+      // Ensure the accordion for this room type is open so the user immediately sees it
+      setOpenType(effectiveRoomTypeId);
+
       setAddUnitOpen(false);
       setNewUnitNumber("");
       setNewUnitFloor("1");
       setTargetRoomTypeId(null);
+      showToast(
+        isEn
+          ? `Room #${unitNum} added successfully`
+          : `Kamar #${unitNum} berhasil ditambahkan`,
+        "success"
+      );
       await refreshProperty();
     } catch (err: unknown) {
-      setActionError(
-        err instanceof Error ? err.message : isEn ? "Error adding room unit." : "Terjadi kesalahan saat menambah kamar."
-      );
+      const errMsg =
+        err instanceof Error ? err.message : isEn ? "Error adding room unit." : "Terjadi kesalahan saat menambah kamar.";
+      setActionError(errMsg);
+      showToast(errMsg, "error");
     } finally {
       setSubmittingUnit(false);
     }
@@ -727,11 +829,18 @@ export default function OwnerPropertyDetailPage() {
 
       setSettingsSuccess(true);
       setTimeout(() => setSettingsSuccess(false), 4000);
+      showToast(
+        isEn
+          ? "Property settings saved successfully"
+          : "Pengaturan properti berhasil disimpan",
+        "success"
+      );
       await refreshProperty();
     } catch (err: unknown) {
-      setActionError(
-        err instanceof Error ? err.message : isEn ? "Error saving settings." : "Terjadi kesalahan saat menyimpan pengaturan."
-      );
+      const errMsg =
+        err instanceof Error ? err.message : isEn ? "Error saving settings." : "Terjadi kesalahan saat menyimpan pengaturan.";
+      setActionError(errMsg);
+      showToast(errMsg, "error");
     } finally {
       setSavingSettings(false);
     }
@@ -745,6 +854,43 @@ export default function OwnerPropertyDetailPage() {
 
   return (
     <DashboardShell role="owner">
+      {/* Top Floating Toast Notification */}
+      {toast && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className={cn(
+            "fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 rounded-xl px-4 py-3 shadow-xl backdrop-blur-md transition-all duration-200 animate-in fade-in slide-in-from-top-4 max-w-md w-[calc(100vw-2rem)] sm:w-auto border",
+            toast.type === "success"
+              ? "bg-nk-surface/95 border-emerald-500/30 text-nk-text ring-1 ring-emerald-500/20"
+              : "bg-nk-surface/95 border-destructive/30 text-nk-text ring-1 ring-destructive/20"
+          )}
+        >
+          {toast.type === "success" ? (
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="size-4" />
+            </div>
+          ) : (
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <AlertCircle className="size-4" />
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs sm:text-sm font-medium leading-snug text-nk-text">
+              {toast.message}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="rounded-md p-1 text-nk-text-muted transition-colors hover:bg-nk-warm hover:text-nk-text cursor-pointer"
+            aria-label="Dismiss toast"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Alert Error */}
       {actionError && (
         <Alert variant="destructive" className="mb-6 shadow-xs">
@@ -2075,6 +2221,30 @@ export default function OwnerPropertyDetailPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateRoomUnit} className="space-y-4 py-2">
+            {property.roomTypes.length > 1 ? (
+              <div>
+                <Label htmlFor="new-unit-roomtype" className="text-xs">
+                  {isEn ? "Room Type *" : "Tipe Kamar *"}
+                </Label>
+                <select
+                  id="new-unit-roomtype"
+                  value={targetRoomTypeId || property.roomTypes[0]?.id || ""}
+                  onChange={(e) => setTargetRoomTypeId(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-nk-border bg-nk-surface px-3 py-2 text-xs text-nk-text focus:border-nk-accent focus:outline-none focus:ring-1 focus:ring-nk-accent"
+                >
+                  {property.roomTypes.map((rt) => (
+                    <option key={rt.id} value={rt.id}>
+                      {rt.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : property.roomTypes.length === 1 ? (
+              <div className="rounded-lg bg-nk-warm/70 px-3 py-2 text-xs">
+                <span className="text-nk-text-muted">{isEn ? "Room Type: " : "Tipe Kamar: "}</span>
+                <span className="font-medium text-nk-text">{property.roomTypes[0].name}</span>
+              </div>
+            ) : null}
             <div>
               <Label htmlFor="new-unit-number" className="text-xs">
                 {isEn ? "Room Number / Code *" : "Nomor / Kode Kamar *"}
@@ -2086,6 +2256,7 @@ export default function OwnerPropertyDetailPage() {
                 placeholder={isEn ? "e.g. A-105 or B-201" : "Contoh: A-105 atau B-201"}
                 required
                 className="mt-1"
+                autoFocus
               />
             </div>
             <div>

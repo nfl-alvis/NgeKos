@@ -78,7 +78,7 @@ export const roomTypeCreateSchema = z
 
 export const roomUnitCreateSchema = z
   .object({
-    roomTypeId: z.uuid(),
+    roomTypeId: z.string().trim().min(1, "roomTypeId wajib diisi"),
     number: trimmedText(1, 50),
     floor: optionalText(50),
     orientation: optionalText(100),
