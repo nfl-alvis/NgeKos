@@ -32,6 +32,7 @@ import AdminPageShell, { AdminSection, AdminStat } from "@/components/admin/Admi
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "@/hooks/use-toast";
 import { formatIDR } from "@/lib/utils";
 
 const chartConfig = {
@@ -106,17 +107,21 @@ export default function AdminFinancePage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error?.message || "Gagal memproses penarikan");
 
+      const feedbackMsg = `Penarikan sebesar ${formatIDR(selectedPayout.amount)} berhasil di-${actionType === "APPROVE" ? "setujui dan ditransfer" : "tolak (saldo dikembalikan)"}!`;
       setActionFeedback({
         type: "success",
-        text: `Penarikan sebesar ${formatIDR(selectedPayout.amount)} berhasil di-${actionType === "APPROVE" ? "setujui dan ditransfer" : "tolak (saldo dikembalikan)"}!`,
+        text: feedbackMsg,
       });
+      toast.success(feedbackMsg);
       setActionModalOpen(false);
       setSelectedPayout(null);
       setRefNumber("");
       setAdminNote("");
       fetchPayouts();
     } catch (err: any) {
-      setActionFeedback({ type: "error", text: err.message || "Terjadi kesalahan" });
+      const errMsg = err.message || "Terjadi kesalahan";
+      setActionFeedback({ type: "error", text: errMsg });
+      toast.error(errMsg);
     } finally {
       setActionSubmitting(false);
     }

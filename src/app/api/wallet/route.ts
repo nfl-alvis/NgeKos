@@ -4,7 +4,7 @@ import { getOrCreateWallet } from "@/server/wallet-service";
 
 export const dynamic = "force-dynamic";
 
-export const GET = withApi(async () => {
+export const GET = withApi(async (request: Request) => {
   const { profile } = await requireUser();
   const wallet = await getOrCreateWallet(profile.id);
 

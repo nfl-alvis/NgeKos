@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "@/hooks/use-toast";
 import {
   AlertCircle,
   ArrowDownLeft,
@@ -79,6 +80,12 @@ export default function OwnerWalletPage() {
       if (res.ok) {
         const json = await res.json();
         setData(json.data);
+        if (json.data?.payouts?.length > 0) {
+          const last = json.data.payouts[0];
+          setBankName((prev) => (prev ? prev : (last.bankName || "BCA")));
+          setAccountNumber((prev) => (prev ? prev : (last.accountNumber || "")));
+          setAccountHolder((prev) => (prev ? prev : (last.accountHolder || "")));
+        }
       }
     } catch (err) {
       console.error("Failed to load wallet", err);
@@ -105,15 +112,21 @@ export default function OwnerWalletPage() {
 
     const numAmount = Number(amount);
     if (isNaN(numAmount) || numAmount < 50000) {
-      setErrorMsg("Nominal penarikan minimal adalah Rp 50.000");
+      const msg = "Nominal penarikan minimal adalah Rp 50.000";
+      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
     if (numAmount > (data?.balance || 0)) {
-      setErrorMsg("Nominal penarikan melebihi saldo aktif Anda");
+      const msg = "Nominal penarikan melebihi saldo aktif Anda";
+      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
     if (!bankName.trim() || !accountNumber.trim() || !accountHolder.trim()) {
-      setErrorMsg("Harap lengkapi informasi rekening bank");
+      const msg = "Harap lengkapi informasi rekening bank";
+      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
 
@@ -135,14 +148,16 @@ export default function OwnerWalletPage() {
         throw new Error(json.error?.message || "Gagal mengajukan penarikan dana");
       }
 
-      setSuccessMsg("Permohonan penarikan dana berhasil diajukan dan sedang diproses admin!");
+      const successTxt = "Permohonan penarikan dana berhasil diajukan dan sedang diproses admin!";
+      setSuccessMsg(successTxt);
+      toast.success(successTxt);
       setPayoutModalOpen(false);
       setAmount("");
-      setAccountNumber("");
-      setAccountHolder("");
       loadWallet();
     } catch (err: any) {
-      setErrorMsg(err.message || "Terjadi kesalahan");
+      const errTxt = err.message || "Terjadi kesalahan";
+      setErrorMsg(errTxt);
+      toast.error(errTxt);
     } finally {
       setIsSubmitting(false);
     }
