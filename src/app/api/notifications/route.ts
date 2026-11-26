@@ -138,10 +138,9 @@ export const GET = withApi(async () => {
       return successResponse(mapped);
     }
 
-    return successResponse(getDefaultNotifications(profile.role));
+    return successResponse([]);
   } catch {
-    // Unauthenticated or demo fallback
-    return successResponse(getDefaultNotifications("OWNER"));
+    return successResponse([]);
   }
 });
 

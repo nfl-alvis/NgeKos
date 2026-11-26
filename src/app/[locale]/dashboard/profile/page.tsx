@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { properties } from "@/lib/data/properties";
-import { DEMO_TODAY, userProfile } from "@/lib/data/userData";
+import { userProfile } from "@/lib/data/userData";
 import { useUserOps } from "@/lib/userOpsStore";
 import { useSession } from "@/components/SessionProvider";
+import { useTenantSession } from "@/hooks/useTenantSession";
 import { formatIDR } from "@/lib/utils";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
@@ -24,12 +25,15 @@ export default function DashboardProfilePage() {
   const shellT = useTranslations("userDash");
   const ops = useUserOps();
   const { user, refresh } = useSession();
+  const { tenant } = useTenantSession();
 
-  const [name, setName] = useState(user?.name || userProfile.name);
-  const [phone, setPhone] = useState(userProfile.phone);
-  const [birthPlace, setBirthPlace] = useState(userProfile.birthPlaceId || "Bandung");
-  const [occupation, setOccupation] = useState(userProfile.occupationId || "Mahasiswa");
-  const [email, setEmail] = useState(user?.email || userProfile.email);
+  const [name, setName] = useState(user?.name || "");
+  const [phone, setPhone] = useState("");
+  const [birthPlace, setBirthPlace] = useState("");
+  const [occupation, setOccupation] = useState("");
+  const [email, setEmail] = useState(user?.email || "");
+  const [bookingCount, setBookingCount] = useState(0);
+  const [totalSpent, setTotalSpent] = useState(0);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -46,6 +50,25 @@ export default function DashboardProfilePage() {
           if (json.data.occupation) setOccupation(json.data.occupation);
           if (json.data.email) setEmail(json.data.email);
         }
+      })
+      .catch(() => {});
+
+    fetch("/api/bookings?as=applicant")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const list = Array.isArray(json?.data) ? json.data : [];
+        setBookingCount(list.length);
+      })
+      .catch(() => {});
+
+    fetch("/api/invoices")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const list = Array.isArray(json?.data) ? json.data : [];
+        const paidTotal = list
+          .filter((inv: any) => inv.status === "PAID")
+          .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.amountSnapshot || 0), 0);
+        setTotalSpent(paidTotal);
       })
       .catch(() => {});
   }, []);
@@ -222,10 +245,10 @@ export default function DashboardProfilePage() {
           <DashSection title={t("summary")} bodyClass="divide-y divide-nk-border">
             <dl className="flex flex-col">
               {[
-                { k: t("sumBookings"), v: "4" },
+                { k: t("sumBookings"), v: String(bookingCount) },
                 { k: t("sumFavorites"), v: String(favoriteCount) },
                 { k: t("sumReviews"), v: String(ops.reviews.filter((r) => r.mine).length) },
-                { k: t("sumSpent"), v: formatIDR(780000) },
+                { k: t("sumSpent"), v: formatIDR(totalSpent) },
               ].map((row) => (
                 <div key={row.k} className="flex items-center justify-between gap-3 py-3">
                   <dt className="text-sm text-nk-text-muted">{row.k}</dt>
@@ -235,18 +258,20 @@ export default function DashboardProfilePage() {
             </dl>
           </DashSection>
 
-          <DashSection title={t("tenancy")} bodyClass="p-4">
-            <StatusBadge color="green">{t("tenancyActive")}</StatusBadge>
-            <p className="mt-2 text-sm text-nk-text-muted">
-              {t("tenancyNote", { date: DEMO_TODAY.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) })}
-            </p>
-            <Link
-              href="/tenant/dashboard"
-              className="mt-4 inline-flex items-center justify-center bg-nk-accent px-4 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90"
-            >
-              {t("tenancyCta")}
-            </Link>
-          </DashSection>
+          {tenant.hasActiveBooking && (
+            <DashSection title={t("tenancy")} bodyClass="p-4">
+              <StatusBadge color="green">{t("tenancyActive")}</StatusBadge>
+              <p className="mt-2 text-sm text-nk-text-muted">
+                {tenant.propertyName} {tenant.roomNumber ? `· Kamar ${tenant.roomNumber}` : ""}
+              </p>
+              <Link
+                href={tenant.checkedInAt ? "/tenant/dashboard" : "/tenant/contract?action=checkin"}
+                className="mt-4 inline-flex items-center justify-center bg-nk-accent px-4 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90"
+              >
+                {tenant.checkedInAt ? t("tenancyCta") : "Check-in Sekarang"}
+              </Link>
+            </DashSection>
+          )}
         </aside>
       </div>
     </UserDashboardShell>

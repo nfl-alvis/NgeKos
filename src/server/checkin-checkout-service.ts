@@ -9,6 +9,8 @@ import {
   canTenantRequestCheckOut,
   canOwnerConfirmCheckOut,
 } from "@/server/checkin-checkout-policy";
+
+const TX_OPTIONS = { timeout: 20000, maxWait: 10000 };
 import { Prisma, type Profile, type RoomStatus } from "@prisma/client";
 
 export interface TenantCheckInInput {
@@ -143,7 +145,7 @@ export async function tenantCheckIn({
     });
 
     return updatedBooking;
-  });
+  }, TX_OPTIONS);
 
   return updated;
 }
@@ -250,7 +252,7 @@ export async function ownerCheckIn({
     });
 
     return updatedBooking;
-  });
+  }, TX_OPTIONS);
 
   return updated;
 }
@@ -340,7 +342,7 @@ export async function tenantRequestCheckOut({
     });
 
     return updatedBooking;
-  });
+  }, TX_OPTIONS);
 
   return updated;
 }
@@ -438,7 +440,7 @@ export async function ownerConfirmCheckOut({
     });
 
     return updatedBooking;
-  });
+  }, TX_OPTIONS);
 
   if (depositRefundAmount && depositRefundAmount > 0) {
     await creditWallet({

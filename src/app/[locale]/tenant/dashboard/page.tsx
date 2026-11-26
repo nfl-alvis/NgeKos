@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Clock,
   Coins,
+  KeyRound,
   LogIn,
   LogOut,
   MessageSquare,
@@ -453,6 +454,36 @@ export default function TenantDashboardPage() {
       ) : (
         /* Authenticated & Active Lease View */
         <>
+          {/* Check-in Reminder Banner when paid but not checked in yet */}
+          {activeBooking.status === "ACTIVE" && !activeBooking.checkedInAt && !activeBooking.checkedOutAt && (
+            <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg shrink-0 mt-0.5 bg-emerald-100 text-emerald-700">
+                  <KeyRound className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-emerald-900">
+                    {locale === "id"
+                      ? "Pembayaran Lunas — Siap Check-in ke Kamar!"
+                      : "Payment Confirmed — Ready for Check-in!"}
+                  </h3>
+                  <p className="text-xs text-emerald-800/90 mt-0.5">
+                    {locale === "id"
+                      ? "Saat Anda tiba di lokasi kos dan melakukan serah terima kunci dengan pemilik kos, klik Check-in Sekarang untuk mencatat kedatangan Anda. Dana sewa diteruskan ke pemilik H+1 setelah check-in."
+                      : "Once you arrive at the property and receive your keys, click Self Check-in to record your arrival. Rent funds are released to the owner T+1 after check-in."}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href={`/tenant/contract?action=checkin&bookingId=${activeBooking.id}`}
+                className="inline-flex w-full sm:w-auto shrink-0 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
+              >
+                <KeyRound className="size-3.5" />
+                {locale === "id" ? "Check-in Sekarang" : "Self Check-in"}
+              </Link>
+            </div>
+          )}
+
           {/* Lease Expiration Notice Banner (H-30 & H-7) */}
           {daysLeft <= 30 && !activeBooking.checkedOutAt && (
             <div
@@ -564,7 +595,16 @@ export default function TenantDashboardPage() {
                 </dd>
                 <dt className="sr-only">{t("quickActions")}</dt>
               </dl>
-              <div className="flex shrink-0 flex-row gap-2 border-t border-nk-border pt-3 sm:w-40 sm:flex-col sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+              <div className="flex shrink-0 flex-row gap-2 border-t border-nk-border pt-3 sm:w-44 sm:flex-col sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+                {activeBooking.status === "ACTIVE" && !activeBooking.checkedInAt && !activeBooking.checkedOutAt && (
+                  <Link
+                    href={`/tenant/contract?action=checkin&bookingId=${activeBooking.id}`}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
+                  >
+                    <KeyRound className="size-3.5" />
+                    {locale === "id" ? "Check-in Sekarang" : "Self Check-in"}
+                  </Link>
+                )}
                 <Link
                   href={propertySlug ? `/kost/${propertySlug}` : "/tenant/property"}
                   className="inline-flex items-center justify-center rounded-lg border border-nk-border bg-nk-surface px-3 py-2 text-xs font-medium text-nk-text transition-colors hover:bg-nk-warm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"

@@ -35,6 +35,9 @@ export interface TenantData {
   ownerEmail: string;
   isDemo: boolean;
   hasActiveBooking: boolean;
+  bookingCode?: string;
+  checkedInAt?: string | null;
+  checkedOutAt?: string | null;
 }
 
 import { ENABLE_TENANT_DUMMIES, dummyTenants } from "@/lib/data/tenantDummies";
@@ -71,6 +74,9 @@ const initialTenantData: TenantData = ENABLE_TENANT_DUMMIES
       ownerEmail: ownerContact.email,
       isDemo: true,
       hasActiveBooking: true,
+      bookingCode: "",
+      checkedInAt: null,
+      checkedOutAt: null,
     }
   : {
       id: "",
@@ -100,6 +106,9 @@ const initialTenantData: TenantData = ENABLE_TENANT_DUMMIES
       ownerEmail: "",
       isDemo: false,
       hasActiveBooking: false,
+      bookingCode: "",
+      checkedInAt: null,
+      checkedOutAt: null,
     };
 
 export function useTenantSession() {
@@ -133,42 +142,45 @@ export function useTenantSession() {
           const propSlug =
             activeBooking.property?.slug ||
             activeBooking.propertyId ||
-            fallbackProperty.slug;
+            "";
 
-          const prop = getPropertyBySlug(propSlug) || {
-            ...fallbackProperty,
-            name: activeBooking.property?.name || fallbackProperty.name,
-            address: activeBooking.property?.address || fallbackProperty.address,
-            city: activeBooking.property?.city || fallbackProperty.city,
-            slug: propSlug,
+          const staticProp = propSlug ? getPropertyBySlug(propSlug) : undefined;
+          const prop: Property = {
+            ...(staticProp ?? fallbackProperty),
+            id: activeBooking.property?.id || staticProp?.id || activeBooking.propertyId || "",
+            name: activeBooking.property?.name || staticProp?.name || "Kost",
+            address: activeBooking.property?.address || staticProp?.address || "-",
+            city: activeBooking.property?.city || staticProp?.city || "",
+            slug: propSlug || staticProp?.slug || "",
           };
 
           const sDate = typeof activeBooking.startDate === "string"
             ? activeBooking.startDate.slice(0, 10)
-            : contractInfo.startDate;
+            : "";
 
           const dMonths = Number(activeBooking.durationMonths) || 1;
-          const endD = new Date(sDate);
+          const endD = sDate ? new Date(sDate) : new Date();
           endD.setMonth(endD.getMonth() + dMonths);
           const eDate = endD.toISOString().slice(0, 10);
 
           setData({
             id: activeBooking.id,
+            bookingCode: activeBooking.code || activeBooking.id,
             name: user?.name || activeBooking.applicant?.fullName || "",
             email: user?.email || activeBooking.applicant?.email || "",
             phone: activeBooking.applicant?.phone || "",
             roomNumber: activeBooking.roomUnit?.number || activeBooking.roomNumber || "-",
-            roomType: activeBooking.roomType?.name || tenantRoomInfo.type,
+            roomType: activeBooking.roomType?.name || "Kamar",
             floor: 1,
             sizeM2: activeBooking.roomType?.sizeM2 ?? tenantRoomInfo.sizeM2,
             monthlyRent: Number(activeBooking.monthlyPriceSnapshot) || 0,
             startDate: sDate,
             endDate: eDate,
             durationMonths: dMonths,
-            depositAmount: Number(activeBooking.depositSnapshot) || (prop.depositAmount ?? 0),
+            depositAmount: Number(activeBooking.depositSnapshot) || 0,
             depositInfo: activeBooking.depositSnapshot
               ? `DP Rp ${Number(activeBooking.depositSnapshot).toLocaleString("id-ID")}`
-              : prop.depositInfo,
+              : "",
             noticePeriodId: contractInfo.noticePeriodId,
             noticePeriodEn: contractInfo.noticePeriodEn,
             joinedAt: sDate,
@@ -177,24 +189,35 @@ export function useTenantSession() {
             propertyAddress: prop.address,
             propertyCity: prop.city,
             property: prop,
-            ownerName: activeBooking.property?.owner?.fullName || ownerContact.name,
-            ownerPhone: activeBooking.property?.owner?.phone || ownerContact.phone,
-            ownerEmail: ownerContact.email,
+            ownerName: activeBooking.property?.owner?.fullName || "",
+            ownerPhone: activeBooking.property?.owner?.phone || "",
+            ownerEmail: "",
             isDemo: false,
             hasActiveBooking: activeBooking.status === "ACTIVE",
+            checkedInAt: activeBooking.checkedInAt || null,
+            checkedOutAt: activeBooking.checkedOutAt || null,
           });
         } else if (user && isMounted) {
-          // User login tetapi belum ada booking di DB: gunakan nama user asli
-          setData((prev) => ({
-            ...prev,
-            name: user.name || prev.name,
-            email: user.email || prev.email,
-            isDemo: true,
-            hasActiveBooking: (user.email === primaryTenant.email && ENABLE_TENANT_DUMMIES) || prev.hasActiveBooking,
-          }));
+          // User login tetapi belum ada booking di DB: biarkan kosong tanpa mock kos otomatis
+          setData({
+            ...initialTenantData,
+            name: user.name || "",
+            email: user.email || "",
+            isDemo: false,
+            hasActiveBooking: false,
+            propertyName: "",
+            propertySlug: "",
+            propertyAddress: "",
+            propertyCity: "",
+            roomNumber: "",
+            roomType: "",
+            bookingCode: "",
+            checkedInAt: null,
+            checkedOutAt: null,
+          });
         }
       } catch {
-        // Biarkan fallback ke default demo
+        // Biarkan state default kosong bila gagal memuat booking
       } finally {
         if (isMounted) setLoading(false);
       }

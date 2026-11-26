@@ -6,6 +6,7 @@
    aktivitas supaya riwayat bertambah tanpa backend. */
 
 import { useSyncExternalStore } from "react";
+import { ENABLE_TENANT_DUMMIES } from "@/lib/data/tenantDummies";
 
 const STORAGE_KEY = "ngekos.user-activity";
 
@@ -31,15 +32,17 @@ export interface ActivityItem {
 }
 
 /** tanggal booking demo dibuat → seed riwayat sinkron dengan entities.bookings */
-export const seedActivity: ActivityItem[] = [
-  { id: "sa-1", type: "favorite", titleId: "Ditambahkan ke favorit", titleEn: "Added to favorites", subject: "Kost Putri Mawar", at: "2026-09-02T19:40:00" },
-  { id: "sa-2", type: "review", titleId: "Ulasan dikirim", titleEn: "Review submitted", subject: "Kost Bougenville", at: "2026-09-01T14:05:00" },
-  { id: "sa-3", type: "status", titleId: "Booking menunggu konfirmasi pemilik", titleEn: "Booking awaiting owner confirmation", subject: "Kost Kenanga", at: "2026-08-31T08:40:00" },
-  { id: "sa-4", type: "payment", titleId: "Pembayaran pertama berhasil", titleEn: "First payment successful", subject: "Kost Bougenville", at: "2026-08-15T09:05:00" },
-  { id: "sa-5", type: "booking", titleId: "Booking dibuat", titleEn: "Booking created", subject: "Kost Griya Cemara", at: "2026-08-12T09:14:00" },
-  { id: "sa-6", type: "refund", titleId: "Refund diajukan", titleEn: "Refund requested", subject: "Kost Pangeran Diponegoro", at: "2026-08-05T11:02:00" },
-  { id: "sa-7", type: "info", titleId: "Pengingat jatuh tempo disetel", titleEn: "Due-date reminder set", subject: "Kost Griya Cemara", at: "2026-07-28T20:10:00" },
-];
+export const seedActivity: ActivityItem[] = ENABLE_TENANT_DUMMIES
+  ? [
+      { id: "sa-1", type: "favorite", titleId: "Ditambahkan ke favorit", titleEn: "Added to favorites", subject: "Kost Putri Mawar", at: "2026-09-02T19:40:00" },
+      { id: "sa-2", type: "review", titleId: "Ulasan dikirim", titleEn: "Review submitted", subject: "Kost Bougenville", at: "2026-09-01T14:05:00" },
+      { id: "sa-3", type: "status", titleId: "Booking menunggu konfirmasi pemilik", titleEn: "Booking awaiting owner confirmation", subject: "Kost Kenanga", at: "2026-08-31T08:40:00" },
+      { id: "sa-4", type: "payment", titleId: "Pembayaran pertama berhasil", titleEn: "First payment successful", subject: "Kost Bougenville", at: "2026-08-15T09:05:00" },
+      { id: "sa-5", type: "booking", titleId: "Booking dibuat", titleEn: "Booking created", subject: "Kost Griya Cemara", at: "2026-08-12T09:14:00" },
+      { id: "sa-6", type: "refund", titleId: "Refund diajukan", titleEn: "Refund requested", subject: "Kost Pangeran Diponegoro", at: "2026-08-05T11:02:00" },
+      { id: "sa-7", type: "info", titleId: "Pengingat jatuh tempo disetel", titleEn: "Due-date reminder set", subject: "Kost Griya Cemara", at: "2026-07-28T20:10:00" },
+    ]
+  : [];
 
 const sorted = <T extends { at: string }>(rows: T[]) =>
   [...rows].sort((a, b) => b.at.localeCompare(a.at));

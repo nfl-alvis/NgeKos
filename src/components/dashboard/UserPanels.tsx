@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowRight, Check, Heart, Star } from "lucide-react";
+import { ArrowRight, Check, Heart, KeyRound, Star } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -424,11 +424,16 @@ export function ActiveKostCard() {
     return null;
   }
 
+  const needsCheckIn = !tenant.checkedInAt && !tenant.checkedOutAt;
+
   return (
     <section className="flex flex-col gap-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 bg-[#E9F4EC]">
       <div className="flex items-center justify-between px-4 pb-1 pt-3">
         <h2 className="text-sm font-semibold text-nk-text">{t("title")}</h2>
-        <StatusBadge color="green">{t("status")}</StatusBadge>
+        <div className="flex items-center gap-2">
+          {needsCheckIn && <StatusBadge color="blue">Menunggu Check-in</StatusBadge>}
+          <StatusBadge color="green">{t("status")}</StatusBadge>
+        </div>
       </div>
       <div className="flex flex-1 flex-col gap-4 rounded-lg bg-nk-surface p-4 ring-1 ring-foreground/10 sm:flex-row sm:items-center">
         <Image
@@ -445,13 +450,24 @@ export function ActiveKostCard() {
           </p>
           <p className="mt-1 text-xs text-nk-text-muted">{tenant.propertyAddress}</p>
         </div>
-        <Link
-          href="/tenant/dashboard"
-          className="inline-flex shrink-0 items-center justify-center gap-1.5 bg-nk-accent px-4 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
-        >
-          {t("cta")}
-          <ArrowRight className="size-4" aria-hidden="true" />
-        </Link>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {needsCheckIn && (
+            <Link
+              href={`/tenant/contract?action=checkin${tenant.id ? `&bookingId=${tenant.id}` : ""}`}
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+            >
+              <KeyRound className="size-4" aria-hidden="true" />
+              Check-in Sekarang
+            </Link>
+          )}
+          <Link
+            href="/tenant/dashboard"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 bg-nk-accent px-4 py-2.5 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nk-accent"
+          >
+            {t("cta")}
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
     </section>
   );

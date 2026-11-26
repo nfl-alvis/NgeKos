@@ -10,8 +10,18 @@ import { ApiError } from "@/server/http";
 import type { BookingCreateInput } from "@/server/validation";
 
 const bookingInclude = {
-  property: { select: { id: true, slug: true, name: true, city: true, ownerId: true } },
-  roomType: { select: { id: true, name: true } },
+  property: {
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      city: true,
+      address: true,
+      ownerId: true,
+      owner: { select: { id: true, fullName: true, phone: true } },
+    },
+  },
+  roomType: { select: { id: true, name: true, sizeM2: true } },
   roomUnit: { select: { id: true, number: true, status: true } },
   applicant: { select: { id: true, fullName: true, email: true, phone: true } },
   history: { orderBy: { createdAt: "asc" as const } },

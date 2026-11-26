@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "@/hooks/use-toast";
 import { useLocale, useTranslations } from "next-intl";
 import {
   AlertCircle,
@@ -130,6 +131,7 @@ export default function TenantContractPage() {
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [checkInNotes, setCheckInNotes] = useState("");
   const [isSubmittingCheckIn, setIsSubmittingCheckIn] = useState(false);
+  const autoOpenedCheckInRef = useRef(false);
 
   // Check-Out state
   const [checkOutOpen, setCheckOutOpen] = useState(false);
@@ -163,11 +165,13 @@ export default function TenantContractPage() {
     }
   }, []);
 
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback((preserveNotice?: boolean | unknown) => {
     setIsFetching(true);
     setErrorMessage(null);
-    setActionSuccessMsg(null);
-    setActionErrorMsg(null);
+    if (preserveNotice !== true) {
+      setActionSuccessMsg(null);
+      setActionErrorMsg(null);
+    }
     setRefreshKey((k) => k + 1);
   }, []);
 
@@ -189,14 +193,25 @@ export default function TenantContractPage() {
       }
       setCheckInOpen(false);
       setCheckInNotes("");
-      setActionSuccessMsg(
+      const successMsg =
         locale === "id"
           ? "Check-in berhasil dikonfirmasi! Selamat menikmati kamar Anda."
-          : "Check-in confirmed successfully! Welcome to your room."
-      );
-      handleRefresh();
+          : "Check-in confirmed successfully! Welcome to your room.";
+      setActionSuccessMsg(successMsg);
+      toast({
+        title: locale === "id" ? "Check-in berhasil" : "Check-in confirmed",
+        description: successMsg,
+        variant: "success",
+      });
+      handleRefresh(true);
     } catch (err) {
-      setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat check-in.");
+      const errMsg = err instanceof Error ? err.message : "Terjadi kesalahan saat check-in.";
+      setActionErrorMsg(errMsg);
+      toast({
+        title: locale === "id" ? "Gagal melakukan check-in" : "Check-in failed",
+        description: errMsg,
+        variant: "destructive",
+      });
     } finally {
       setIsSubmittingCheckIn(false);
     }
@@ -235,7 +250,7 @@ export default function TenantContractPage() {
           ? "Pengajuan check-out berhasil dikirim! Menunggu konfirmasi dan inspeksi dari pemilik kos."
           : "Checkout request submitted successfully! Awaiting owner inspection."
       );
-      handleRefresh();
+      handleRefresh(true);
     } catch (err) {
       setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat mengajukan check-out.");
     } finally {
@@ -355,10 +370,33 @@ export default function TenantContractPage() {
             : [];
           setBookings(rawBookings);
 
-          const active = rawBookings.find(
-            (b) => b.status === "ACTIVE" || b.status === "APPROVED_AWAITING_PAYMENT"
-          );
+          const searchParams =
+            typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+          const requestedBookingId = searchParams?.get("bookingId");
+          const requestedAction = searchParams?.get("action");
+
+          const active =
+            (requestedBookingId
+              ? rawBookings.find(
+                  (b) =>
+                    (b.id === requestedBookingId || b.code === requestedBookingId) &&
+                    (b.status === "ACTIVE" || b.status === "APPROVED_AWAITING_PAYMENT")
+                )
+              : undefined) ||
+            rawBookings.find((b) => b.status === "ACTIVE") ||
+            rawBookings.find((b) => b.status === "APPROVED_AWAITING_PAYMENT");
           setActiveBooking(active || null);
+
+          if (
+            requestedAction === "checkin" &&
+            !autoOpenedCheckInRef.current &&
+            active?.status === "ACTIVE" &&
+            !active.checkedInAt &&
+            !active.checkedOutAt
+          ) {
+            autoOpenedCheckInRef.current = true;
+            setCheckInOpen(true);
+          }
         } else {
           setBookings([]);
           setActiveBooking(null);

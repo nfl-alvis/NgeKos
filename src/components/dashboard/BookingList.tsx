@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { bookings as staticBookings } from "@/lib/data/entities";
 import type { Booking, BookingStatus } from "@/lib/data/types";
 import { formatIDR, cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -27,6 +26,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Receipt,
+  KeyRound,
   User,
   Phone,
   Mail,
@@ -56,6 +56,7 @@ function mapDbBooking(b: any): Booking {
 
   return {
     id: b.code || b.id,
+    code: b.code || undefined,
     propertySlug: b.property?.slug || b.propertyId || "",
     propertyName: b.property?.name || "Kost",
     city: b.property?.city || "Indonesia",
@@ -71,6 +72,8 @@ function mapDbBooking(b: any): Booking {
     payDeadlineMin: 1440,
     usesDp: Boolean(b.depositSnapshot),
     monthlyPrice: Number(b.monthlyPriceSnapshot || b.roomType?.pricePerMonth || 0),
+    checkedInAt: b.checkedInAt || null,
+    checkedOutAt: b.checkedOutAt || null,
     timeline: [
       { at: typeof b.createdAt === "string" ? b.createdAt.slice(0, 10) : "", stage: "diajukan" },
       ...(b.status === "APPROVED_AWAITING_PAYMENT" || b.status === "ACTIVE"
@@ -500,6 +503,33 @@ export default function BookingList() {
                     <span>Lanjutkan Pembayaran Sekarang</span>
                   </button>
                 )}
+                {selectedBooking.status === "active" && !selectedBooking.checkedInAt && !selectedBooking.checkedOutAt && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const targetId = selectedBooking.id;
+                      setSelectedBooking(null);
+                      router.push(`/tenant/contract?action=checkin&bookingId=${targetId}`);
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-emerald-700 active:scale-[0.99]"
+                  >
+                    <KeyRound className="size-4" />
+                    <span>Check-in Sekarang</span>
+                  </button>
+                )}
+                {selectedBooking.status === "active" && selectedBooking.checkedInAt && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedBooking(null);
+                      router.push("/tenant/contract");
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-nk-accent px-4 py-3 text-sm font-medium text-nk-text-inverse transition-opacity hover:opacity-90 active:scale-[0.99]"
+                  >
+                    <ArrowRight className="size-4" />
+                    <span>Buka Kontrak & Status Hunian</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setSelectedBooking(null)}
@@ -609,10 +639,19 @@ function BookingCardItem({
           </dd>
         </div>
         <div className="rounded-lg border border-nk-border bg-nk-bg p-3">
-          <dt className="text-xs text-nk-text-muted">Status Pembayaran</dt>
-          <dd className="mt-1.5">
+          <dt className="text-xs text-nk-text-muted">Status Pembayaran & Hunian</dt>
+          <dd className="mt-1.5 flex flex-wrap items-center gap-1.5">
             {booking.status === "active" ? (
-              <StatusBadge color="green">Lunas</StatusBadge>
+              <>
+                <StatusBadge color="green">Lunas</StatusBadge>
+                {booking.checkedOutAt ? (
+                  <StatusBadge color="gray">Sudah Check-out</StatusBadge>
+                ) : booking.checkedInAt ? (
+                  <StatusBadge color="green">Sudah Check-in</StatusBadge>
+                ) : (
+                  <StatusBadge color="blue">Belum Check-in</StatusBadge>
+                )}
+              </>
             ) : booking.status === "approved-awaiting-payment" ? (
               <StatusBadge color="yellow">Menunggu Pembayaran</StatusBadge>
             ) : booking.status === "pending" ? (
@@ -663,6 +702,28 @@ function BookingCardItem({
             >
               <CreditCard className="size-3.5" />
               <span>Bayar Sekarang</span>
+            </button>
+          )}
+
+          {booking.status === "active" && !booking.checkedInAt && !booking.checkedOutAt && (
+            <button
+              type="button"
+              onClick={() => router.push(`/tenant/contract?action=checkin&bookingId=${booking.id}`)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700 active:scale-[0.99]"
+            >
+              <KeyRound className="size-3.5" />
+              <span>Check-in Sekarang</span>
+            </button>
+          )}
+
+          {booking.status === "active" && booking.checkedInAt && (
+            <button
+              type="button"
+              onClick={() => router.push("/tenant/contract")}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800 transition-colors hover:bg-emerald-100"
+            >
+              <ArrowRight className="size-3.5" />
+              <span>Lihat Kontrak</span>
             </button>
           )}
 
@@ -720,7 +781,7 @@ function getStatusLabel(status: BookingStatus): string {
 
 export function CompactBookingList({ limit = 3 }: { limit?: number }) {
   const router = useRouter();
-  const [items, setItems] = useState<Booking[]>(staticBookings.slice(0, limit));
+  const [items, setItems] = useState<Booking[]>([]);
 
   useEffect(() => {
     fetch("/api/bookings?as=applicant")
@@ -733,9 +794,7 @@ export function CompactBookingList({ limit = 3 }: { limit?: number }) {
           : null;
         if (rawList) {
           const dbItems = rawList.map(mapDbBooking);
-          const existingIds = new Set(dbItems.map((d: Booking) => d.id));
-          const merged = [...dbItems, ...staticBookings.filter((s) => !existingIds.has(s.id))];
-          setItems(merged.slice(0, limit));
+          setItems(dbItems.slice(0, limit));
         }
       })
       .catch(() => {});

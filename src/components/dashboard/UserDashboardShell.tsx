@@ -2,12 +2,11 @@
 
 import { useLocale } from "next-intl";
 import AdminPageShell from "@/components/admin/AdminPageShell";
-import { DEMO_TODAY } from "@/lib/data/userData";
 
 /**
  * Kerangka seragam halaman /dashboard* (user) dan /tenant/* (penyewa) -
  * reuse AdminPageShell (sidebar per role + judul + toast in-place), lalu
- * menambah baris sapaan + tanggal demo.
+ * menambah baris sapaan + tanggal hari ini.
  */
 export default function UserDashboardShell({
   role = "user",
@@ -27,8 +26,8 @@ export default function UserDashboardShell({
     <AdminPageShell role={role} title={title} actions={actions}>
       <div className="-mt-3 mb-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         {greeting && <p className="text-sm font-medium text-nk-text">{greeting}</p>}
-        <p className="text-sm text-nk-text-muted">
-          {DEMO_TODAY.toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
+        <p className="text-sm text-nk-text-muted" suppressHydrationWarning>
+          {new Date().toLocaleDateString(locale === "id" ? "id-ID" : "en-GB", {
             weekday: "long",
             day: "numeric",
             month: "long",

@@ -32,7 +32,7 @@ export default function UserDashboardPage() {
   const ops = useUserOps();
   const activity = useUserActivity();
 
-  const firstName = (user?.name ?? "Budi Santoso").split(" ")[0];
+  const firstName = (user?.name ?? "Pengguna").split(" ")[0];
   const [totalBookings, setTotalBookings] = useState(bookings.length);
   const [openBookings, setOpenBookings] = useState(
     bookings.filter((b) => b.status === "pending" || b.status === "approved-awaiting-payment").length

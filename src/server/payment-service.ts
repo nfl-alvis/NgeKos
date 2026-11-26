@@ -423,7 +423,7 @@ export async function settleSubscriptionPayment(
     });
 
     return { alreadySettled: false, subscriptionId };
-  });
+  }, { timeout: 20000, maxWait: 10000 });
 }
 
 /**
@@ -469,7 +469,7 @@ export async function failBookingPayment(
       description: `Payment failed for booking ${bookingId} (${status})`,
       metadata: { bookingId, orderId, status },
     });
-  });
+  }, { timeout: 20000, maxWait: 10000 });
 }
 
 /**
@@ -499,5 +499,5 @@ export async function failSubscriptionPayment(
         metadata: { orderId, status, ownerId: payment.recordedById },
       });
     }
-  });
+  }, { timeout: 20000, maxWait: 10000 });
 }

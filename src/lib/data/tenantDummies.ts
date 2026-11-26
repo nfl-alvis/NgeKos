@@ -25,7 +25,7 @@ import type {
 } from "./userData";
 
 /** Flag toggle global: set ke false untuk menonaktifkan seluruh data dummy */
-export const ENABLE_TENANT_DUMMIES = true;
+export const ENABLE_TENANT_DUMMIES = false;
 
 /* ===== 1. DAFTAR PENYEWA (TENANTS) ===== */
 export const dummyTenants: Tenant[] = [
