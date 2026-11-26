@@ -97,7 +97,7 @@ function getDefaultNotifications(role?: string) {
       body: "Citra Lestari Dewi paid the September 2026 invoice (Rp1,350,000).",
       at: new Date(now - 1000 * 60 * 120).toISOString(),
       read: false,
-      linkUrl: "/owner/finance",
+      linkUrl: "/owner/wallet",
     },
     {
       id: "n-3",

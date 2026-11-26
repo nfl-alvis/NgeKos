@@ -26,9 +26,25 @@ const h = vi.hoisted(() => {
 
   const mockPayment = {
     findUnique: vi.fn(),
+    findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     upsert: vi.fn(),
+  };
+
+  const mockWallet = {
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+  };
+
+  const mockWalletTransaction = {
+    findFirst: vi.fn(),
+    create: vi.fn(),
+  };
+
+  const mockNotification = {
+    create: vi.fn(),
   };
 
   const mockRoomUnit = {
@@ -66,6 +82,9 @@ const h = vi.hoisted(() => {
     subscriptionPlan: mockSubscriptionPlan,
     profile: mockProfile,
     auditLog: mockAuditLog,
+    wallet: mockWallet,
+    walletTransaction: mockWalletTransaction,
+    notification: mockNotification,
   };
 
   return {
@@ -78,6 +97,9 @@ const h = vi.hoisted(() => {
     mockSubscriptionPlan,
     mockProfile,
     mockAuditLog,
+    mockWallet,
+    mockWalletTransaction,
+    mockNotification,
   };
 });
 
@@ -845,6 +867,119 @@ describe("Midtrans Sandbox Staging Integration & Secure Demo Mode", () => {
       expect(res.status).toBe(200);
       expect(json.data.settled).toBe(true);
       expect(json.data.transactionStatus).toBe("settlement");
+    });
+
+    it("resolves pending Midtrans order via bookingId, credits owner escrow even with DP/depositSnapshot, and creates owner + seeker notifications", async () => {
+      await loginAs({
+        id: TEST_USER_ID,
+        email: "seeker@ngekost.id",
+        role: "seeker",
+        fullName: "Penyewa Asli",
+      });
+      const orderId = `BOOK-BK-DP01-${Date.now()}`;
+
+      h.mockBooking.findFirst.mockResolvedValue({
+        id: TEST_BOOKING_ID,
+        code: "BK-DP01",
+        status: "APPROVED_AWAITING_PAYMENT",
+        applicantId: TEST_USER_ID,
+        property: { ownerId: TEST_OWNER_ID },
+      });
+
+      h.mockPayment.findMany.mockResolvedValue([
+        { midtransOrderId: orderId, snapToken: "snap-dp-1" },
+      ]);
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          status_code: "200",
+          status_message: "Success",
+          transaction_id: "tx-dp-123",
+          order_id: orderId,
+          gross_amount: "850000.00",
+          payment_type: "qris",
+          transaction_status: "settlement",
+        }),
+      });
+
+      h.mockBooking.findUnique.mockResolvedValue({
+        id: TEST_BOOKING_ID,
+        code: "BK-DP01",
+        status: "APPROVED_AWAITING_PAYMENT",
+        roomUnitId: "unit-101",
+        propertyId: "prop-1",
+        roomTypeId: "rt-1",
+        applicantId: TEST_USER_ID,
+        depositSnapshot: new Prisma.Decimal(850000),
+        checkedInAt: null,
+        applicant: { fullName: "Penyewa Asli" },
+        property: { ownerId: TEST_OWNER_ID, name: "Kost Putri Bu Sastro" },
+      });
+
+      h.mockRoomUnit.update.mockResolvedValue({});
+      h.mockPayment.findUnique.mockResolvedValue({ id: "pay-dp-1", status: "PENDING" });
+      h.mockPayment.update.mockResolvedValue({ id: "pay-dp-1", status: "VERIFIED" });
+      h.mockWallet.findUnique.mockResolvedValue({ id: "wallet-owner-1", balance: 0, heldBalance: 0 });
+      h.mockWalletTransaction.findFirst.mockResolvedValue(null);
+      h.mockWallet.update.mockResolvedValue({ id: "wallet-owner-1", heldBalance: 850000 });
+      h.mockWalletTransaction.create.mockResolvedValue({ id: "wtx-1" });
+      h.mockNotification.create.mockResolvedValue({ id: "notif-1" });
+      h.mockAuditLog.create.mockResolvedValue({ id: "audit-dp" });
+
+      const req = new Request("http://localhost:3000/api/payments/midtrans/status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "http://localhost:3000",
+        },
+        body: JSON.stringify({ bookingId: TEST_BOOKING_ID }),
+      });
+
+      const res = await statusPOST(req);
+      const json = await res.json();
+      expect(res.status).toBe(200);
+      expect(json.data.settled).toBe(true);
+      expect(json.data.orderId).toBe(orderId);
+
+      // Owner wallet escrow MUST receive full 850000 even when depositSnapshot == 850000
+      expect(h.mockWallet.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "wallet-owner-1" },
+          data: { heldBalance: { increment: 850000 } },
+        })
+      );
+      expect(h.mockWalletTransaction.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            walletId: "wallet-owner-1",
+            amount: 850000,
+            type: "EARNING_HOLD",
+            status: "PENDING",
+            referenceId: TEST_BOOKING_ID,
+          }),
+        })
+      );
+
+      // Persistent in-app notifications for BOTH owner and seeker
+      expect(h.mockNotification.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            profileId: TEST_OWNER_ID,
+            type: "PAYMENT",
+            linkUrl: "/owner/wallet",
+          }),
+        })
+      );
+      expect(h.mockNotification.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            profileId: TEST_USER_ID,
+            type: "PAYMENT",
+            linkUrl: `/dashboard/bookings/${TEST_BOOKING_ID}`,
+          }),
+        })
+      );
     });
   });
 });

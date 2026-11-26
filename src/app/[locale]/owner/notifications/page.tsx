@@ -30,9 +30,14 @@ export default function OwnerNotificationsPage() {
             id: n.id,
             title: n.title,
             body: n.body,
-            at: typeof n.createdAt === "string" ? n.createdAt : new Date().toISOString(),
+            at:
+              typeof n.at === "string"
+                ? n.at
+                : typeof n.createdAt === "string"
+                  ? n.createdAt
+                  : new Date().toISOString(),
             type: (n.type ? n.type.toLowerCase() : "booking") as "booking" | "payment" | "subscription",
-            read: Boolean(n.readAt),
+            read: typeof n.read === "boolean" ? n.read : Boolean(n.readAt),
           }));
           setList(mapped);
           const alreadyReadIds = mapped.filter((m) => m.read).map((m) => m.id);

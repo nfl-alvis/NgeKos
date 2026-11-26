@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/server/http";
 import { recordAuditLog } from "@/server/audit-service";
+import { isTelegramConfigured, sendTelegramMessage } from "@/server/telegram-service";
 
 export interface SettleBookingPaymentInput {
   bookingId: string;
@@ -30,11 +31,12 @@ export interface SettleBookingPaymentResult {
 export async function settleBookingPayment(
   input: SettleBookingPaymentInput,
 ): Promise<SettleBookingPaymentResult> {
-  return prisma.$transaction(async (tx) => {
+  const txResult = await prisma.$transaction(async (tx) => {
     const booking = await tx.booking.findUnique({
       where: { id: input.bookingId },
       select: {
         id: true,
+        code: true,
         status: true,
         roomUnitId: true,
         propertyId: true,
@@ -42,13 +44,14 @@ export async function settleBookingPayment(
         applicantId: true,
         depositSnapshot: true,
         checkedInAt: true,
+        applicant: { select: { fullName: true } },
         property: { select: { ownerId: true, name: true } },
       },
     });
     if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking not found");
 
     if (booking.status === "ACTIVE") {
-      return { alreadySettled: true, bookingId: booking.id };
+      return { alreadySettled: true, bookingId: booking.id, telegramInfo: null };
     }
 
     let roomUnitId = booking.roomUnitId;
@@ -93,86 +96,140 @@ export async function settleBookingPayment(
     });
 
     let paymentId = "unknown";
-    try {
-      const existingPayment = await tx.payment.findUnique({
-        where: { midtransOrderId: input.midtransOrderId },
-        select: { id: true, status: true },
+    const existingPayment = await tx.payment.findUnique({
+      where: { midtransOrderId: input.midtransOrderId },
+      select: { id: true, status: true },
+    });
+
+    if (!existingPayment) {
+      const createdPayment = await tx.payment.create({
+        data: {
+          bookingId: booking.id,
+          method: "MIDTRANS",
+          status: "VERIFIED",
+          amount: new Prisma.Decimal(Math.round(input.amount)),
+          reference: input.midtransOrderId,
+          midtransOrderId: input.midtransOrderId,
+          snapToken: input.snapToken ?? null,
+          paymentType: input.paymentType ?? null,
+          paidAt: settledAt,
+          settlementAt: settledAt,
+          verifiedAt: settledAt,
+        },
       });
-
-      if (!existingPayment) {
-        const createdPayment = await tx.payment.create({
-          data: {
-            bookingId: booking.id,
-            method: "MIDTRANS",
-            status: "VERIFIED",
-            amount: new Prisma.Decimal(Math.round(input.amount)),
-            reference: input.midtransOrderId,
-            midtransOrderId: input.midtransOrderId,
-            snapToken: input.snapToken ?? null,
-            paymentType: input.paymentType ?? null,
-            paidAt: settledAt,
-            settlementAt: settledAt,
-            verifiedAt: settledAt,
-          },
-        });
-        paymentId = createdPayment.id;
-      } else {
-        await tx.payment.update({
-          where: { midtransOrderId: input.midtransOrderId },
-          data: {
-            status: "VERIFIED",
-            paymentType: input.paymentType ?? undefined,
-            paidAt: settledAt,
-            settlementAt: settledAt,
-            verifiedAt: settledAt,
-          },
-        });
-        paymentId = existingPayment.id;
-      }
-    } catch (payErr) {
-      console.warn("[settleBookingPayment] payment table update skipped due to pending migration:", payErr);
+      paymentId = createdPayment.id;
+    } else {
+      await tx.payment.update({
+        where: { midtransOrderId: input.midtransOrderId },
+        data: {
+          status: "VERIFIED",
+          paymentType: input.paymentType ?? undefined,
+          paidAt: settledAt,
+          settlementAt: settledAt,
+          verifiedAt: settledAt,
+        },
+      });
+      paymentId = existingPayment.id;
     }
 
-    // Escrow: Record rental amount in owner's wallet as heldBalance
-    if (booking.property?.ownerId) {
-      try {
-        const ownerId = booking.property.ownerId;
-        let ownerWallet = await tx.wallet.findUnique({ where: { profileId: ownerId } });
-        if (!ownerWallet) {
-          ownerWallet = await tx.wallet.create({
-            data: { profileId: ownerId, balance: 0, heldBalance: 0 },
-          });
-        }
+    // Escrow: Record paid amount in owner's wallet as heldBalance (idempotent per booking)
+    const escrowAmount = Math.max(0, Math.round(Number(input.amount || 0)));
+    if (
+      escrowAmount > 0 &&
+      booking.property?.ownerId &&
+      tx.wallet &&
+      tx.walletTransaction
+    ) {
+      const ownerId = booking.property.ownerId;
+      let ownerWallet = await tx.wallet.findUnique({ where: { profileId: ownerId } });
+      if (!ownerWallet) {
+        ownerWallet = await tx.wallet.create({
+          data: { profileId: ownerId, balance: 0, heldBalance: 0 },
+        });
+      }
 
-        const depositAmount = Number(booking.depositSnapshot || 0);
-        const rentAmount = Math.max(0, input.amount - depositAmount);
-
-        if (rentAmount > 0) {
-          const payoutEligibleAt = booking.checkedInAt
-            ? new Date(new Date(booking.checkedInAt).getTime() + 24 * 60 * 60 * 1000)
-            : null;
-
-          await tx.wallet.update({
-            where: { id: ownerWallet.id },
-            data: { heldBalance: { increment: rentAmount } },
-          });
-
-          await tx.walletTransaction.create({
-            data: {
+      const existingHold = tx.walletTransaction.findFirst
+        ? await tx.walletTransaction.findFirst({
+            where: {
               walletId: ownerWallet.id,
-              amount: rentAmount,
-              type: "EARNING_HOLD",
-              status: "PENDING",
               referenceId: booking.id,
-              description: `Uang sewa termin 1 (${booking.property.name}) - Menunggu Check-in`,
-              payoutEligibleAt,
+              type: "EARNING_HOLD",
             },
-          });
-        }
-      } catch (escrowErr) {
-        console.warn("[settleBookingPayment] escrow recording error:", escrowErr);
+            select: { id: true },
+          })
+        : null;
+
+      if (!existingHold) {
+        const payoutEligibleAt = booking.checkedInAt
+          ? new Date(new Date(booking.checkedInAt).getTime() + 24 * 60 * 60 * 1000)
+          : null;
+
+        await tx.wallet.update({
+          where: { id: ownerWallet.id },
+          data: { heldBalance: { increment: escrowAmount } },
+        });
+
+        const isDpPayment =
+          booking.depositSnapshot !== null &&
+          booking.depositSnapshot !== undefined &&
+          Number(booking.depositSnapshot) > 0 &&
+          Math.round(Number(booking.depositSnapshot)) === escrowAmount;
+
+        await tx.walletTransaction.create({
+          data: {
+            walletId: ownerWallet.id,
+            amount: escrowAmount,
+            type: "EARNING_HOLD",
+            status: "PENDING",
+            referenceId: booking.id,
+            description: isDpPayment
+              ? `Pembayaran DP / Booking (${booking.property.name}${booking.code ? ` #${booking.code}` : ""}) - Menunggu Check-in`
+              : `Uang sewa (${booking.property.name}${booking.code ? ` #${booking.code}` : ""}) - Menunggu Check-in`,
+            payoutEligibleAt,
+          },
+        });
       }
     }
+
+    const formattedAmount = `Rp ${Math.round(input.amount).toLocaleString("id-ID")}`;
+    const bookingLabel = booking.code ? `#${booking.code} ` : "";
+    const propertyName = booking.property?.name || "Properti";
+    const tenantName = booking.applicant?.fullName || "Penyewa";
+
+    if (tx.notification?.create) {
+      if (booking.property?.ownerId) {
+        await tx.notification.create({
+          data: {
+            profileId: booking.property.ownerId,
+            type: "PAYMENT",
+            title: "Pembayaran Booking Diterima",
+            body: `${tenantName} telah melunasi pembayaran ${bookingLabel}(${propertyName}) sebesar ${formattedAmount}. Dana masuk ke Saldo Tertahan (Escrow).`,
+            linkUrl: "/owner/wallet",
+          },
+        });
+      }
+
+      if (booking.applicantId) {
+        await tx.notification.create({
+          data: {
+            profileId: booking.applicantId,
+            type: "PAYMENT",
+            title: "Pembayaran Berhasil Dikonfirmasi",
+            body: `Pembayaran Anda untuk booking ${bookingLabel}(${propertyName}) sebesar ${formattedAmount} telah terverifikasi.`,
+            linkUrl: `/dashboard/bookings/${booking.id}`,
+          },
+        });
+      }
+    }
+
+    const telegramInfo = booking.property?.ownerId
+      ? {
+          ownerId: booking.property.ownerId,
+          bookingCode: booking.code || booking.id.slice(0, 8),
+          propertyName,
+          tenantName,
+        }
+      : null;
 
     // Catat audit log atomik
     await recordAuditLog({
@@ -189,8 +246,33 @@ export async function settleBookingPayment(
       },
     });
 
-    return { alreadySettled: false, bookingId: booking.id };
+    return { alreadySettled: false, bookingId: booking.id, telegramInfo };
   }, { timeout: 20000, maxWait: 10000 });
+
+  if (!txResult.alreadySettled && txResult.telegramInfo && isTelegramConfigured()) {
+    try {
+      const ownerProfile = await prisma.profile.findUnique({
+        where: { id: txResult.telegramInfo.ownerId },
+        select: { telegramChatId: true },
+      });
+      if (ownerProfile?.telegramChatId) {
+        const formattedAmount = `Rp ${Math.round(input.amount).toLocaleString("id-ID")}`;
+        await sendTelegramMessage(
+          ownerProfile.telegramChatId,
+          `💰 <b>Pembayaran Booking Diterima!</b>\n\n` +
+            `Kode: <b>#${txResult.telegramInfo.bookingCode}</b>\n` +
+            `Properti: <b>${txResult.telegramInfo.propertyName}</b>\n` +
+            `Penyewa: <b>${txResult.telegramInfo.tenantName}</b>\n` +
+            `Nominal: <b>${formattedAmount}</b>\n\n` +
+            `Dana telah masuk ke <b>Saldo Tertahan (Escrow)</b> dan siap dicairkan H+1 setelah penyewa check-in.`
+        );
+      }
+    } catch (tgErr) {
+      console.warn("[settleBookingPayment] Telegram notification failed:", tgErr);
+    }
+  }
+
+  return { alreadySettled: txResult.alreadySettled, bookingId: txResult.bookingId };
 }
 
 export interface SettleSubscriptionPaymentInput {
@@ -311,6 +393,18 @@ export async function settleSubscriptionPayment(
         note: `Subscription activated: ${plan.name} (${plan.code})`,
       },
     });
+
+    if (tx.notification?.create) {
+      await tx.notification.create({
+        data: {
+          profileId: ownerId,
+          type: "SUBSCRIPTION",
+          title: "Paket Langganan Aktif",
+          body: `Pembayaran paket ${plan.name} sebesar Rp ${Math.round(input.amount).toLocaleString("id-ID")} telah berhasil dikonfirmasi.`,
+          linkUrl: "/owner/subscription",
+        },
+      });
+    }
 
     // 5. Catat audit log atomik
     await recordAuditLog({

@@ -1,13 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, Check, RefreshCw, ShieldAlert } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Check, RefreshCw } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import Logo from "@/components/Logo";
 import { bookings as staticBookings } from "@/lib/data/entities";
 import type { Booking, BookingStatus } from "@/lib/data/types";
 import { formatIDR } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 type PaymentBooking = {
   id: string;
@@ -127,6 +128,29 @@ function PaymentContent() {
   const [checking, setChecking] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const checkingRef = useRef(false);
+  const initialSyncedRef = useRef<string | null>(null);
+  const notifiedPaidRef = useRef(false);
+
+  const storageKey = (key: string) => `ngekos_midtrans_order_${key}`;
+
+  const getStoredOrderId = useCallback((key: string): string | null => {
+    try {
+      return window.sessionStorage.getItem(storageKey(key));
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const clearStoredOrderIds = useCallback((keys: string[]) => {
+    try {
+      for (const k of keys) {
+        if (k) window.sessionStorage.removeItem(storageKey(k));
+      }
+    } catch {
+      // Abaikan bila sessionStorage tidak tersedia
+    }
+  }, []);
 
   useEffect(() => {
     if (staticBooking) return;
@@ -148,30 +172,115 @@ function PaymentContent() {
   }, [id, staticBooking]);
 
   const returnedFromMidtrans = searchParams.has("payment_return") || searchParams.has("transaction_status");
+  const bookingId = booking?.id ?? id;
+  const bookingStatus = booking?.status;
+  const orderIdFromUrl = searchParams.get("order_id");
 
-  async function checkPaymentStatus() {
-    setChecking(true);
+  const checkPaymentStatus = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (checkingRef.current) return;
+    checkingRef.current = true;
+    if (!silent) setChecking(true);
+
     try {
-      const orderIdParam = searchParams.get("order_id");
-      if (orderIdParam) {
-        try {
-          await fetch("/api/payments/midtrans/status", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ orderId: orderIdParam }),
-          });
-        } catch {
-          // Abaikan bila sinkronisasi status gateway gagal, lanjut ke refresh booking
+      const storedOrderId = getStoredOrderId(id) || (bookingId !== id ? getStoredOrderId(bookingId) : null);
+      const orderIdToSync = orderIdFromUrl || storedOrderId;
+      let settledNow = false;
+
+      try {
+        const syncRes = await fetch("/api/payments/midtrans/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...(orderIdToSync ? { orderId: orderIdToSync } : {}),
+            bookingId,
+          }),
+        });
+        if (syncRes.ok) {
+          const syncJson = await syncRes.json();
+          settledNow = Boolean(syncJson?.data?.settled);
         }
+      } catch {
+        // Abaikan bila sinkronisasi status gateway gagal, lanjut ke refresh booking
       }
-      setBooking(await fetchBooking(id));
+
+      const latestBooking = await fetchBooking(id);
+      setBooking(latestBooking);
       setError(null);
+
+      const isNowPaid = latestBooking.status === "active" || settledNow;
+      if (isNowPaid) {
+        clearStoredOrderIds([id, bookingId, latestBooking.id]);
+        if (!notifiedPaidRef.current) {
+          notifiedPaidRef.current = true;
+          toast({
+            title: "Pembayaran berhasil dikonfirmasi",
+            description: "Status booking Anda telah aktif.",
+            variant: "success",
+          });
+        }
+      } else if (!silent) {
+        toast("Pembayaran belum terkonfirmasi", {
+          description: "Jika baru saja melakukan transfer via Midtrans atau Simulator, tunggu beberapa detik lalu periksa kembali.",
+        });
+      }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Status pembayaran belum dapat diperiksa.");
+      if (!silent) {
+        const message = reason instanceof Error ? reason.message : "Status pembayaran belum dapat diperiksa.";
+        setError(message);
+        toast({
+          title: "Gagal memeriksa status pembayaran",
+          description: message,
+          variant: "destructive",
+        });
+      }
     } finally {
-      setChecking(false);
+      checkingRef.current = false;
+      if (!silent) setChecking(false);
     }
-  }
+  }, [bookingId, clearStoredOrderIds, getStoredOrderId, id, orderIdFromUrl]);
+
+  useEffect(() => {
+    if (staticBooking || bookingStatus !== "approved-awaiting-payment") return;
+
+    if (initialSyncedRef.current !== bookingId) {
+      initialSyncedRef.current = bookingId;
+      void checkPaymentStatus({ silent: true });
+    }
+
+    const handleReturnOrFocus = () => {
+      if (document.visibilityState === "visible") {
+        void checkPaymentStatus({ silent: true });
+      }
+    };
+
+    window.addEventListener("focus", handleReturnOrFocus);
+    document.addEventListener("visibilitychange", handleReturnOrFocus);
+
+    const hasPendingContext =
+      returnedFromMidtrans || Boolean(orderIdFromUrl) || Boolean(getStoredOrderId(id)) || Boolean(getStoredOrderId(bookingId));
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    if (hasPendingContext) {
+      let pollCount = 0;
+      intervalId = setInterval(() => {
+        if (pollCount >= 24) {
+          if (intervalId) clearInterval(intervalId);
+          return;
+        }
+        if (document.visibilityState === "visible") {
+          pollCount += 1;
+          void checkPaymentStatus({ silent: true });
+        }
+      }, 5000);
+    }
+
+    return () => {
+      window.removeEventListener("focus", handleReturnOrFocus);
+      document.removeEventListener("visibilitychange", handleReturnOrFocus);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [bookingId, bookingStatus, checkPaymentStatus, getStoredOrderId, id, orderIdFromUrl, returnedFromMidtrans, staticBooking]);
 
   async function continueToMidtrans() {
     if (!booking) return;
@@ -194,6 +303,14 @@ function PaymentContent() {
       }
       if (!body?.data?.redirectUrl) {
         throw new Error("Midtrans tidak mengirim halaman pembayaran. Coba lagi.");
+      }
+      if (body?.data?.orderId) {
+        try {
+          window.sessionStorage.setItem(storageKey(id), body.data.orderId);
+          window.sessionStorage.setItem(storageKey(booking.id), body.data.orderId);
+        } catch {
+          // Abaikan bila sessionStorage tidak tersedia
+        }
       }
       window.location.assign(body.data.redirectUrl);
     } catch (reason) {
@@ -293,34 +410,10 @@ function PaymentContent() {
 
           {returnedFromMidtrans && !paid && (
             <div className="mt-6 border-l-2 border-nk-accent bg-nk-section px-4 py-3 text-sm leading-6" role="status">
-              {booking.isDemo
-                ? "Ini booking contoh. Hasil pembayaran Midtrans tidak disimpan sebagai booking riil."
-                : "Anda kembali dari Midtrans. Pembayaran belum terkonfirmasi di sistem; periksa lagi setelah beberapa saat."}
+              Pembayaran sedang diverifikasi secara otomatis. Bila status belum berubah setelah Anda menyelesaikan transfer, klik{" "}
+              <strong>Periksa status pembayaran</strong> di bawah.
             </div>
           )}
-          {booking.isDemo && !returnedFromMidtrans && (
-            <p className="mt-6 text-xs leading-5 text-nk-text-muted">Booking contoh untuk menguji alur checkout Midtrans.</p>
-          )}
-          {/* Demo Mode Notice */}
-          <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900" role="note" aria-label="Pemberitahuan mode demo">
-            <div className="flex items-center gap-2 font-semibold text-amber-800">
-              <ShieldAlert className="size-4 shrink-0 text-amber-600" aria-hidden="true" />
-              <span>DEMO MODE — Midtrans Sandbox</span>
-            </div>
-            <p className="mt-1.5 leading-relaxed text-amber-800/90">
-              Transaksi ini diproses melalui <strong>Midtrans Sandbox</strong>.
-              Gunakan nomor kartu uji coba Midtrans atau bayar Virtual Account via{" "}
-              <a
-                href="https://simulator.sandbox.midtrans.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold underline underline-offset-2 hover:text-amber-950"
-              >
-                Midtrans Simulator
-              </a>
-              . Jangan gunakan saldo bank atau kartu sungguhan.
-            </p>
-          </div>
 
           {error && <p className="mt-6 text-sm text-destructive" role="alert">{error}</p>}
 
@@ -350,7 +443,7 @@ function PaymentContent() {
               Pembayaran sudah tercatat
             </div>
           )}
-          {returnedFromMidtrans && !booking.isDemo && !paid && (
+          {!booking.isDemo && canPay && !paid && (
             <button
               type="button"
               onClick={() => void checkPaymentStatus()}
@@ -358,7 +451,7 @@ function PaymentContent() {
               className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-nk-text-muted underline underline-offset-4 hover:text-nk-text focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-nk-accent disabled:opacity-50"
             >
               <RefreshCw className={`size-4 ${checking ? "animate-spin" : ""}`} aria-hidden="true" />
-              Periksa status pembayaran
+              {checking ? "Memeriksa status..." : "Periksa status pembayaran"}
             </button>
           )}
           <p className="mt-5 text-xs leading-5 text-nk-text-muted">Metode pembayaran dipilih di halaman Midtrans.</p>
