@@ -45,6 +45,29 @@ async function refreshMinPrice(tx: Prisma.TransactionClient, propertyId: string)
 
 export async function createRoomType(profile: Profile, propertyId: string, input: RoomTypeInput) {
   const prop = await ownedProperty(profile, propertyId);
+  const normalizedName = input.name.trim();
+
+  const existingActive = await prisma.roomType.findFirst({
+    where: { propertyId: prop.id, name: normalizedName, deletedAt: null },
+    select: { id: true },
+  });
+  if (existingActive) {
+    throw new ApiError(409, "ROOM_TYPE_EXISTS", `Tipe kamar "${normalizedName}" sudah ada di properti ini`);
+  }
+
+  const staleDeleted = await prisma.roomType.findMany({
+    where: { propertyId: prop.id, name: normalizedName, deletedAt: { not: null } },
+    select: { id: true, name: true },
+  });
+  if (Array.isArray(staleDeleted)) {
+    for (const stale of staleDeleted) {
+      await prisma.roomType.update({
+        where: { id: stale.id },
+        data: { name: `${stale.name}__deleted_${Date.now()}` },
+      });
+    }
+  }
+
   return prisma.$transaction(async (tx) => {
     const { facilities, ...rest } = input;
     const desc =
@@ -55,6 +78,7 @@ export async function createRoomType(profile: Profile, propertyId: string, input
     const roomType = await tx.roomType.create({
       data: {
         ...rest,
+        name: normalizedName,
         description: desc,
         propertyId: prop.id,
         pricePerMonth: new Prisma.Decimal(input.pricePerMonth),
@@ -82,7 +106,37 @@ export async function createRoomUnit(profile: Profile, propertyId: string, input
     select: { id: true },
   });
   if (!roomType) throw new ApiError(422, "ROOM_TYPE_MISMATCH", "This room type is not available on this property");
-  return prisma.roomUnit.create({ data: { ...input, propertyId: prop.id } });
+
+  const normalizedNumber = input.number.trim();
+
+  const existingActive = await prisma.roomUnit.findFirst({
+    where: { propertyId: prop.id, number: normalizedNumber, deletedAt: null },
+    select: { id: true },
+  });
+  if (existingActive) {
+    throw new ApiError(409, "ROOM_UNIT_EXISTS", `Nomor kamar "${normalizedNumber}" sudah ada di properti ini`);
+  }
+
+  const staleDeleted = await prisma.roomUnit.findMany({
+    where: { propertyId: prop.id, number: normalizedNumber, deletedAt: { not: null } },
+    select: { id: true, number: true },
+  });
+  if (Array.isArray(staleDeleted)) {
+    for (const stale of staleDeleted) {
+      await prisma.roomUnit.update({
+        where: { id: stale.id },
+        data: { number: `${stale.number}__deleted_${Date.now()}` },
+      });
+    }
+  }
+
+  return prisma.roomUnit.create({
+    data: {
+      ...input,
+      number: normalizedNumber,
+      propertyId: prop.id,
+    },
+  });
 }
 
 export async function updateRoomUnitStatus(profile: Profile, propertyId: string, roomId: string, status: "AVAILABLE" | "MAINTENANCE" | "OCCUPIED") {
@@ -100,7 +154,11 @@ export async function deleteRoomUnit(profile: Profile, propertyId: string, roomI
   if (unit.status === "RESERVED" || unit.status === "OCCUPIED") {
     throw new ApiError(409, "ROOM_IN_USE", "The room is reserved or occupied and cannot be deleted");
   }
-  await prisma.roomUnit.update({ where: { id: roomId }, data: { deletedAt: new Date() } });
+  const archivedNumber = `${unit.number}__deleted_${Date.now()}`;
+  await prisma.roomUnit.update({
+    where: { id: roomId },
+    data: { deletedAt: new Date(), number: archivedNumber },
+  });
   return { success: true, id: roomId };
 }
 
@@ -123,7 +181,11 @@ export async function deleteRoomType(profile: Profile, propertyId: string, roomT
   }
 
   return prisma.$transaction(async (tx) => {
-    await tx.roomType.update({ where: { id: roomTypeId }, data: { deletedAt: new Date() } });
+    const archivedName = `${existing.name}__deleted_${Date.now()}`;
+    await tx.roomType.update({
+      where: { id: roomTypeId },
+      data: { deletedAt: new Date(), name: archivedName },
+    });
     await refreshMinPrice(tx, prop.id);
     return { success: true, id: roomTypeId };
   });

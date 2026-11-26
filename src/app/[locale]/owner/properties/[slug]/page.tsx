@@ -617,12 +617,6 @@ export default function OwnerPropertyDetailPage() {
   const handleDeleteRoomType = async () => {
     if (!editingType || !property) return;
     const typeName = editingType.name;
-    const confirmDelete = window.confirm(
-      isEn
-        ? `Are you sure you want to delete room type "${typeName}"? All associated units will also be removed.`
-        : `Apakah Anda yakin ingin menghapus tipe kamar "${typeName}"? Seluruh unit kamar di dalamnya juga akan terhapus.`
-    );
-    if (!confirmDelete) return;
 
     setDeletingType(true);
     setActionError(null);
@@ -1314,7 +1308,7 @@ export default function OwnerPropertyDetailPage() {
                                     className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2.5 rounded-lg text-rose-600 hover:bg-rose-50"
                                   >
                                     <Trash2 className="size-3.5" />
-                                    <span>{isEn ? "Delete Unit" : "Hapus Unit Kamar"}</span>
+                                    <span>{isEn ? "Delete Room" : "Hapus Kamar"}</span>
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
