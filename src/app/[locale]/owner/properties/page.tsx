@@ -10,6 +10,7 @@ import type { Property } from "@/lib/data/types";
 import { getKosImage } from "@/lib/kosImages";
 import { useSession } from "@/components/SessionProvider";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
 import {
   Search,
   X,
@@ -45,11 +46,9 @@ export default function OwnerPropertiesPage() {
   const [deleteTarget, setDeleteTarget] = useState<"draft" | Property | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
-  const [actionAlert, setActionAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const handleResubmitVerification = async (idOrSlug: string) => {
     setSubmittingId(idOrSlug);
-    setActionAlert(null);
     try {
       const res = await fetch(`/api/properties/${idOrSlug}/submit-verification`, {
         method: "POST",
@@ -63,21 +62,14 @@ export default function OwnerPropertiesPage() {
               : item
           )
         );
-        setActionAlert({
-          type: "success",
-          message: "Pengajuan verifikasi berhasil dikirim ke Admin! Status kini Menunggu Verifikasi.",
-        });
+        toast.success(
+          "Pengajuan verifikasi berhasil dikirim ke Admin! Status kini Menunggu Verifikasi."
+        );
       } else {
-        setActionAlert({
-          type: "error",
-          message: json?.error?.message || "Gagal mengajukan verifikasi ke Admin.",
-        });
+        toast.error(json?.error?.message || "Gagal mengajukan verifikasi ke Admin.");
       }
     } catch {
-      setActionAlert({
-        type: "error",
-        message: "Terjadi kesalahan jaringan saat mengajukan verifikasi.",
-      });
+      toast.error("Terjadi kesalahan jaringan saat mengajukan verifikasi.");
     } finally {
       setSubmittingId(null);
     }
@@ -188,6 +180,7 @@ export default function OwnerPropertiesPage() {
     deleteSavedPropertyDraft();
     setDraft(null);
     setDeleteTarget(null);
+    toast.success("Draf properti berhasil dihapus.");
   };
 
   const handleDeleteProperty = async (property: Property) => {
@@ -203,9 +196,14 @@ export default function OwnerPropertiesPage() {
             "id" in item && item.id ? item.id !== property.id : item.slug !== property.slug
           )
         );
+        toast.success(`Properti "${property.name}" berhasil dihapus.`);
+      } else {
+        const json = await res.json().catch(() => null);
+        toast.error(json?.error?.message || "Gagal menghapus properti.");
       }
     } catch (err) {
       console.error("Failed to delete property:", err);
+      toast.error("Terjadi kesalahan saat menghapus properti.");
     } finally {
       setIsDeleting(false);
       setDeleteTarget(null);
@@ -368,27 +366,6 @@ export default function OwnerPropertiesPage() {
           )}
         </div>
       </div>
-
-      {actionAlert && (
-        <div
-          className={`mb-6 rounded-lg border p-4 text-xs ${
-            actionAlert.type === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-red-200 bg-red-50 text-red-800"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <p className="font-medium">{actionAlert.message}</p>
-            <button
-              type="button"
-              onClick={() => setActionAlert(null)}
-              className="ml-3 font-semibold underline underline-offset-2 hover:opacity-80"
-            >
-              Tutup
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Search Input Bar */}
       <div className="mb-6">

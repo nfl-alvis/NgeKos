@@ -7,8 +7,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import type { Booking, BookingStatus } from "@/lib/data/types";
 import { formatIDR } from "@/lib/utils";
 
@@ -110,7 +110,6 @@ export default function OwnerBookingsPage() {
   const [bookingsList, setBookingsList] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [banner, setBanner] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const fetchBookings = () => {
     setIsLoading(true);
@@ -173,7 +172,6 @@ export default function OwnerBookingsPage() {
 
   const handleApprove = async (booking: Booking) => {
     setActionLoading(booking.id);
-    setBanner(null);
     try {
       const res = await fetch(`/api/bookings/${booking.id}`, {
         method: "PATCH",
@@ -187,12 +185,11 @@ export default function OwnerBookingsPage() {
       setBookingsList((prev) =>
         prev.map((b) => (b.id === booking.id ? { ...b, status: "approved-awaiting-payment" } : b))
       );
-      setBanner({ type: "success", message: `Booking untuk ${booking.applicantName} berhasil disetujui!` });
+      toast.success(`Booking untuk ${booking.applicantName} berhasil disetujui!`);
     } catch (err: unknown) {
-      setBanner({
-        type: "error",
-        message: err instanceof Error ? err.message : "Terjadi kesalahan saat menyetujui booking.",
-      });
+      toast.error(
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menyetujui booking."
+      );
     } finally {
       setActionLoading(null);
     }
@@ -201,11 +198,10 @@ export default function OwnerBookingsPage() {
   const handleReject = async () => {
     if (!rejectTarget) return;
     if (rejectReason.trim().length < 3) {
-      setBanner({ type: "error", message: "Alasan penolakan minimal 3 karakter." });
+      toast.error("Alasan penolakan minimal 3 karakter.");
       return;
     }
     setActionLoading(rejectTarget.id);
-    setBanner(null);
     try {
       const res = await fetch(`/api/bookings/${rejectTarget.id}`, {
         method: "PATCH",
@@ -219,14 +215,13 @@ export default function OwnerBookingsPage() {
       setBookingsList((prev) =>
         prev.map((b) => (b.id === rejectTarget.id ? { ...b, status: "rejected", statusNote: rejectReason.trim() } : b))
       );
-      setBanner({ type: "success", message: `Booking untuk ${rejectTarget.applicantName} telah ditolak.` });
+      toast.success(`Booking untuk ${rejectTarget.applicantName} telah ditolak.`);
       setRejectTarget(null);
       setRejectReason("");
     } catch (err: unknown) {
-      setBanner({
-        type: "error",
-        message: err instanceof Error ? err.message : "Terjadi kesalahan saat menolak booking.",
-      });
+      toast.error(
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menolak booking."
+      );
     } finally {
       setActionLoading(null);
     }
@@ -240,7 +235,6 @@ export default function OwnerBookingsPage() {
 
   const handleOwnerCheckIn = async (b: Booking) => {
     setActionLoading(b.id);
-    setBanner(null);
     try {
       const res = await fetch(`/api/bookings/${b.id}/owner-check-in`, {
         method: "POST",
@@ -258,12 +252,11 @@ export default function OwnerBookingsPage() {
       if (detail && detail.id === b.id) {
         setDetail({ ...detail, checkedInAt: nowIso });
       }
-      setBanner({ type: "success", message: `Check-in untuk ${b.applicantName} berhasil dikonfirmasi!` });
+      toast.success(`Check-in untuk ${b.applicantName} berhasil dikonfirmasi!`);
     } catch (err: unknown) {
-      setBanner({
-        type: "error",
-        message: err instanceof Error ? err.message : "Terjadi kesalahan saat mengonfirmasi check-in.",
-      });
+      toast.error(
+        err instanceof Error ? err.message : "Terjadi kesalahan saat mengonfirmasi check-in."
+      );
     } finally {
       setActionLoading(null);
     }
@@ -273,7 +266,6 @@ export default function OwnerBookingsPage() {
     e.preventDefault();
     if (!checkoutTarget) return;
     setIsSubmittingCheckout(true);
-    setBanner(null);
     try {
       const res = await fetch(`/api/bookings/${checkoutTarget.id}/confirm-checkout`, {
         method: "POST",
@@ -310,18 +302,16 @@ export default function OwnerBookingsPage() {
           depositRefundAmount: depositRefundAmount ? Number(depositRefundAmount) : null,
         });
       }
-      setBanner({
-        type: "success",
-        message: `Check-out untuk ${checkoutTarget.applicantName} selesai dan unit kamar disetel ke ${roomStatusAfterCheckout}!`,
-      });
+      toast.success(
+        `Check-out untuk ${checkoutTarget.applicantName} selesai dan unit kamar disetel ke ${roomStatusAfterCheckout}!`
+      );
       setCheckoutTarget(null);
       setInspectionNotes("");
       setDepositRefundAmount("");
     } catch (err: unknown) {
-      setBanner({
-        type: "error",
-        message: err instanceof Error ? err.message : "Terjadi kesalahan saat menyelesaikan check-out.",
-      });
+      toast.error(
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menyelesaikan check-out."
+      );
     } finally {
       setIsSubmittingCheckout(false);
     }
@@ -329,7 +319,6 @@ export default function OwnerBookingsPage() {
 
   const handleConfirmTermination = async (bookingId: string, action: "APPROVE" | "REJECT") => {
     setActionLoading(bookingId);
-    setBanner(null);
     try {
       const res = await fetch(`/api/bookings/${bookingId}/terminate-confirm`, {
         method: "POST",
@@ -340,20 +329,15 @@ export default function OwnerBookingsPage() {
       if (!res.ok) {
         throw new Error(data?.error?.message || data?.message || "Gagal memproses permohonan");
       }
-      setBanner({
-        type: "success",
-        message:
-          action === "APPROVE"
-            ? "Penghentian sewa disetujui! Kamar telah tersedia kembali dan refund dikembalikan ke dompet penyewa."
-            : "Permohonan penghentian sewa ditolak.",
-      });
+      toast.success(
+        action === "APPROVE"
+          ? "Penghentian sewa disetujui! Kamar telah tersedia kembali dan refund dikembalikan ke dompet penyewa."
+          : "Permohonan penghentian sewa ditolak."
+      );
       setDetail(null);
       fetchBookings();
     } catch (err: unknown) {
-      setBanner({
-        type: "error",
-        message: err instanceof Error ? err.message : "Terjadi kesalahan",
-      });
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setActionLoading(null);
     }
@@ -367,25 +351,6 @@ export default function OwnerBookingsPage() {
         <h1 className="text-2xl font-medium tracking-tight text-nk-text">{t("title")}</h1>
         {isLoading && <Loader2 className="size-4 animate-spin text-nk-text-muted" />}
       </div>
-
-      {banner && (
-        <Alert
-          className={`mb-6 border ${
-            banner.type === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-              : "border-red-200 bg-red-50 text-red-900"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            {banner.type === "success" ? (
-              <CheckCircle2 className="size-4 text-emerald-600" />
-            ) : (
-              <AlertCircle className="size-4 text-red-600" />
-            )}
-            <AlertDescription className="text-sm font-medium">{banner.message}</AlertDescription>
-          </div>
-        </Alert>
-      )}
 
       {/* tab filter */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>

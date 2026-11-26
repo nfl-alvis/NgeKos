@@ -5,10 +5,8 @@ import DashboardShell from "@/components/DashboardShell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
 import {
-  AlertCircle,
   ArrowDownLeft,
   ArrowUpRight,
   CheckCircle2,
@@ -64,8 +62,6 @@ export default function OwnerWalletPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [payoutModalOpen, setPayoutModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"transactions" | "payouts">("transactions");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Payout form state
   const [amount, setAmount] = useState("");
@@ -107,26 +103,18 @@ export default function OwnerWalletPage() {
 
   const handlePayoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
 
     const numAmount = Number(amount);
     if (isNaN(numAmount) || numAmount < 50000) {
-      const msg = "Nominal penarikan minimal adalah Rp 50.000";
-      setErrorMsg(msg);
-      toast.error(msg);
+      toast.error("Nominal penarikan minimal adalah Rp 50.000");
       return;
     }
     if (numAmount > (data?.balance || 0)) {
-      const msg = "Nominal penarikan melebihi saldo aktif Anda";
-      setErrorMsg(msg);
-      toast.error(msg);
+      toast.error("Nominal penarikan melebihi saldo aktif Anda");
       return;
     }
     if (!bankName.trim() || !accountNumber.trim() || !accountHolder.trim()) {
-      const msg = "Harap lengkapi informasi rekening bank";
-      setErrorMsg(msg);
-      toast.error(msg);
+      toast.error("Harap lengkapi informasi rekening bank");
       return;
     }
 
@@ -148,16 +136,12 @@ export default function OwnerWalletPage() {
         throw new Error(json.error?.message || "Gagal mengajukan penarikan dana");
       }
 
-      const successTxt = "Permohonan penarikan dana berhasil diajukan dan sedang diproses admin!";
-      setSuccessMsg(successTxt);
-      toast.success(successTxt);
+      toast.success("Permohonan penarikan dana berhasil diajukan dan sedang diproses admin!");
       setPayoutModalOpen(false);
       setAmount("");
       loadWallet();
     } catch (err: any) {
-      const errTxt = err.message || "Terjadi kesalahan";
-      setErrorMsg(errTxt);
-      toast.error(errTxt);
+      toast.error(err.message || "Terjadi kesalahan");
     } finally {
       setIsSubmitting(false);
     }
@@ -239,20 +223,6 @@ export default function OwnerWalletPage() {
             Tarik Saldo
           </button>
         </div>
-
-        {/* Alerts */}
-        {successMsg && (
-          <Alert className="border-emerald-300 bg-emerald-50 text-emerald-800">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <AlertDescription className="text-sm font-medium">{successMsg}</AlertDescription>
-          </Alert>
-        )}
-        {errorMsg && (
-          <Alert className="border-rose-300 bg-rose-50 text-rose-800">
-            <AlertCircle className="w-4 h-4 text-rose-600" />
-            <AlertDescription className="text-sm font-medium">{errorMsg}</AlertDescription>
-          </Alert>
-        )}
 
         {/* Top Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLocale } from "next-intl";
 import { CheckCircle2, ExternalLink, RefreshCw, Send, Unlink } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface TelegramStatus {
   connected: boolean;
@@ -65,20 +66,20 @@ export default function TelegramConnectCard({
       if (res.ok && json?.data?.url) {
         setConnectUrl(json.data.url);
         window.open(json.data.url, "_blank", "noopener,noreferrer");
-        setMessage({
-          type: "success",
-          text: isEn
-            ? "New Telegram link opened in a new tab! Press 'START' in the Telegram app to reconnect, then click 'Refresh Status' below."
-            : "Tautan Telegram baru telah dibuka di tab baru! Tekan 'START' di aplikasi Telegram untuk menghubungkan ulang, lalu klik 'Perbarui Status' di bawah.",
-        });
+        const msg = isEn
+          ? "New Telegram link opened in a new tab! Press 'START' in the Telegram app to reconnect, then click 'Refresh Status' below."
+          : "Tautan Telegram baru telah dibuka di tab baru! Tekan 'START' di aplikasi Telegram untuk menghubungkan ulang, lalu klik 'Perbarui Status' di bawah.";
+        setMessage({ type: "success", text: msg });
+        toast.success(msg);
       } else {
-        setMessage({
-          type: "error",
-          text: json?.error?.message || (isEn ? "Failed to generate Telegram connection link." : "Gagal membuat tautan koneksi Telegram."),
-        });
+        const msg = json?.error?.message || (isEn ? "Failed to generate Telegram connection link." : "Gagal membuat tautan koneksi Telegram.");
+        setMessage({ type: "error", text: msg });
+        toast.error(msg);
       }
     } catch {
-      setMessage({ type: "error", text: isEn ? "Network error occurred." : "Terjadi kesalahan jaringan." });
+      const msg = isEn ? "Network error occurred." : "Terjadi kesalahan jaringan.";
+      setMessage({ type: "error", text: msg });
+      toast.error(msg);
     } finally {
       setConnecting(false);
     }
@@ -104,21 +105,21 @@ export default function TelegramConnectCard({
       const json = await res.json();
 
       if (res.ok && json?.data?.success) {
-        setMessage({
-          type: "success",
-          text: isEn ? "Telegram account linked successfully!" : "Akun Telegram berhasil dihubungkan secara manual!",
-        });
+        const msg = isEn ? "Telegram account linked successfully!" : "Akun Telegram berhasil dihubungkan secara manual!";
+        setMessage({ type: "success", text: msg });
+        toast.success(msg);
         setManualInput("");
         setShowManualReconnect(false);
         await fetchStatus();
       } else {
-        setMessage({
-          type: "error",
-          text: json?.error?.message || (isEn ? "Failed to link Telegram account." : "Gagal menghubungkan Telegram."),
-        });
+        const msg = json?.error?.message || (isEn ? "Failed to link Telegram account." : "Gagal menghubungkan Telegram.");
+        setMessage({ type: "error", text: msg });
+        toast.error(msg);
       }
     } catch {
-      setMessage({ type: "error", text: isEn ? "Error while connecting." : "Terjadi kesalahan saat menghubungkan." });
+      const msg = isEn ? "Error while connecting." : "Terjadi kesalahan saat menghubungkan.";
+      setMessage({ type: "error", text: msg });
+      toast.error(msg);
     } finally {
       setManualLoading(false);
     }
@@ -135,20 +136,20 @@ export default function TelegramConnectCard({
     try {
       const res = await fetch("/api/owner/telegram/disconnect", { method: "POST" });
       if (res.ok) {
-        setMessage({
-          type: "success",
-          text: isEn ? "Telegram link disconnected successfully." : "Tautan Telegram berhasil diputuskan.",
-        });
+        const msg = isEn ? "Telegram link disconnected successfully." : "Tautan Telegram berhasil diputuskan.";
+        setMessage({ type: "success", text: msg });
+        toast.success(msg);
         setConnectUrl(null);
         await fetchStatus();
       } else {
-        setMessage({
-          type: "error",
-          text: isEn ? "Failed to disconnect Telegram." : "Gagal memutuskan tautan Telegram.",
-        });
+        const msg = isEn ? "Failed to disconnect Telegram." : "Gagal memutuskan tautan Telegram.";
+        setMessage({ type: "error", text: msg });
+        toast.error(msg);
       }
     } catch {
-      setMessage({ type: "error", text: isEn ? "Connection error." : "Terjadi kesalahan koneksi." });
+      const msg = isEn ? "Connection error." : "Terjadi kesalahan koneksi.";
+      setMessage({ type: "error", text: msg });
+      toast.error(msg);
     } finally {
       setDisconnecting(false);
     }

@@ -15,6 +15,7 @@ import { useUserOps } from "@/lib/userOpsStore";
 import { useSession } from "@/components/SessionProvider";
 import { useTenantSession } from "@/hooks/useTenantSession";
 import { formatIDR } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 import UserDashboardShell from "@/components/dashboard/UserDashboardShell";
 import { DashSection } from "@/components/dashboard/DashSection";
 import ActivityList from "@/components/dashboard/ActivityList";
@@ -96,16 +97,21 @@ export default function DashboardProfilePage() {
       const json = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setError(json?.error?.message || json?.message || "Gagal menyimpan perubahan profil.");
+        const msg = json?.error?.message || json?.message || "Gagal menyimpan perubahan profil.";
+        setError(msg);
+        toast.error(msg);
         setSaving(false);
         return;
       }
 
       setSaved(true);
+      toast.success("Perubahan profil berhasil disimpan.");
       await refresh?.();
       window.setTimeout(() => setSaved(false), 4000);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Terjadi kesalahan jaringan.");
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan jaringan.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

@@ -23,6 +23,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -106,7 +107,6 @@ export default function AdminVerificationPage() {
   const [review, setReview] = useState<AdminReviewEntry | null>(null);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"oldest" | "newest">("oldest");
-  const [toast, setToast] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSwitching, setIsSwitching] = useState(false);
 
@@ -187,12 +187,16 @@ export default function AdminVerificationPage() {
     const currentReview = review;
     recordDecision(currentReview, decision, adminName, reason);
     setQueue((prev) => prev.filter((p) => p.id !== currentReview.id));
-    setToast(t("decidedToast", { decision: t(`decided${decision === "approved" ? "Approved" : "Rejected"}`), name: currentReview.propertyName }));
+    toast.success(
+      t("decidedToast", {
+        decision: t(`decided${decision === "approved" ? "Approved" : "Rejected"}`),
+        name: currentReview.propertyName,
+      })
+    );
     setReview(null);
-    window.setTimeout(() => setToast(null), 5000);
 
     try {
-      await fetch(`/api/admin/verifications/${currentReview.id}`, {
+      const res = await fetch(`/api/admin/verifications/${currentReview.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -200,8 +204,12 @@ export default function AdminVerificationPage() {
           ...(decision === "rejected" ? { reason: reason || "Data properti tidak memenuhi syarat verifikasi." } : {}),
         }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err?.error?.message || "Gagal memperbarui status verifikasi di server.");
+      }
     } catch {
-      // fallback
+      toast.error("Gagal terhubung ke server saat menyimpan keputusan.");
     }
   };
 
@@ -451,16 +459,6 @@ export default function AdminVerificationPage() {
         onOpenChange={(o) => !o && setReview(null)}
         onDecide={decide}
       />
-
-      {/* toast konfirmasi keputusan */}
-      {toast && (
-        <div
-          role="status"
-          className="fixed bottom-6 left-1/2 z-[120] -translate-x-1/2 rounded-lg border border-nk-border bg-nk-surface px-4 py-2.5 text-sm text-nk-text shadow-lg"
-        >
-          {toast}
-        </div>
-      )}
     </DashboardShell>
   );
 }

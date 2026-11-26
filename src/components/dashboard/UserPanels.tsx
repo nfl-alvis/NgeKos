@@ -18,6 +18,7 @@ import { useTenantSession } from "@/hooks/useTenantSession";
 import { cn, formatIDR } from "@/lib/utils";
 import { DashSection } from "@/components/dashboard/DashSection";
 import { getKosImage } from "@/lib/kosImages";
+import { toast } from "@/hooks/use-toast";
 
 /** tanggal jatuh tempo bayar = createdAt + payDeadlineMin (dibaca dari booking) */
 function payDeadline(b: (typeof bookings)[number]) {
@@ -317,6 +318,7 @@ export function FavoritesPanel({ limit, full = false }: { limit?: number; full?:
 
   const handleRemove = (slug: string) => {
     toggleFavorite(slug);
+    toast.success("Dihapus dari daftar favorit.");
     fetch(`/api/favorites/${slug}`, { method: "DELETE" }).catch(() => {});
   };
 
@@ -484,7 +486,6 @@ export function ReviewsPanel({ limit }: { limit?: number }) {
   const [editing, setEditing] = useState<UserReview | null>(null);
   const [body, setBody] = useState("");
   const [rating, setRating] = useState(5);
-  const [toast, setToast] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -540,8 +541,7 @@ export function ReviewsPanel({ limit }: { limit?: number }) {
     }
     saveReview({ ...editing, rating, bodyId: body, bodyEn: body, at: new Date().toISOString().slice(0, 10) });
     setEditing(null);
-    setToast(t("saved"));
-    window.setTimeout(() => setToast(null), 5000);
+    toast.success(t("saved"));
   };
 
   return (
@@ -668,12 +668,6 @@ export function ReviewsPanel({ limit }: { limit?: number }) {
           </button>
         </DialogContent>
       </Dialog>
-
-      {toast && (
-        <div role="status" className="fixed bottom-6 left-1/2 z-[120] -translate-x-1/2 rounded-lg border border-nk-border bg-nk-surface px-4 py-2.5 text-sm text-nk-text shadow-lg">
-          {toast}
-        </div>
-      )}
     </DashSection>
   );
 }

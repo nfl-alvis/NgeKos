@@ -6,6 +6,7 @@ import { useSession } from "@/components/SessionProvider";
 import { toggleFavorite as toggleStoreFavorite, useUserOps } from "@/lib/userOpsStore";
 import { cn } from "@/lib/utils";
 import SeekerAuthModal from "@/components/SeekerAuthModal";
+import { toast } from "@/hooks/use-toast";
 
 interface FavoriteButtonProps {
   propertySlug: string;
@@ -47,19 +48,24 @@ export default function FavoriteButton({
     try {
       const targetId = propertyId || propertySlug;
       if (willFavorite) {
-        await fetch("/api/favorites", {
+        const res = await fetch("/api/favorites", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ propertyId: targetId }),
         });
+        if (!res.ok) throw new Error();
+        toast.success("Kos ditambahkan ke favorit.");
       } else {
-        await fetch(`/api/favorites/${targetId}`, {
+        const res = await fetch(`/api/favorites/${targetId}`, {
           method: "DELETE",
         });
+        if (!res.ok && res.status !== 204) throw new Error();
+        toast.success("Kos dihapus dari favorit.");
       }
     } catch {
       // Revert if network failed
       toggleStoreFavorite(propertySlug);
+      toast.error("Gagal memperbarui daftar favorit.");
     } finally {
       setLoading(false);
     }

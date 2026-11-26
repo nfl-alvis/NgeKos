@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { ShieldAlert } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 import { formatIDR, cn } from "@/lib/utils";
 
 interface Plan {
@@ -79,8 +80,11 @@ export default function OwnerSubscriptionPage() {
         return;
       }
       await loadSubscription();
+      toast.success("Paket langganan berhasil diperbarui.");
     } catch (err: any) {
-      setErrorMessage(err.message || "Gagal memproses langganan.");
+      const msg = err.message || "Gagal memproses langganan.";
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -101,8 +105,11 @@ export default function OwnerSubscriptionPage() {
       }
       setCancelOpen(false);
       await loadSubscription();
+      toast.success("Paket langganan berhasil dibatalkan.");
     } catch (err: any) {
-      setErrorMessage(err.message || "Gagal membatalkan paket.");
+      const msg = err.message || "Gagal membatalkan paket.";
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }

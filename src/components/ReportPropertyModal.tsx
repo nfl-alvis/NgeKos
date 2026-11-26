@@ -13,6 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 const REPORT_REASONS = [
   "Informasi atau foto tidak sesuai aslinya",
@@ -81,6 +82,7 @@ export default function ReportPropertyModal({
       }
 
       setSuccess(true);
+      toast.success("Laporan properti berhasil dikirim dan akan segera ditinjau admin.");
       setTimeout(() => {
         setOpen(false);
         setSuccess(false);
@@ -88,7 +90,9 @@ export default function ReportPropertyModal({
         setReason(REPORT_REASONS[0]);
       }, 2500);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat mengirim laporan.");
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat mengirim laporan.";
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

@@ -8,6 +8,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { AlertCircle, Loader2, Receipt } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import type { Invoice } from "@/lib/data/types";
 import { formatIDR } from "@/lib/utils";
 
@@ -18,7 +19,6 @@ export default function OwnerInvoicesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [newInv, setNewInv] = useState({ tenant: "", period: "", amount: "" });
   const [tenantList, setTenantList] = useState<Array<{ id: string; name: string; agreementId?: string; monthlyPrice?: number }>>([]);
 
@@ -79,7 +79,6 @@ export default function OwnerInvoicesPage() {
   const arrears = rows.filter((r) => r.status !== "lunas" && r.dueDate !== "-" && new Date(r.dueDate) < new Date()).length;
 
   const markPaid = async (id: string) => {
-    setActionError(null);
     try {
       const res = await fetch(`/api/invoices/${id}`, {
         method: "PATCH",
@@ -91,8 +90,9 @@ export default function OwnerInvoicesPage() {
         throw new Error(err?.error?.message || err?.message || "Gagal memperbarui status invoice.");
       }
       setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: "lunas" as const } : r)));
+      toast.success("Status tagihan berhasil ditandai lunas.");
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
     }
   };
 
@@ -121,13 +121,6 @@ export default function OwnerInvoicesPage() {
           {t("create")}
         </button>
       </div>
-
-      {actionError && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-          <AlertCircle className="size-4 shrink-0 text-red-600" />
-          <span>{actionError}</span>
-        </div>
-      )}
 
       {/* ringkasan - band judul tinted di atas, card putih menyatu di bawah */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:max-w-md">
@@ -319,7 +312,6 @@ export default function OwnerInvoicesPage() {
             onClick={async () => {
               if (!newInv.tenant || !newInv.period || !newInv.amount) return;
               setIsSubmitting(true);
-              setActionError(null);
               const selected = tenantList.find((tn) => tn.name === newInv.tenant);
               const periodParts = newInv.period.split("-");
               const year = Number(periodParts[0]) || new Date().getFullYear();
@@ -364,10 +356,11 @@ export default function OwnerInvoicesPage() {
                 } else {
                   loadData();
                 }
+                toast.success(`Tagihan untuk ${newInv.tenant} berhasil dibuat.`);
                 setNewInv({ tenant: "", period: "", amount: "" });
                 setCreateOpen(false);
               } catch (err: unknown) {
-                setActionError(err instanceof Error ? err.message : "Gagal membuat invoice.");
+                toast.error(err instanceof Error ? err.message : "Gagal membuat invoice.");
               } finally {
                 setIsSubmitting(false);
               }

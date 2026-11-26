@@ -22,6 +22,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/components/SessionProvider";
 import { AlertCircle, CheckCircle2, Loader2, ShieldCheck, Trash2 } from "lucide-react";
 import TelegramConnectCard from "@/components/owner/TelegramConnectCard";
+import { toast } from "@/hooks/use-toast";
 
 /** Pengaturan akun user - preferensi notifikasi, ubah kata sandi, dan hapus akun. */
 export default function DashboardSettingsPage() {
@@ -80,7 +81,7 @@ export default function DashboardSettingsPage() {
     setPrefsSaved(false);
 
     try {
-      await fetch("/api/me", {
+      const res = await fetch("/api/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -89,10 +90,12 @@ export default function DashboardSettingsPage() {
           marketingNotifications: updated.priceDrops,
         }),
       });
+      if (!res.ok) throw new Error();
       setPrefsSaved(true);
+      toast.success("Preferensi notifikasi diperbarui.");
       setTimeout(() => setPrefsSaved(false), 3000);
     } catch {
-      // Abaikan jika offline
+      toast.error("Gagal menyimpan preferensi notifikasi.");
     } finally {
       setSavingPrefs(false);
     }
@@ -105,12 +108,16 @@ export default function DashboardSettingsPage() {
     setPasswordSuccess(false);
 
     if (newPassword.length < 8) {
-      setPasswordError("Kata sandi baru minimal 8 karakter.");
+      const msg = "Kata sandi baru minimal 8 karakter.";
+      setPasswordError(msg);
+      toast.error(msg);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError("Konfirmasi kata sandi tidak cocok.");
+      const msg = "Konfirmasi kata sandi tidak cocok.";
+      setPasswordError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -127,13 +134,14 @@ export default function DashboardSettingsPage() {
       }
 
       setPasswordSuccess(true);
+      toast.success("Kata sandi berhasil diperbarui.");
       setNewPassword("");
       setConfirmPassword("");
       setTimeout(() => setPasswordSuccess(false), 5000);
     } catch (err: unknown) {
-      setPasswordError(
-        err instanceof Error ? err.message : "Terjadi kesalahan saat memperbarui kata sandi."
-      );
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat memperbarui kata sandi.";
+      setPasswordError(msg);
+      toast.error(msg);
     } finally {
       setSavingPassword(false);
     }
@@ -151,13 +159,14 @@ export default function DashboardSettingsPage() {
         throw new Error(json?.error?.message || "Gagal menghapus akun.");
       }
 
+      toast.success("Akun berhasil dihapus.");
       // Logout dari sesi lokal dan redirect ke login
       await logout();
       router.push("/login");
     } catch (err: unknown) {
-      setDeleteError(
-        err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus akun."
-      );
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus akun.";
+      setDeleteError(msg);
+      toast.error(msg);
       setDeleting(false);
     }
   };

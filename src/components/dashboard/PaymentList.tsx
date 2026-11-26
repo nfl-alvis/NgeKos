@@ -8,6 +8,7 @@ import type { BookingPayment, BookingPaymentStatus } from "@/lib/data/userData";
 import { formatIDR, cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 import {
   Calendar,
   CreditCard,
@@ -131,10 +132,15 @@ export default function PaymentList() {
     });
   }, [allPayments, tab, search]);
 
-  const copyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedId(code);
-    setTimeout(() => setCopiedId(null), 2000);
+  const copyCode = async (code: string) => {
+    try {
+      await navigator.clipboard?.writeText(code);
+      setCopiedId(code);
+      toast.success("Kode transaksi berhasil disalin.");
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast.error("Gagal menyalin kode transaksi.");
+    }
   };
 
   const statCards = [

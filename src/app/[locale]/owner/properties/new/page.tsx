@@ -8,6 +8,7 @@ import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import DashboardShell from "@/components/DashboardShell";
 import { useSession } from "@/components/SessionProvider";
+import { toast } from "@/hooks/use-toast";
 import {
   Building2,
   MapPin,
@@ -966,7 +967,7 @@ export default function NewPropertyPage() {
   // GPS current location
   const handleUseGPS = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation tidak didukung pada peramban ini.");
+      toast.error("Geolocation tidak didukung pada peramban ini.");
       return;
     }
     isUserTypingRef.current = false;
@@ -995,7 +996,7 @@ export default function NewPropertyPage() {
       },
       (err) => {
         setIsReverseGeocoding(false);
-        alert("Gagal mendapatkan lokasi GPS: " + err.message);
+        toast.error("Gagal mendapatkan lokasi GPS: " + err.message);
       },
       { timeout: 10000 }
     );
@@ -1182,8 +1183,11 @@ export default function NewPropertyPage() {
           }
         } catch {}
         setShowSuccessModal(true);
+        toast.success("Properti kos berhasil didaftarkan dan dikirim untuk verifikasi!");
       } catch (err) {
-        setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan kos.");
+        const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan kos.";
+        setErrorMsg(msg);
+        toast.error(msg);
       }
     });
   };

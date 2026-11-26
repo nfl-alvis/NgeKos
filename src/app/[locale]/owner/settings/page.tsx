@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -110,13 +111,16 @@ export default function OwnerSettingsPage() {
       }
 
       setProfileSaved(true);
+      toast.success(isEn ? "Profile settings saved." : "Pengaturan profil berhasil disimpan.");
       setTimeout(() => setProfileSaved(false), 3000);
 
       if (lang !== locale) {
         router.replace(pathname, { locale: lang });
       }
     } catch (err: unknown) {
-      setProfileError(err instanceof Error ? err.message : (isEn ? "An error occurred." : "Terjadi kesalahan."));
+      const msg = err instanceof Error ? err.message : (isEn ? "An error occurred." : "Terjadi kesalahan.");
+      setProfileError(msg);
+      toast.error(msg);
     } finally {
       setSavingProfile(false);
     }
@@ -129,7 +133,7 @@ export default function OwnerSettingsPage() {
     setNotifsSaved(false);
 
     try {
-      await fetch("/api/me", {
+      const res = await fetch("/api/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -138,10 +142,12 @@ export default function OwnerSettingsPage() {
           marketingNotifications: updated.monthlyDigest,
         }),
       });
+      if (!res.ok) throw new Error();
       setNotifsSaved(true);
+      toast.success(isEn ? "Notification preferences updated." : "Preferensi notifikasi diperbarui.");
       setTimeout(() => setNotifsSaved(false), 3000);
     } catch {
-      // offline
+      toast.error(isEn ? "Failed to save notification preferences." : "Gagal menyimpan preferensi notifikasi.");
     } finally {
       setSavingNotifs(false);
     }
@@ -153,11 +159,15 @@ export default function OwnerSettingsPage() {
     setPasswordSuccess(false);
 
     if (newPassword.length < 8) {
-      setPasswordError(isEn ? "Password must be at least 8 characters." : "Kata sandi minimal 8 karakter.");
+      const msg = isEn ? "Password must be at least 8 characters." : "Kata sandi minimal 8 karakter.";
+      setPasswordError(msg);
+      toast.error(msg);
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError(isEn ? "Passwords don't match." : "Konfirmasi kata sandi tidak cocok.");
+      const msg = isEn ? "Passwords don't match." : "Konfirmasi kata sandi tidak cocok.";
+      setPasswordError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -168,17 +178,19 @@ export default function OwnerSettingsPage() {
       if (error) throw new Error(error.message);
 
       setPasswordSuccess(true);
+      toast.success(isEn ? "Password updated successfully." : "Kata sandi berhasil diperbarui.");
       setNewPassword("");
       setConfirmPassword("");
       setTimeout(() => setPasswordSuccess(false), 5000);
     } catch (err: unknown) {
-      setPasswordError(
+      const msg =
         err instanceof Error
           ? err.message
           : isEn
             ? "Failed to update password."
-            : "Gagal memperbarui kata sandi."
-      );
+            : "Gagal memperbarui kata sandi.";
+      setPasswordError(msg);
+      toast.error(msg);
     } finally {
       setSavingPassword(false);
     }
@@ -194,10 +206,13 @@ export default function OwnerSettingsPage() {
         const json = await res.json().catch(() => null);
         throw new Error(json?.error?.message || (isEn ? "Failed to delete account." : "Gagal menghapus akun."));
       }
+      toast.success(isEn ? "Account deleted." : "Akun berhasil dihapus.");
       await logout();
       router.push("/login");
     } catch (err: unknown) {
-      setDeleteError(err instanceof Error ? err.message : (isEn ? "Error deleting account." : "Gagal menghapus akun."));
+      const msg = err instanceof Error ? err.message : (isEn ? "Error deleting account." : "Gagal menghapus akun.");
+      setDeleteError(msg);
+      toast.error(msg);
       setDeleting(false);
     }
   };

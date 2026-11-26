@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FACILITY_META } from "@/lib/data/facilities";
 import type { Facility } from "@/lib/data/types";
+import { toast } from "@/hooks/use-toast";
 
 interface CreatePropertyDialogProps {
   open: boolean;
@@ -119,10 +120,12 @@ export default function CreatePropertyDialog({
           json?.message ||
           "Gagal menambahkan properti. Pastikan data terisi dengan benar.";
         setError(message);
+        toast.error(message);
         setLoading(false);
         return;
       }
 
+      toast.success(`Properti "${name.trim()}" berhasil dibuat dan dikirim untuk verifikasi!`);
       // Reset form
       setName("");
       setTagline("");
@@ -134,9 +137,9 @@ export default function CreatePropertyDialog({
       onOpenChange(false);
       onSuccess?.(json.data);
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Terjadi gangguan server. Coba lagi."
-      );
+      const msg = err instanceof Error ? err.message : "Terjadi gangguan server. Coba lagi.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

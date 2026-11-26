@@ -119,8 +119,6 @@ export default function TenantContractPage() {
 
   const [isFetching, setIsFetching] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
-  const [actionErrorMsg, setActionErrorMsg] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [bookings, setBookings] = useState<ApiBooking[]>([]);
@@ -165,13 +163,9 @@ export default function TenantContractPage() {
     }
   }, []);
 
-  const handleRefresh = useCallback((preserveNotice?: boolean | unknown) => {
+  const handleRefresh = useCallback(() => {
     setIsFetching(true);
     setErrorMessage(null);
-    if (preserveNotice !== true) {
-      setActionSuccessMsg(null);
-      setActionErrorMsg(null);
-    }
     setRefreshKey((k) => k + 1);
   }, []);
 
@@ -179,8 +173,6 @@ export default function TenantContractPage() {
     e.preventDefault();
     if (!activeBooking) return;
     setIsSubmittingCheckIn(true);
-    setActionErrorMsg(null);
-    setActionSuccessMsg(null);
     try {
       const res = await fetch(`/api/bookings/${activeBooking.id}/check-in`, {
         method: "POST",
@@ -197,16 +189,14 @@ export default function TenantContractPage() {
         locale === "id"
           ? "Check-in berhasil dikonfirmasi! Selamat menikmati kamar Anda."
           : "Check-in confirmed successfully! Welcome to your room.";
-      setActionSuccessMsg(successMsg);
       toast({
         title: locale === "id" ? "Check-in berhasil" : "Check-in confirmed",
         description: successMsg,
         variant: "success",
       });
-      handleRefresh(true);
+      handleRefresh();
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "Terjadi kesalahan saat check-in.";
-      setActionErrorMsg(errMsg);
       toast({
         title: locale === "id" ? "Gagal melakukan check-in" : "Check-in failed",
         description: errMsg,
@@ -221,8 +211,6 @@ export default function TenantContractPage() {
     e.preventDefault();
     if (!activeBooking) return;
     setIsSubmittingCheckOut(true);
-    setActionErrorMsg(null);
-    setActionSuccessMsg(null);
     try {
       const res = await fetch(`/api/bookings/${activeBooking.id}/check-out-request`, {
         method: "POST",
@@ -245,14 +233,15 @@ export default function TenantContractPage() {
       setBankName("");
       setAccountNumber("");
       setAccountHolder("");
-      setActionSuccessMsg(
+      const msg =
         locale === "id"
           ? "Pengajuan check-out berhasil dikirim! Menunggu konfirmasi dan inspeksi dari pemilik kos."
-          : "Checkout request submitted successfully! Awaiting owner inspection."
-      );
-      handleRefresh(true);
+          : "Checkout request submitted successfully! Awaiting owner inspection.";
+      toast.success(msg);
+      handleRefresh();
     } catch (err) {
-      setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat mengajukan check-out.");
+      const errMsg = err instanceof Error ? err.message : "Terjadi kesalahan saat mengajukan check-out.";
+      toast.error(errMsg);
     } finally {
       setIsSubmittingCheckOut(false);
     }
@@ -262,8 +251,6 @@ export default function TenantContractPage() {
     e.preventDefault();
     if (!activeBooking) return;
     setIsSubmittingTermination(true);
-    setActionErrorMsg(null);
-    setActionSuccessMsg(null);
     try {
       const res = await fetch(`/api/bookings/${activeBooking.id}/terminate-request`, {
         method: "POST",
@@ -276,14 +263,15 @@ export default function TenantContractPage() {
       }
       setTerminationOpen(false);
       setTerminationReason("");
-      setActionSuccessMsg(
+      const msg =
         locale === "id"
           ? "Permohonan berhenti sewa berhasil diajukan. Menunggu konfirmasi pemilik kos."
-          : "Termination request submitted successfully. Awaiting owner confirmation."
-      );
+          : "Termination request submitted successfully. Awaiting owner confirmation.";
+      toast.success(msg);
       handleRefresh();
     } catch (err) {
-      setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat mengajukan berhenti sewa.");
+      const errMsg = err instanceof Error ? err.message : "Terjadi kesalahan saat mengajukan berhenti sewa.";
+      toast.error(errMsg);
     } finally {
       setIsSubmittingTermination(false);
     }
@@ -292,8 +280,6 @@ export default function TenantContractPage() {
   const handleTerminationConfirm = async (action: "APPROVE" | "REJECT") => {
     if (!activeBooking) return;
     setIsConfirmingTermination(true);
-    setActionErrorMsg(null);
-    setActionSuccessMsg(null);
     try {
       const res = await fetch(`/api/bookings/${activeBooking.id}/terminate-confirm`, {
         method: "POST",
@@ -304,18 +290,19 @@ export default function TenantContractPage() {
       if (!res.ok) {
         throw new Error(data?.error?.message || data?.message || "Gagal memproses permohonan");
       }
-      setActionSuccessMsg(
+      const msg =
         action === "APPROVE"
           ? (locale === "id"
               ? "Penghentian sewa disetujui! Dana refund telah dikreditkan ke saldo dompet Anda."
               : "Termination approved! Refund has been credited to your wallet balance.")
           : (locale === "id"
               ? "Permohonan penghentian sewa ditolak."
-              : "Termination request rejected.")
-      );
+              : "Termination request rejected.");
+      toast.success(msg);
       handleRefresh();
     } catch (err) {
-      setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat memproses permohonan.");
+      const errMsg = err instanceof Error ? err.message : "Terjadi kesalahan saat memproses permohonan.";
+      toast.error(errMsg);
     } finally {
       setIsConfirmingTermination(false);
     }
@@ -325,8 +312,6 @@ export default function TenantContractPage() {
     e.preventDefault();
     if (!activeBooking) return;
     setIsSubmittingExtend(true);
-    setActionErrorMsg(null);
-    setActionSuccessMsg(null);
     try {
       const res = await fetch(`/api/bookings/${activeBooking.id}/extend-lease`, {
         method: "POST",
@@ -341,14 +326,15 @@ export default function TenantContractPage() {
         throw new Error(data?.error?.message || data?.message || "Gagal memperpanjang sewa");
       }
       setExtendOpen(false);
-      setActionSuccessMsg(
+      const msg =
         locale === "id"
           ? `Masa sewa berhasil diperpanjang ${additionalMonths} bulan! Tagihan termin baru telah diterbitkan dengan deposit otomatis bergulir.`
-          : `Lease extended by ${additionalMonths} months! New invoice created with rollover deposit.`
-      );
+          : `Lease extended by ${additionalMonths} months! New invoice created with rollover deposit.`;
+      toast.success(msg);
       handleRefresh();
     } catch (err) {
-      setActionErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat memperpanjang sewa.");
+      const errMsg = err instanceof Error ? err.message : "Terjadi kesalahan saat memperpanjang sewa.";
+      toast.error(errMsg);
     } finally {
       setIsSubmittingExtend(false);
     }
@@ -589,20 +575,6 @@ export default function TenantContractPage() {
         ) : undefined
       }
     >
-      {/* Feedback Banners */}
-      {actionSuccessMsg && (
-        <div className="mb-6 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-          <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
-          <p className="font-medium">{actionSuccessMsg}</p>
-        </div>
-      )}
-      {actionErrorMsg && (
-        <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
-          <AlertCircle className="size-5 shrink-0 text-red-600" />
-          <p className="font-medium">{actionErrorMsg}</p>
-        </div>
-      )}
-
       {/* Error Banner */}
       {errorMessage && (
         <div className="mb-6 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">

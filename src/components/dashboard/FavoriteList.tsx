@@ -20,6 +20,7 @@ import type { Property } from "@/lib/data/types";
 import { formatIDR, formatDistance, cn } from "@/lib/utils";
 import { toggleFavorite, useUserOps } from "@/lib/userOpsStore";
 import { getKosImage } from "@/lib/kosImages";
+import { toast } from "@/hooks/use-toast";
 
 export default function FavoriteList() {
   const t = useTranslations("userDash.favorites");
@@ -44,6 +45,7 @@ export default function FavoriteList() {
 
   const handleRemove = (slug: string) => {
     toggleFavorite(slug);
+    toast.success("Kos dihapus dari daftar favorit.");
     fetch(`/api/favorites/${slug}`, { method: "DELETE" }).catch(() => {});
   };
 

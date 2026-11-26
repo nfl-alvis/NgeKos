@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "@/hooks/use-toast";
 
 interface PropertyImage {
   id: string;
@@ -111,17 +112,19 @@ export default function PropertyPhotoManager({
           json?.message ||
           "Gagal mengunggah foto. Pastikan format JPEG, PNG, atau WebP (maks. 5MB).";
         setError(msg);
+        toast.error(msg);
         setUploading(false);
         return;
       }
 
       if (json?.data) {
         setImages((prev) => [...prev, json.data]);
+        toast.success("Foto properti berhasil diunggah.");
       }
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Terjadi kegagalan saat mengunggah foto."
-      );
+      const msg = err instanceof Error ? err.message : "Terjadi kegagalan saat mengunggah foto.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setUploading(false);
     }
@@ -142,15 +145,17 @@ export default function PropertyPhotoManager({
         const json = await res.json().catch(() => null);
         const msg = json?.error?.message || json?.message || "Gagal menghapus foto.";
         setError(msg);
+        toast.error(msg);
         setDeletingId(null);
         return;
       }
 
       setImages((prev) => prev.filter((img) => img.id !== imageId));
+      toast.success("Foto properti berhasil dihapus.");
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus foto."
-      );
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus foto.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setDeletingId(null);
     }

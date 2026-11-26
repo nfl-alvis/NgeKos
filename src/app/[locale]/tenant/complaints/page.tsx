@@ -4,14 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   AlertCircle,
-  CheckCircle2,
   ClipboardList,
   Loader2,
   LogIn,
   Plus,
   RefreshCw,
-  X,
 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -114,7 +113,6 @@ export default function TenantComplaintsPage() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [toastSuccess, setToastSuccess] = useState<string | null>(null);
 
   const handleRefresh = useCallback(() => {
     setIsFetching(true);
@@ -265,11 +263,11 @@ export default function TenantComplaintsPage() {
       setTitle("");
       setDescription("");
       setCategory("FACILITY");
-      setToastSuccess(t("created"));
-      setTimeout(() => setToastSuccess(null), 5000);
+      toast.success(t("created"));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (locale === "id" ? "Gagal mengirim pengaduan" : "Failed to submit complaint");
       setFormError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -314,22 +312,6 @@ export default function TenantComplaintsPage() {
         ) : undefined
       }
     >
-      {/* Toast Notification */}
-      {toastSuccess && (
-        <div className="mb-4 flex items-center justify-between rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-900">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="size-5 shrink-0 text-green-600" />
-            <p>{toastSuccess}</p>
-          </div>
-          <button
-            onClick={() => setToastSuccess(null)}
-            className="text-green-700 hover:text-green-950"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-      )}
-
       {/* Error state */}
       {errorMessage && (
         <div className="mb-6 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">

@@ -1,14 +1,16 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext } from "react";
 import DashboardShell from "@/components/DashboardShell";
+import { toast } from "@/hooks/use-toast";
 
 /* ===== kerangka seragam halaman admin =====
-   Semua menu admin memakai shell ini: sidebar admin + judul + badge + toast
-   in-place (pola toast VerificationDetailDialog - tanpa library tambahan).
+   Semua menu admin memakai shell ini: sidebar admin + judul + badge + shadcn toast.
    Aksi halaman memanggil useAdminToast().show("pesan"). */
 
-const ToastCtx = createContext<{ show: (msg: string) => void }>({ show: () => {} });
+const ToastCtx = createContext<{ show: (msg: string, variant?: "success" | "error") => void }>({
+  show: () => {},
+});
 
 export function useAdminToast() {
   return useContext(ToastCtx);
@@ -30,10 +32,13 @@ export default function AdminPageShell({
   actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const [toast, setToast] = useState<string | null>(null);
-  const show = useCallback((msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 5000);
+  const show = useCallback((msg: string, variant?: "success" | "error") => {
+    const isErr = variant === "error" || (variant === undefined && /gagal|error|failed|ditolak|tidak valid/i.test(msg));
+    if (isErr) {
+      toast.error(msg);
+    } else {
+      toast.success(msg);
+    }
   }, []);
 
   return (
@@ -45,15 +50,6 @@ export default function AdminPageShell({
           {actions && <div className="ml-auto">{actions}</div>}
         </div>
         {children}
-
-        {toast && (
-          <div
-            role="status"
-            className="fixed bottom-6 left-1/2 z-[120] -translate-x-1/2 rounded-lg border border-nk-border bg-nk-surface px-4 py-2.5 text-sm text-nk-text shadow-lg"
-          >
-            {toast}
-          </div>
-        )}
       </ToastCtx.Provider>
     </DashboardShell>
   );
